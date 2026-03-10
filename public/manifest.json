@@ -1,6 +1,6 @@
 {
-  "name": "My Awesome PWA app",
-  "short_name": "PWA App",
+  "name": "DAV Pfarrkirchen",
+  "short_name": "DAVpan",
   "icons": [
     {
       "src": "/icons/android-chrome-192x192.png",

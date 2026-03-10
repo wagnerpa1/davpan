@@ -14,10 +14,10 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const APP_NAME = "JDAV Pfarrkirchen";
+const APP_NAME = "DAV Pfarrkirchen";
 const APP_DEFAULT_TITLE = "JDAV Pfarrkirchen";
-const APP_TITLE_TEMPLATE = "%s - JDAV";
-const APP_DESCRIPTION = "App für die JDAV Pfarrkirchen - Touren, Material, Kalender";
+const APP_TITLE_TEMPLATE = "DAVpan";
+const APP_DESCRIPTION = "App für den DAV Pfarrkirchen - Touren, Material, Kalender";
 
 export const metadata: Metadata = {
   applicationName: APP_NAME,
