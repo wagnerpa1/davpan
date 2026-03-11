@@ -1,22 +1,38 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@plugin "tailwindcss-animate";
 
-@theme inline {
+@custom-variant dark (&:is(.dark *));
+
+@theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  /* JDAV PAN Colors */
+  --color-jdav-green: #76a355;
+  --color-jdav-green-light: #94b97a;
+  --color-jdav-green-dark: #5a8040;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  --background: #f8fafc; /* light slate/gray as default bg */
+  --foreground: #0f172a;
+  
+  --primary: #76a355;
+  --primary-foreground: #ffffff;
+}
+
+.dark {
+  --background: #0f172a;
+  --foreground: #f8fafc;
+  
+  --primary: #76a355;
+  --primary-foreground: #ffffff;
 }
 
 body {

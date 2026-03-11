@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import React from "react";
 import { SerwistProvider } from "./serwist";
+import { Header } from "@/components/layout/Header";
+import { BottomNavigation } from "@/components/layout/BottomNavigation";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -69,9 +71,13 @@ export default function RootLayout({
   return (
     <html lang="de">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} flex min-h-screen flex-col antialiased`}
       >
-        <SerwistProvider swUrl="/serwist/sw.js">{children}</SerwistProvider>
+        <SerwistProvider swUrl="/serwist/sw.js">
+          <Header />
+          <main className="flex-1 pb-16 md:pb-0">{children}</main>
+          <BottomNavigation />
+        </SerwistProvider>
       </body>
     </html>
   );
