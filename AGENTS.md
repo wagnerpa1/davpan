@@ -1,524 +1,807 @@
-Vollständiges Briefing — JDAV Pfarrkirchen Web-App
+# Projektdokument
 
-JDAV Pfarrkirchen / Deutscher Alpenverein
+## Web-App für Tourenverwaltung der JDAV / DAV Sektion Pfarrkirchen
 
-Unten findest du ein ausführliches, Entwickler- und Design-taugliches Briefing, das alle bisher besprochenen Funktionen, UI/UX-Flows, Datenstrukturen, API-Spezifikationen, Design-Tokens und Betriebsanforderungen enthält — so, dass ein Team direkt mit Implementierung, UI-Mockups und Tests starten kann.
+---
 
-Kurze Zugammenfassung der Kernentscheidungen (Kontext)
+# 1. Projektüberblick
 
-PWA (Progressive Web App) statt native App
+Dieses Dokument beschreibt das vollständige Konzept einer Web-App zur Organisation von Touren, Teilnehmern, Material und Vereinsinformationen für die JDAV / DAV Sektion Pfarrkirchen.
 
-Zielgruppen: Kinder (<14 via Eltern), Jugendliche (14–17, eigener Account + Eltern-Bestätigung), Eltern (können Nicht-Mitglieder sein), Leiter, Admins
+Das Dokument dient als **technisches und funktionales Briefing für Entwickler**.
+Es enthält:
 
-Rollenbasiertes RBAC; Leiter erstellen Events, Admins genehmigen Events; Eltern können Kinder verwalten.
+* Ziel und Grundidee der Plattform
+* Rollen- und Rechtekonzept
+* vollständige Featurebeschreibung
+* UI/UX-Flows
+* Datenbankstruktur
+* Tourenlogik
+* Materialverwaltung
+* Community- und Berichtssystem
+* öffentliche und interne Bereiche
+* PWA- und Offlinekonzept
+* Push-Benachrichtigungssystem
 
-CSV-Import als erster Integrationsweg zu bestehenden Mitgliederdaten.
+Die Plattform soll langfristig eine **zentrale Organisationsplattform für Touren der Sektion** darstellen.
 
-Einverständniserklärungen pro Tour (per E-Mail Bestätigungslink), mit Option für dauerhafte Freigabe.
+---
 
-Warteliste, Restplatzanzeige, Materialbedarf in Anmeldung, Materialreservierung.
+# 2. Ziel der Plattform
 
-Farbe: Brand #57AB27 + jugendliches, leicht verspieltes UI.
+Die App soll die Organisation von Vereinsaktivitäten deutlich vereinfachen.
 
-1. Funktionen (vollständig, nach Themen gruppiert)
-   1.1 Kernfunktionen — Nutzer-sicht
+Der Fokus liegt auf:
 
-Registrierung / Login
+* Planung von Touren
+* Anmeldung von Teilnehmern
+* Verwaltung von Material
+* Kommunikation von Tourinformationen
+* Veröffentlichung von Tourberichten
+* Bereitstellung wichtiger Vereinsdokumente
 
-E-Mail + Passwort; Magic-Link optional später
+Die Plattform richtet sich primär an **Vereinsmitglieder**, während ein kleiner Teil der Inhalte öffentlich sichtbar ist.
 
-Auswahl beim Onboarding: „Elternteil“ oder „Jugendlicher (≥14)“
+---
 
-Eltern-Bestätigung per E-Mail für Jugendliche (14–17)
+# 3. Plattformart
 
-Kinder <14: kein eigenes Login, werden über Elternkonto verwaltet
+Die Anwendung wird als **Progressive Web App (PWA)** entwickelt.
 
-Dashboard
+Eigenschaften:
 
-Nächste Tour, Restplatzanzeige, schnelle Aktionen (Touren, Material, Dokumente, Schwarzes Brett)
+* Nutzung im Browser
+* Installation auf Smartphone möglich
+* Push-Benachrichtigungen
+* Offlinefähigkeit (teilweise)
+* automatische Synchronisation bei Internetverbindung
 
-Relevante Hinweise / Benachrichtigungen (kontextuell)
+---
 
-Kalender & Touren
+# 4. Zielgruppen
 
-Monats-/Listenansicht, Filter (Altersgruppe, Eventtyp)
+## Mitglieder
 
-Tour-Detailseite: Datum, Ort, Treffpunkt, Max-Teilnehmer, Bild, Beschreibung, Materialliste, Kontaktperson
+* können Touren sehen
+* sich anmelden
+* Material reservieren
+* Tourberichte lesen
 
-Tour-Anmeldung
+## Eltern
 
-Auswahl teilnehmende Person (Eltern können Kinder wählen)
+* können eigene Kinder verwalten
+* können Kinder zu Touren anmelden
 
-Abfrage benötigter Ausrüstung (Helm, Klettersteigset etc.)
+## Guides (Tourenleiter)
 
-Prüfung: Einverständnis vorhanden? Wenn nicht → E-Mail an Eltern (per-Tour) bzw. Nutzung von Dauerfreigabe
+* erstellen Touren
+* verwalten Teilnehmer
+* bestätigen Anmeldungen
+* verwalten Material
+* erstellen Tourberichte
 
-Wenn Max-Teilnehmer erreicht: Möglichkeit Warteliste
+## Admin
 
-Warteliste & Restplatzlogik
+* vollständige Systemverwaltung
+* Tourstatus ändern
+* Benutzer verwalten
+* Dokumente hochladen
 
-Chronologische Warteliste
+---
 
-Bei freiem Platz: automatisierte Benachrichtigung (Push + E-Mail) an ersten Wartenden — Frist (z. B. 24h) zur Bestätigung
+# 5. Rollenmodell
 
-Wenn Bestätigung nicht erfolgt → nächster in Liste
+## Teilnehmer (Mitglied)
 
-Teilnehmer können sich selbständig abmelden (mit Fristregelung)
+Rechte:
 
-Materialreservierung
+* Touren ansehen
+* sich anmelden
+* Material reservieren
+* Tourberichte lesen
+* eigene Beiträge löschen
 
-Katalog, Verfügbarkeit, Zeitfenster, Reservierung (Mitnahme/Abholung)
+---
 
-Verknüpfung: Anmeldung kann Ausrüstungsbedarf automatisch zur Reservierung vorschlagen
+## Eltern
 
-Schwarzes Brett
+Zusätzlich zu Teilnehmerrechten:
 
-Beiträge: Ankündigungen, Mitfahrgelegenheiten, Sonstiges
+* Kinderprofile verwalten
+* Kinder zu Touren anmelden
 
-Posting-Rechte: Leiter & Admins (evtl. berechtigte Jugendliche je Einstellung)
+---
 
-Moderation / Meldefunktion
+## Guide (Tourenleiter)
 
-Dokumentenbereich
+Rechte:
 
-Strukturierte Ordner, Download (Einverständniserklärungen, Packlisten)
+* Touren erstellen
+* eigene Touren bearbeiten
+* Teilnehmer bestätigen
+* Warteliste verwalten
+* Materiallisten einsehen
+* Tourberichte erstellen
+* Beiträge moderieren
 
-Kinder sehen nicht-sensible Inhalte über Elternansicht
+Guides dürfen **nur Touren bearbeiten, bei denen sie als Guide eingetragen sind**.
 
-Erlebnisdokumentation (Tourenberichte)
+---
 
-Neuer Name statt „Logbuch“ — Berichte mit Fotos, Teilnehmerliste, Highlights
+## Admin
 
-Veröffentlichung durch Leiter/Admins
+Rechte:
 
-Benachrichtigungen
+* Benutzerverwaltung
+* Tourstatus ändern
+* Dokumente verwalten
+* Moderation
 
-Push + E-Mail; Opt-in nötig; in-app Notification Center
+---
 
-Anwendungsfälle: Wartelisten-Platz, Tour-Änderung, neue Dokumente
+# 6. Öffentlicher Bereich
 
-1.2 Admin / Leiter Funktionen
+Ohne Login erreichbar.
 
-Event-Erstellung (Leiter) → Status „Zur Freigabe“ (Draft)
+## Öffentliche Tourenliste
 
-Event-Freigabe (Admin) → Publizierung
+Anzeige:
 
-Rollenzuweisung (Admins ernennen Leiter, Admins)
+* Tourtitel
+* Datum
+* Kategorie
+* Zielgebiet
+* zuständige Guides
 
-CSV-Import (Mitgliederdaten): Preview/Mapping/Import-Report
+Touren werden **chronologisch** angezeigt.
 
-Teilnehmermanagement: Teilnehmerlisten ansehen, Warteliste manuell verwalten
+---
 
-Materialverwaltung: Katalog pflegen, Ausgabelog
+## Öffentliche Tourdetails
 
-Audit / Zugriff-Log: Protokollierte Admin-Datenzugriffe (unveränderbar)
+Sichtbar:
 
-2. Detaillierte UI / UX Flows (Text-Workflow)
-   2.1 Onboarding & Auth Flow (Kurz)
+* Titel
+* Datum
+* Zielgebiet
+* Kategorie
+* Beschreibung
+* Schwierigkeit
+* Höhenmeter
+* Strecke
+* Gehzeit
+* Treffpunkt
+* Guides
 
-Start → Auswahl: Login / Registrieren
+Nicht sichtbar:
 
-Registrieren → Frage: „Elternteil“ oder „Jugendlicher (≥14)“
+* Teilnehmerliste
+* Material
+* Anmeldung
+* Kommentare
 
-Eltern: Formular (Name, E-Mail, Passwort, Telefonnummer optional) → Verifikation (Double Opt-in) → Option: Kinder anlegen
+---
 
-Jugendlicher: Formular (Name, E-Mail, Geburtsdatum) → System sendet E-Mail an hinterlegte Erziehungsberechtigte zur Bestätigung → Konto bleibt „ausstehend“ bis Bestätigung
+# 7. Interner Bereich (Login erforderlich)
 
-Login → Dashboard
+Nach Login stehen zusätzliche Funktionen zur Verfügung.
 
-Annahmen: Altersangabe ist self-declared; Verifikation via Eltern-E-Mail genügt.
+---
 
-2.2 Tour-Creation & Publikationsflow
+# 8. Dashboard / Startseite
 
-Leiter erstellt Event → Status: DRAFT / ZUR FREIGABE
+Die Startseite zeigt einen **Vereinsfeed**.
 
-Admin wird per Notification informiert → prüft & Freigabe (APP: PATCH /events/:id/status = approved)
+Der Feed enthält:
 
-Nach Freigabe: Event sichtbar für alle berechtigten Rollen
+* neue Tourberichte
+* neue Beiträge
+* wichtige Hinweise
 
-2.3 Anmeldung mit Einverständnis
+---
 
-Nutzer klickt „Anmelden“ → Auswahl: Person (Kind/ eigener Account) → Materialbedarf abfragen → System checkt Einwilligung:
+# 9. Tourenübersicht
 
-Wenn Einwilligung vorhanden bzw. Dauerfreigabe: Anmeldung abgeschlossen → Bestätigungs-E-Mail + Push
+Liste aller kommenden Touren.
 
-Wenn nicht: Mail an Eltern mit Bestätigungslink → Anmeldung in Status „wartet auf Einverständnis“ → Leiter sieht Teilnehmerstatus „ausstehend“
+Sortierung:
 
-2.4 Wartelistenprozess
+* chronologisch nach Datum
 
-Bei vollen Events: Anmeldung → Platz auf Warteliste (timestamp)
+Filter möglich nach:
 
-Bei Absage: System benachrichtigt ersten Wartenden (24h Confirm Window)
+* Jahr
+* Kategorie
 
-Wenn bestätigt: System setzt angemeldet; Benachrichtigungen an Teilnehmer/Leiter
+---
 
-2.5 Materialreservierung Flow
+# 10. Tourdetails (intern)
 
-Nutzer wählt Material → Zeitfenster → System prüft Verfügbarkeit → Reservierung anlegen → Benachrichtigung + Kalender-Eintrag
+Zusätzlich sichtbar:
 
-3. Bildschirme / Screens (Übersicht — Entwickler-Liste)
+* Anmeldung
+* Materialauswahl
 
-Start / Welcome (Anmelden / Registrieren)
+Nicht sichtbar:
 
-Login
+* Teilnehmerliste
 
-Registrierung (Eltern vs Jugendlicher)
+---
 
-Eltern-Bestätigungs-Screen (information)
+# 11. Tourstruktur
 
-Dashboard / Home
+Jede Tour enthält folgende strukturierte Daten.
 
-Kalender (Monat / Liste)
+## Basisdaten
 
-Tour-Detail (inkl. Restplatz, Materialbedarf, Anmeldung)
+* Titel
+* Kategorie
+* Zielgebiet
+* Beschreibung
+* Schwierigkeit (DAV-System)
+* Voraussetzungen (Text)
 
-Anmeldung Wizard (Schritte: Person → Material → Einverständnis → Abschluss)
+---
 
-Wartelisten-Status Screen
+## Zeitliche Daten
 
-Materialkatalog & Reservierung
+* Startdatum
+* Enddatum
+* Treffpunktzeit
 
-Erlebnisberichte (Liste & Detail mit Galerie)
+---
 
-Schwarzes Brett (Liste & Post erstellen)
+## Treffpunkt
 
-Dokumentenzentrale (Ordner / Dateiansicht)
+* Name oder Beschreibung
 
-Profil / Einstellungen (Benachrichtigungen, Notfallkontakte)
+Standard:
 
-Admin: Event-Management (Erstellen / Freigabe)
+Park-and-Ride Parkplatz (falls nichts anderes angegeben)
 
-Admin: CSV-Import UI (Mapping & Preview)
+---
 
-Audit / Zugriff-Log Viewer (Admin)
+## Tourparameter
 
-4. Datenstruktur / DB-Schema (relational — Beispiel: PostgreSQL)
+* Höhenmeter
+* Strecke
+* Gehzeit
 
-Hinweis: Felder mit sensitive werden verschlüsselt/zugriffsbeschränkt.
+---
 
-4.1 Haupt-Entitäten (vereinfacht)
--- Users (Eltern, Jugendliche, Leiter, Admins)
-CREATE TABLE users (
-id UUID PRIMARY KEY,
-role TEXT NOT NULL, -- 'parent','youth','leader','admin'
-first_name TEXT,
-last_name TEXT,
-email TEXT UNIQUE,
-password_hash TEXT,
-birthdate DATE,
-is_member BOOLEAN DEFAULT false,
-member_id TEXT, -- optional, aus CSV
-phone TEXT,
-created_at TIMESTAMP,
-verified BOOLEAN DEFAULT false
-);
+## Kosten
 
--- Children (for parents) - children can also be users if >=14
-CREATE TABLE children (
-id UUID PRIMARY KEY,
-parent_user_id UUID REFERENCES users(id),
-first_name TEXT,
-last_name TEXT,
-birthdate DATE,
-member_id TEXT,
-medical_info JSONB, -- allergies, meds, swim_ability
-photo_consent BOOLEAN,
-created_at TIMESTAMP
-);
+* optionaler Kostenhinweis
 
--- Events (Tours)
-CREATE TABLE events (
-id UUID PRIMARY KEY,
-title TEXT,
-description TEXT,
-location TEXT,
-start_ts TIMESTAMP,
-end_ts TIMESTAMP,
-created_by UUID REFERENCES users(id), -- leader
-status TEXT DEFAULT 'draft', -- draft, pending_approval, approved, archived
-max_participants INT NULL, -- NULL = open event
-created_at TIMESTAMP,
-required_equipment JSONB  -- ["helmet","via-ferrata-set"]
-);
+Abrechnung erfolgt privat (z. B. bar).
 
--- Registrations
-CREATE TABLE registrations (
-id UUID PRIMARY KEY,
-event_id UUID REFERENCES events(id),
-registrant_user_id UUID, -- for youth/parent account
-registrant_child_id UUID, -- if signing up a child
-status TEXT, -- 'registered', 'pending_parent_consent', 'waitlist', 'cancelled'
-created_at TIMESTAMP,
-consent_given_by_email TEXT, -- parent email that confirmed
-consent_ts TIMESTAMP
-);
+---
 
--- Waitlist (separate to allow ordering)
-CREATE TABLE waitlist (
-id UUID PRIMARY KEY,
-event_id UUID REFERENCES events(id),
-user_id UUID,
-child_id UUID,
-position INT,
-created_at TIMESTAMP
-);
+## Teilnehmer
 
--- Material
-CREATE TABLE material (
-id UUID PRIMARY KEY,
-name TEXT,
-total INT,
-description TEXT,
-categories TEXT[],
-created_at TIMESTAMP
-);
+* maximale Teilnehmerzahl
+* Warteliste unbegrenzt
 
-CREATE TABLE material_reservations (
-id UUID PRIMARY KEY,
-material_id UUID REFERENCES material(id),
-user_id UUID,
-child_id UUID,
-start_ts TIMESTAMP,
-end_ts TIMESTAMP,
-status TEXT, -- reserved, picked_up, returned, cancelled
-created_at TIMESTAMP
-);
+---
 
--- Documents
-CREATE TABLE documents (
-id UUID PRIMARY KEY,
-filename TEXT,
-path TEXT,
-category TEXT,
-visible_for JSONB, -- roles or specific groups
-uploaded_by UUID REFERENCES users(id),
-created_at TIMESTAMP
-);
+## Guides
 
--- Audit log for admin data access
-CREATE TABLE admin_audit_logs (
-id UUID PRIMARY KEY,
-admin_user_id UUID REFERENCES users(id),
-action TEXT,
-target_table TEXT,
-target_id UUID,
-timestamp TIMESTAMP DEFAULT now(),
-details JSONB
-);
-Bemerkungen:
+* Hauptguide
+* weitere Guides auswählbar
 
-children ist separat, damit Eltern ohne Mitgliedschaft Kinder verwalten können. Kinder ≥14 haben optional users-Accounts (role = 'youth').
+---
 
-required_equipment und medical_info als JSONB für flexible Felder; kann später normalisiert werden.
+# 12. Tourstatus
 
-Sicherstellen: GDPR-Felder (addresses, phone, medical_info) sind nur zugreifbar nach RBAC.
+Touren besitzen Status:
 
-Zusätzlich: Indices auf events(start_ts), users(email), registrations(event_id).
+### Planung
 
-5. API-Endpunkte (Basis-Set)
+Tour existiert, Anmeldung noch nicht möglich.
 
-Auth via JWT; alle schreibenden Endpoints prüfen RBAC.
+### Anmeldung offen
 
-POST   /auth/register
-POST   /auth/login
-POST   /auth/verify-parent (parent email confirming youth)
-POST   /auth/password-reset
+Teilnehmer können sich anmelden.
 
-GET    /events
-GET    /events/:id
-POST   /events        -- leader (creates draft/pending)
-PATCH  /events/:id    -- leader/admin
-POST   /events/:id/approve  -- admin approves
+### Ausgebucht
 
-POST   /events/:id/register  -- register (user or child)
-GET    /events/:id/registrations
-POST   /events/:id/waitlist
+Maximale Teilnehmerzahl erreicht.
+Warteliste aktiv.
 
-GET    /material
-POST   /material/:id/reserve
-GET    /material/reservations
+### Abgeschlossen
 
-GET    /documents
-POST   /documents (upload)  -- admin/leader
+Tour wurde durchgeführt.
 
-POST   /csv/import  -- admin (upload + mapping)
-GET    /audit/logs  -- admin
+Danach kann ein **Tourbericht erstellt werden**.
 
-GET    /users/:id
-PATCH  /users/:id
+---
 
-Webhooks/Workers:
+# 13. Touranmeldung
 
-Worker für Wartelisten-Nachrückprozess (trigger bei Abmeldung)
+Anmeldeprozess:
 
-Worker für E-Mail-Sends + Retry (email queue)
+1. Teilnehmer öffnet Tour
+2. klickt „Anmelden“
+3. gibt benötigtes Material an
+4. Anmeldung wird gespeichert
 
-Push Notification Service (FCM/Web Push): subscription per user
+Status:
 
-6. Design System / UI Tokens
-   6.1 Farbpalette (final)
-   Primary:        #57AB27
-   Secondary:      #3E7E1C
-   SoftAccent:     #CFE8BF
-   Background:     #F4F6F8
-   Card:           #FFFFFF
-   Divider:        #C7CCD1
-   TextPrimary:    #1F2933
-   Success:        #2E7D32
-   Warning:        #F9A825
-   Error:          #D32F2F
-   Info:           #1976D2
-   6.2 Typografie
+pending
 
-Headings: Poppins (Bold for H1/H2), Body: Inter (Regular 16px)
+---
 
-Line-height 1.4; touch target ≥44×44px
+# 14. Bestätigung durch Guide
 
-6.3 Spacing & Radii
+Guide erhält Push-Benachrichtigung.
 
-Base spacing: 8px scale (8 / 16 / 24 / 32)
+Guide kann:
 
-Card radius: 16–20px
+* bestätigen
+* ablehnen
 
-Button radius: 14–16px
+Bei Bestätigung:
 
-Shadow: soft, y-offset 2–4 px, blur 8–12 px
+Status = confirmed
 
-7. Sicherheit, DSGVO & Privacy
+---
 
-Double Opt-in bei Registrierung (Verifizierung E-Mail)
+# 15. Warteliste
 
-Elternbestätigung: E-Mail-Link für jede tourbezogene Einwilligung; Speicherung mit Zeitstempel
+Wenn Teilnehmerlimit erreicht:
 
-Minimierung personenbezogener Daten: speichern nur, was benötigt wird
+neue Anmeldungen → Warteliste
 
-Verschlüsselung: Passworts (bcrypt), optional Sensitive Fields encryption (PGP / field-level AES)
+---
 
-Host / Storage in EU (oder DSGVO-konformer Anbieter)
+## Wartelistenlogik
 
-Admin Audit Log: Jeder Zugriff auf personenbezogene Daten durch Admins protokolliert
+Wenn Teilnehmer absagt:
 
-Datenlöschung: Prozesse zur Löschung / Export auf Anfrage (DSAR)
+1. erster Wartelistenteilnehmer rückt automatisch nach
+2. Guide erhält Push-Benachrichtigung
 
-Push Opt-in: explizit, jederzeit abwählbar
+Guide kann zusätzlich:
 
-8. MVP & Roadmap (Priorisierung)
-   MVP (Sprint 1–3)
+* Wartelistenreihenfolge ändern
+* Teilnehmer direkt bestätigen
 
-Auth (E-Mail + Passwort), Registrierung Parent/Youth flow + parent verification
+---
 
-Events: List, Detail, Anmeldung (per-tour consent), Restplatzanzeige, Warteliste basics
+# 16. Altersbeschränkung
 
-Dashboard (Nächste Tour, Quick Actions)
+Touren können ein Mindestalter besitzen.
 
-Material: einfache Reservierung (catalog + reserve)
+Wenn Teilnehmer zu jung ist:
 
-Documents: Upload & Download basics
+System blockiert Anmeldung.
 
-Admin: Event approval, CSV import (basic), Audit logging
+Option:
 
-Notification skeleton (in-app + E-mail queue)
+Teilnehmer kann **Ausnahme anfragen**.
 
-Post-MVP (Sprint 4–6)
+Guide kann Altersregel überschreiben.
 
-Push Notifications (Web Push / mobile) + subscription management
+---
 
-Advanced Material logic (auto-reserve when user indicates missing equipment)
+# 17. Eltern-Kinder-System
 
-Enhanced waiting list (24h confirm flow)
+Eltern können Kinderprofile erstellen.
 
-Erlebnisdokumentation: photo uploads, galleries
+Ein Elternteil kann mehrere Kinder verwalten.
 
-Schwarzes Brett moderation tooling
+Kinder können einzeln zu Touren angemeldet werden.
 
-Optional / Later
+Beispiel:
 
-Offline PWA enhanced features (IndexedDB sync)
+Elternteil meldet:
 
-API integration with DAV central system (if available)
+* Kind A
+* Kind B
 
-Analytics & Reporting (participation, materials usage)
+zur gleichen Tour an.
 
-9. Akzeptanzkriterien / Tests (Beispiele)
+---
 
-Registrierung → Parent confirmation mail is sent; youth account status set to pending until click
+# 18. Teilnehmerabmeldung
 
-Event creation by leader appears as pending and not visible in public event list
+Teilnehmer können sich selbst abmelden.
 
-Admin approves event → event visible; registrations can be made
+Folgen:
 
-Max participants reached → new registration goes to waitlist and UI shows “Warteliste”
+* Guide erhält Push-Benachrichtigung
+* Warteliste rückt nach
 
-On cancellation → first waitlist user receives notification; if not confirmed within 24h → next user notified
+---
 
-Material reservation prevents overlapping reservations over same time window
+# 19. Materialsystem
 
-10. Operational & Dev Hinweise
+Material wird vom Guide bei der Tour definiert.
 
-Environments: dev, staging, production; use feature flags for important flows (e.g., waitlist auto-confirm)
+Beispiele:
 
-CI/CD: tests + linting + migrations in pipeline
+* Helm
+* Klettersteigset
+* Gurt
 
-Backups: nightly DB backups; retention policy
+---
 
-Monitoring: errors (Sentry), performance (NewRelic or equivalent)
+## Materialreservierung
 
-SMTP + Queue: transactional mail provider (Mailgun/SendGrid) + Redis queue for retries
+Teilnehmer wählen Material bei der Anmeldung aus.
 
-Push: FCM for Android / Web Push (VAPID) for browsers; Apple requires native wrapper for APNs if moving to native
+Das System verhindert:
 
-11. UI-Komponenten (für Designer/Dev)
+Reservierungen über vorhandenen Bestand hinaus.
 
-Primary Button (primary/disabled/hover)
+---
 
-Secondary Button
+## Materialausgabe
 
-Card (event card, action card)
+Material wird erst beim tatsächlichen Ausleihen aus dem Bestand abgezogen.
 
-Badge / Chip (status)
+---
 
-Modal (confirmation flows)
+# 20. Teilnehmerliste (Guide)
 
-Multi-step form (registration, event registration)
+Guides können eine Teilnehmerliste sehen.
 
-Table / list with filters (admin participants)
+Enthaltene Daten:
 
-File uploader (documents), image gallery
+* Name
+* Telefonnummer
+* Alter
+* Notfallkontakt
+* reserviertes Material
 
-12. Sample Content (E-Mail Templates / Textblocks)
+---
 
-Parent confirmation email (tour consent)
-Subject: „Bitte bestätigen: [Kind] – Teilnahme an [Event Title] am [Date]“
-Body: Kurz Eventinfo + Button „Jetzt bestätigen“ → link contains secure token (one-time, expires e.g. 7 days). Wenn nicht bestätigt: registrant status remains pending_parent_consent.
+## Export
 
-Wartelist notification
-Subject: „Platz frei bei [Event] – bitte innerhalb 24 Stunden bestätigen“
-Body: Button „Ich möchte teilnehmen“ → tokenized link → confirm endpoint.
+Teilnehmerliste kann exportiert werden als:
 
-13. Offene Annahmen & Entscheidungen (ich habe so implementiert)
+PDF
 
-Altersgrenzen: 14 Jahre Schwelle für selbstständiges Konto; 18 = Volljährigkeit (no extra verification by default). (Assumption: legal review not required beyond parental confirmation; implementer to confirm local legal nuance.)
+Zum Ausdrucken für die Tour.
 
-Parent verification method: E-Mail link (no identity document upload) — tradeoff UX vs strict proof.
+---
 
-CSV fields & format: as suggested earlier (member_id, firstname, lastname, birthdate, email_kind, email_parent, phone_parent, status).
+# 21. Notfallkontakt
 
-Warteliste confirm window: 24h default (configurable).
+Jedes Mitglied kann eine Notfallnummer hinterlegen.
 
-14. Nächste Schritte — Vorschlag für Übergabe an Entwicklerteam
+Diese ist für Guides sichtbar.
 
-Finalize acceptance criteria for each MVP feature (product + legal sign-off for parental consent wording)
+---
 
-Create Figma screens for Dashboard, Calendar/List, Tour Detail, Registration Wizard, Material catalog, Admin CSV Import, Admin Approvals
+# 22. Tourberichte
 
-Backend skeleton: users, events, registrations, material, documents, audit log tables + migrations
+Nach Abschluss kann ein Tourbericht erstellt werden.
 
-Implement auth (JWT + refresh) + role checks middleware
+---
 
-Implement email queue + template + worker for waitlist actions
+## Inhalte
 
-Release internal alpha, QA with real members, iterate
+* Titel
+* Textbericht
+* Bilder
 
-Letzte Anmerkung (kritische Reflektion)
+Maximal:
 
-Dieses Briefing ist bewusst technisch-praktisch, datenschutzbewusst und priorisiert UX für Jugendliche und Eltern. Ich habe einige pragmatische Annahmen getroffen (CSV-import & E-Mail-based parental confirmation) um Entwicklungsrisiken, Kosten und rechtliche Komplexität niedrig zu halten. Solltet ihr die App später für größere rechtliche Hürden qualifizieren müssen (z. B. Zahlungspflichten, Versicherungskommunikation), empfehle ich rechtliche Prüfung und ggf. strengere Identifikationsschritte.
+20 Bilder
+
+---
+
+## Datenschutz
+
+Teilnehmerlisten werden **nicht veröffentlicht**.
+
+---
+
+# 23. Archiv
+
+Tourberichte werden im Archiv gespeichert.
+
+Filter:
+
+* Jahr
+* Kategorie
+* Guide
+
+---
+
+# 24. Community Feed
+
+Der Feed zeigt:
+
+* neue Tourberichte
+* Vereinsbeiträge
+
+---
+
+## Moderation
+
+Beiträge können gelöscht werden durch:
+
+* Autor
+* Guide
+* Admin
+
+---
+
+# 25. Dokumentenbereich
+
+Bereitstellung wichtiger Vereinsdokumente.
+
+Kategorien:
+
+* Formulare
+* Vereinsregeln
+* Packlisten
+
+---
+
+# 26. Push-Benachrichtigungen
+
+Push-Events:
+
+* Anmeldung bestätigt
+* Wartelistenplatz frei
+* neue Kommentare zu eigenen Beiträgen
+* neuer Tourbericht
+
+---
+
+# 27. Offlinefähigkeit (PWA)
+
+Offline verfügbar:
+
+* Tourenübersicht
+* Tourdetails
+* Tourberichte
+
+Synchronisation erfolgt automatisch.
+
+---
+
+# 28. Datenbankstruktur
+
+## Users
+
+```
+id
+name
+email
+phone
+birthdate
+role
+medical_notes
+emergency_phone
+image_consent
+```
+
+---
+
+## ChildProfiles
+
+```
+id
+parent_id
+name
+birthdate
+```
+
+---
+
+## Tours
+
+```
+id
+title
+description
+category
+difficulty
+target_area
+meeting_point
+meeting_time
+start_date
+end_date
+distance
+elevation
+duration
+requirements
+cost_info
+max_participants
+status
+```
+
+---
+
+## TourGuides
+
+```
+id
+tour_id
+user_id
+```
+
+---
+
+## TourParticipants
+
+```
+id
+tour_id
+user_id
+child_profile_id
+status
+age_override
+```
+
+---
+
+## Waitlist
+
+```
+id
+tour_id
+user_id
+position
+```
+
+---
+
+## Materials
+
+```
+id
+name
+total_quantity
+```
+
+---
+
+## TourMaterials
+
+```
+id
+tour_id
+material_id
+```
+
+---
+
+## MaterialReservations
+
+```
+id
+tour_id
+user_id
+material_id
+quantity
+```
+
+---
+
+## TourReports
+
+```
+id
+tour_id
+title
+text
+created_by
+created_at
+```
+
+---
+
+## ReportImages
+
+```
+id
+report_id
+image_url
+```
+
+---
+
+## Documents
+
+```
+id
+title
+file_url
+category
+```
+
+---
+
+# 29. Sicherheitskonzept
+
+Datenschutz:
+
+* Teilnehmerlisten nicht öffentlich
+* medizinische Hinweise nur für Guides
+* Notfallnummer nur intern sichtbar
+
+---
+
+# 30. Erweiterungsmöglichkeiten
+
+Mögliche spätere Erweiterungen:
+
+* GPX-Tracks
+* Wetterintegration
+* Kalenderexport
+* Statistik zu Touren
+* automatisierte Jahresprogramme
+
+---
+
+# 31. Zusammenfassung
+
+Die Plattform bildet alle zentralen Vereinsprozesse digital ab:
+
+* Tourplanung
+* Teilnehmerverwaltung
+* Wartelistenlogik
+* Materialverwaltung
+* Tourberichte
+* Dokumente
+* Vereinsfeed
+
+Durch die Umsetzung als PWA kann sie sowohl **mobil als auch am Desktop** genutzt werden.
+
+Das System ist speziell auf die organisatorischen Anforderungen einer Alpenvereinssektion zugeschnitten.
+
+---
+
+Ende des Dokuments
+
+Für Gemini:
+# Role & Project Context
+You are a Senior Full-Stack Developer for the "JDAV / DAV Sektion Pfarrkirchen" tour management web app.
+The project is a Progressive Web App (PWA) built with Next.js (App Router), Tailwind CSS, Lucide Icons, and Supabase.
+
+# Technical Stack Preferences
+- Framework: Next.js (App Router, React Server Components where possible).
+- Styling: Tailwind CSS (Mobile-First approach, as it's a PWA).
+- Icons: Lucide React.
+- State/Database: Supabase (Auth, PostgreSQL, Storage).
+- PWA: Use @serwist/next for Service Worker and Offline-Caching.
+- Code Style: TypeScript, clean architecture, components in `@/components`, logic in `@/lib` or `@/utils`. Use the `@/*` import alias.
+
+# Functional Core Logic (Strict Adherence)
+1. **Roles & Permissions**:
+   - Roles: `Member`, `Parent`, `Guide`, `Admin`.
+   - Guides can only edit tours where they are assigned as `TourGuide`.
+   - `Parent` can manage `ChildProfiles` and register them for tours.
+   - Private data (phone numbers, medical notes, emergency contacts) is ONLY visible to Guides/Admins.
+
+2. **Tour Lifecycle**:
+   - Status: `Planung` -> `Anmeldung offen` -> `Ausgebucht` (Waitlist active) -> `Abgeschlossen`.
+   - Post-Tour: Only `Abgeschlossen` tours can have a `TourReport`.
+
+3. **Registration & Waitlist**:
+   - Registration status starts as `pending` and requires Guide confirmation (`confirmed`).
+   - If `max_participants` is reached, move new sign-ups to the `Waitlist` table.
+   - Automatic promotion: If a participant cancels, the first person on the waitlist moves up (Trigger/Logic needed).
+
+4. **Material Management**:
+   - Materials are defined per tour.
+   - Prevent reservations exceeding `total_quantity` of a material.
+
+5. **PWA & Offline**:
+   - Ensure `Tours`, `Details`, and `Reports` are cached for offline viewing.
+   - Use Metadata API for PWA manifest and theme colors.
+
+# UI/UX Guidelines
+- Colors: Nature-themed (Greens, Earth tones). Use `bg-green-50` for backgrounds and a primary forest green (e.g., `#76a355`) for actions.
+- Layout: Always include a `BottomNavigation` for mobile users.
+- Components: Use high-quality accessible components (e.g., shadcn/ui style).
+
+# Response Instructions
+- Always assume the user wants to follow the provided database schema (Users, ChildProfiles, Tours, etc.).
+- When generating UI, ensure it matches the "JDAV Pfarrkirchen" branding.
+- Before suggesting a new feature, check if it aligns with the 31 points of the project documentation.
