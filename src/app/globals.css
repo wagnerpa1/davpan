@@ -22,7 +22,7 @@
 :root {
   --background: #f8fafc; /* light slate/gray as default bg */
   --foreground: #0f172a;
-  
+
   --primary: #76a355;
   --primary-foreground: #ffffff;
 }
@@ -30,7 +30,7 @@
 .dark {
   --background: #0f172a;
   --foreground: #f8fafc;
-  
+
   --primary: #76a355;
   --primary-foreground: #ffffff;
 }
@@ -39,4 +39,5 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  -webkit-tap-highlight-color: transparent; /* Youtube advice */
 }
