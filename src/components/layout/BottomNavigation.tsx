@@ -16,17 +16,30 @@ const bottomNavItems = [
   { name: "Profil", href: "/profile", icon: User },
 ];
 
-const moreMenuItems = [
-  { name: "Berichte", href: "/berichte", icon: FileText, desc: "Bilder & Berichte vergangener Touren" },
-  { name: "Dokumente", href: "/dokumente", icon: File, desc: "Formulare und Mitgliedsanträge" },
-  { name: "Material (Demnächst)", href: "/material", icon: Package, desc: "Materialreservierung & Bestand", disabled: true },
-  { name: "Guide-Bereich (Demnächst)", href: "/guide", icon: MountainSnow, desc: "Tourenverwaltung für Leiter", disabled: true },
-  { name: "Admin (Demnächst)", href: "/admin", icon: ShieldCheck, desc: "Systemverwaltung", disabled: true },
-];
 
-export function BottomNavigation() {
+interface BottomNavigationProps {
+  userRole?: string | null;
+}
+
+export function BottomNavigation({ userRole }: BottomNavigationProps) {
   const pathname = usePathname();
   const [isMoreOpen, setIsMoreOpen] = useState(false);
+
+  const canManage = userRole === 'guide' || userRole === 'admin';
+
+  const moreMenuItems = [
+    { name: "Berichte", href: "/berichte", icon: FileText, desc: "Bilder & Berichte vergangener Touren" },
+    { name: "Dokumente", href: "/dokumente", icon: File, desc: "Formulare und Mitgliedsanträge" },
+    { name: "Material (Demnächst)", href: "/material", icon: Package, desc: "Materialreservierung & Bestand", disabled: true },
+    { 
+      name: "Guide-Bereich", 
+      href: "/guide/dashboard", 
+      icon: MountainSnow, 
+      desc: "Tourenverwaltung für Leiter", 
+      disabled: !canManage 
+    },
+    { name: "Admin (Demnächst)", href: "/admin", icon: ShieldCheck, desc: "Systemverwaltung", disabled: true },
+  ];
 
   return (
     <>

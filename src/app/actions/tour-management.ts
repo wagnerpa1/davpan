@@ -1,0 +1,214 @@
+"use server";
+
+import { createClient } from "@/utils/supabase/server";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+
+export async function getAvailableGuides() {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("profiles")
+    .select("id, full_name")
+    .or("role.eq.guide,role.eq.admin")
+    .order("full_name");
+  return data || [];
+}
+
+export async function createTour(formData: FormData) {
+  const supabase = await createClient();
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) {
+    throw new Error("Unauthorized");
+  }
+
+  // Check role
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", session.user.id)
+    .single();
+
+  if (!profile || (profile.role !== "guide" && profile.role !== "admin")) {
+    throw new Error("Forbidden: Only guides and admins can create tours");
+  }
+
+  const title = formData.get("title")?.toString();
+  const description = formData.get("description")?.toString();
+  const category = formData.get("category")?.toString();
+  const target_area = formData.get("target_area")?.toString();
+  const start_date = formData.get("start_date")?.toString();
+  const end_date = formData.get("end_date")?.toString() || start_date;
+  const meeting_point = formData.get("meeting_point")?.toString();
+  const meeting_time = formData.get("meeting_time")?.toString();
+  const difficulty = parseInt(formData.get("difficulty")?.toString() || "0");
+  const elevation = parseInt(formData.get("elevation")?.toString() || "0");
+  const distance = parseFloat(formData.get("distance")?.toString() || "0");
+  const duration_hours = parseFloat(formData.get("duration_hours")?.toString() || "0");
+  const max_participants = parseInt(formData.get("max_participants")?.toString() || "0");
+  const cost_info = formData.get("cost_info")?.toString();
+  const requirements = formData.get("requirements")?.toString();
+  const status = formData.get("status")?.toString() || "planning";
+  
+  // Get all selected guides
+  const guideIds = formData.getAll("guide_ids") as string[];
+
+  const { data: tour, error } = await supabase
+    .from("tours")
+    .insert({
+      title,
+      description,
+      category,
+      target_area,
+      start_date,
+      end_date,
+      meeting_point,
+      meeting_time,
+      difficulty: difficulty || null,
+      elevation: elevation || null,
+      distance: distance || null,
+      duration_hours: duration_hours || null,
+      max_participants: max_participants || null,
+      cost_info,
+      requirements,
+      status,
+      created_by: session.user.id,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error creating tour:", error);
+    throw new Error("Failed to create tour");
+  }
+
+  // Insert guides
+  if (guideIds.length > 0) {
+    const guideInserts = guideIds.map(uid => ({
+      tour_id: tour.id,
+      user_id: uid
+    }));
+    await supabase.from("tour_guides").insert(guideInserts);
+  } else if (profile.role === "guide") {
+    // If no guides selected but user is guide, add them as default
+    await supabase.from("tour_guides").insert({
+      tour_id: tour.id,
+      user_id: session.user.id,
+    });
+  }
+
+  revalidatePath("/touren");
+  redirect(`/touren/${tour.id}`);
+}
+
+export async function updateTour(tourId: string, formData: FormData) {
+  const supabase = await createClient();
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) {
+    throw new Error("Unauthorized");
+  }
+
+  // Check role and permissions
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", session.user.id)
+    .single();
+
+  if (!profile) throw new Error("Profile not found");
+
+  // Admins can update anything. Guides only if they are assigned.
+  if (profile.role !== "admin") {
+    const { data: isGuide } = await supabase
+      .from("tour_guides")
+      .select("id")
+      .eq("tour_id", tourId)
+      .eq("user_id", session.user.id)
+      .single();
+
+    if (!isGuide && profile.role !== "guide") {
+       // Check if they are the creator as fallback
+       const { data: tourCheck } = await supabase.from("tours").select("created_by").eq("id", tourId).single();
+       if (tourCheck?.created_by !== session.user.id) {
+         throw new Error("Forbidden: You are not authorized to edit this tour");
+       }
+    }
+  }
+
+  const payload: any = {};
+  const fields = [
+    "title", "description", "category", "target_area", "start_date", "end_date",
+    "meeting_point", "meeting_time", "difficulty", "elevation", "distance",
+    "duration_hours", "max_participants", "cost_info", "requirements", "status"
+  ];
+
+  fields.forEach(field => {
+    const val = formData.get(field);
+    if (val !== null) {
+      if (["difficulty", "elevation", "max_participants"].includes(field)) {
+        payload[field] = parseInt(val.toString()) || null;
+      } else if (["distance", "duration_hours"].includes(field)) {
+        payload[field] = parseFloat(val.toString()) || null;
+      } else {
+        payload[field] = val.toString();
+      }
+    }
+  });
+
+  const { error } = await supabase
+    .from("tours")
+    .update(payload)
+    .eq("id", tourId);
+
+  if (error) {
+    console.error("Error updating tour:", error);
+    throw new Error("Failed to update tour");
+  }
+
+  // Sync guides
+  const guideIds = formData.getAll("guide_ids") as string[];
+  if (guideIds.length > 0) {
+    // Delete existing
+    await supabase.from("tour_guides").delete().eq("tour_id", tourId);
+    // Insert new
+    const guideInserts = guideIds.map(uid => ({
+      tour_id: tourId,
+      user_id: uid
+    }));
+    await supabase.from("tour_guides").insert(guideInserts);
+  }
+
+  revalidatePath("/touren");
+  revalidatePath(`/touren/${tourId}`);
+  redirect(`/touren/${tourId}`);
+}
+
+export async function deleteTour(tourId: string) {
+  const supabase = await createClient();
+
+  // Similar check as update
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error("Unauthorized");
+
+  const { data: profile } = await supabase.from("profiles").select("role").eq("id", session.user.id).single();
+  
+  if (profile?.role !== "admin") {
+    const { data: tour } = await supabase.from("tours").select("created_by").eq("id", tourId).single();
+    if (tour?.created_by !== session.user.id) {
+       throw new Error("Forbidden");
+    }
+  }
+
+  const { error } = await supabase.from("tours").delete().eq("id", tourId);
+  if (error) throw new Error("Failed to delete tour");
+
+  revalidatePath("/touren");
+  redirect("/touren");
+}

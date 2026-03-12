@@ -14,23 +14,44 @@ export async function POST(req: NextRequest) {
   }
 
   const formData = await req.formData();
+  const childId = formData.get("child_id")?.toString();
   const name = formData.get("child_name")?.toString();
   const birthdate = formData.get("child_birthdate")?.toString();
+  const medicalNotes = formData.get("medical_notes")?.toString();
 
   if (!name || !birthdate) {
     return NextResponse.json({ error: "Name and birthdate are required" }, { status: 400 });
   }
 
-  // Add the child to the database
-  const { error } = await supabase.from("child_profiles").insert({
-    parent_id: session.user.id,
-    name,
-    birthdate,
-  });
+  if (childId) {
+    // Update existing child
+    const { error } = await supabase
+      .from("child_profiles")
+      .update({
+        full_name: name,
+        birthdate,
+        medical_notes: medicalNotes,
+      })
+      .eq("id", childId)
+      .eq("parent_id", session.user.id);
 
-  if (error) {
-    console.error("Error adding child:", error);
-    return NextResponse.json({ error: "Failed to add child" }, { status: 500 });
+    if (error) {
+      console.error("Error updating child:", error);
+      return NextResponse.json({ error: "Failed to update child" }, { status: 500 });
+    }
+  } else {
+    // Add new child
+    const { error } = await supabase.from("child_profiles").insert({
+      parent_id: session.user.id,
+      full_name: name,
+      birthdate,
+      medical_notes: medicalNotes,
+    });
+
+    if (error) {
+      console.error("Error adding child:", error);
+      return NextResponse.json({ error: "Failed to add child" }, { status: 500 });
+    }
   }
 
   // Redirect back to profile page

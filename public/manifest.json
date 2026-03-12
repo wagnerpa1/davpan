@@ -5,13 +5,13 @@
     {
       "purpose": "maskable",
       "sizes": "512x512",
-      "src": "icon512_maskable.png",
+      "src": "/icon512_maskable.png",
       "type": "image/png"
     },
     {
       "purpose": "any",
       "sizes": "512x512",
-      "src": "icon512_rounded.png",
+      "src": "/icon512_rounded.png",
       "type": "image/png"
     }
   ],
@@ -22,20 +22,31 @@
   "name": "JDAV Pfarrkirchen",
   "short_name": "JDAV PAN",
   "description": "JDAV Pfarrkirchen Touren-Portal",
-  "thumbnail": "",
-  "lib": ".",
-  "keywords": [],
-  "configuration": {},
-  "author": "",
-  "defaultDocument": "",
-  "main": "index.js",
-  "version": "",
-  "dependencies": {},
-  "license": "",
-  "tests": "test/**/*.js",
-  "provides": {},
-  "engines": {},
-  "files": {},
-  "contributors": [],
-  "scripts": {}
+  "start_url": "/",
+  "shortcuts": [
+    {
+      "name": "Touren",
+      "short_name": "Touren",
+      "description": "Tourenübersicht",
+      "url": "/touren",
+      "icons": [
+        {
+          "sizes": "96x96",
+          "src": "/compass.svg"
+        }
+      ]
+    },
+    {
+      "name": "Profile",
+      "short_name": "Profile",
+      "description": "Profile",
+      "url": "/profile",
+      "icons": [
+        {
+          "sizes": "96x96",
+          "src": "/user.svg"
+        }
+      ]
+    }
+  ]
 }

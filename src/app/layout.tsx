@@ -243,15 +243,25 @@ export default async function RootLayout({
   const supabase = await createClient();
   const { data: { session } } = await supabase.auth.getSession();
 
+  let userRole = null;
+  if (session) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", session.user.id)
+      .single();
+    userRole = profile?.role;
+  }
+
   return (
     <html lang="de">
       <body
         className={`${GeistSans.variable} ${GeistMono.variable} flex min-h-screen flex-col antialiased`}
       >
         <SerwistProvider swUrl="/serwist/sw.js">
-          {session && <Header />}
+          {session && <Header userRole={userRole} />}
           <main className="flex-1 pb-16 md:pb-0">{children}</main>
-          {session && <BottomNavigation />}
+          {session && <BottomNavigation userRole={userRole} />}
         </SerwistProvider>
       </body>
     </html>

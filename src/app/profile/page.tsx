@@ -138,11 +138,66 @@ export default async function ProfilePage() {
           </div>
 
           {children.length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {children.map((child) => (
-                <div key={child.id} className="flex flex-col gap-1 rounded-lg border border-slate-200 p-4">
-                  <span className="font-medium text-slate-900">{child.name}</span>
-                  <span className="text-sm text-slate-500">Geburtsdatum: {child.birthdate}</span>
+                <div key={child.id} className="rounded-xl border border-slate-200 overflow-hidden">
+                  <details className="group">
+                    <summary className="flex cursor-pointer items-center justify-between bg-slate-50 p-4 transition-colors hover:bg-slate-100">
+                      <div>
+                        <span className="block font-bold text-slate-900">{child.full_name}</span>
+                        <span className="text-xs text-slate-500">Geburtsdatum: {child.birthdate}</span>
+                      </div>
+                      <span className="text-xs font-semibold text-jdav-green group-open:text-slate-400">
+                        {/* Summary shows status or edit hint */}
+                        Details / Bearbeiten
+                      </span>
+                    </summary>
+                    <div className="p-4 bg-white border-t border-slate-100">
+                      <form action="/api/profile/child" method="POST" className="space-y-4">
+                        <input type="hidden" name="child_id" value={child.id} />
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                           <div>
+                             <label className="block text-xs font-medium text-slate-700 uppercase tracking-wider">Name</label>
+                             <input 
+                               type="text" 
+                               name="child_name"
+                               defaultValue={child.full_name}
+                               required
+                               className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green" 
+                             />
+                           </div>
+                           <div>
+                             <label className="block text-xs font-medium text-slate-700 uppercase tracking-wider">Geburtsdatum</label>
+                             <input 
+                               type="date" 
+                               name="child_birthdate"
+                               defaultValue={child.birthdate}
+                               required
+                               className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green" 
+                             />
+                           </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-slate-700 uppercase tracking-wider">Medizinische Hinweise</label>
+                          <textarea 
+                            name="medical_notes"
+                            defaultValue={child.medical_notes || ""}
+                            placeholder="Allergien, Medikamente etc."
+                            rows={2}
+                            className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green" 
+                          />
+                        </div>
+                        <div className="flex justify-end">
+                          <button 
+                            type="submit" 
+                            className="rounded-md bg-slate-800 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-slate-700"
+                          >
+                            Änderungen speichern
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </details>
                 </div>
               ))}
             </div>
@@ -152,35 +207,47 @@ export default async function ProfilePage() {
             </div>
           )}
 
-          <form action="/api/profile/child" method="POST" className="mt-6 border-t border-slate-100 pt-6 space-y-4">
-            <h3 className="font-medium text-slate-900">Neues Kind hinzufügen</h3>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-               <div>
-                 <label className="block text-xs font-medium text-slate-700">Name</label>
-                 <input 
-                   type="text" 
-                   name="child_name"
-                   required
-                   className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green" 
-                 />
-               </div>
-               <div>
-                 <label className="block text-xs font-medium text-slate-700">Geburtsdatum</label>
-                 <input 
-                   type="date" 
-                   name="child_birthdate"
-                   required
-                   className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green" 
-                 />
-               </div>
-            </div>
-            <button 
-              type="submit" 
-              className="inline-flex w-full sm:w-auto items-center justify-center rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-700"
-            >
-              Hinzufügen
-            </button>
-          </form>
+          <div className="mt-8 border-t border-slate-100 pt-8">
+            <h3 className="mb-4 text-lg font-bold text-slate-900">Neues Kind hinzufügen</h3>
+            <form action="/api/profile/child" method="POST" className="space-y-4 rounded-2xl bg-slate-50 p-6 border border-slate-100">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                 <div>
+                   <label className="block text-xs font-medium text-slate-700 uppercase tracking-wider">Name</label>
+                   <input 
+                     type="text" 
+                     name="child_name"
+                     placeholder="Vor- und Nachname"
+                     required
+                     className="mt-1 block w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green" 
+                   />
+                 </div>
+                 <div>
+                   <label className="block text-xs font-medium text-slate-700 uppercase tracking-wider">Geburtsdatum</label>
+                   <input 
+                     type="date" 
+                     name="child_birthdate"
+                     required
+                     className="mt-1 block w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green" 
+                   />
+                 </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700 uppercase tracking-wider">Medizinische Hinweise</label>
+                <textarea 
+                  name="medical_notes"
+                  placeholder="Z.B. Asthma, Nussallergie..."
+                  rows={2}
+                  className="mt-1 block w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green" 
+                />
+              </div>
+              <button 
+                type="submit" 
+                className="inline-flex w-full items-center justify-center rounded-xl bg-jdav-green px-4 py-2.5 text-sm font-black text-white shadow-md transition-all hover:bg-jdav-green-dark hover:shadow-lg"
+              >
+                Kind hinzufügen
+              </button>
+            </form>
+          </div>
         </div>
       )}
     </div>

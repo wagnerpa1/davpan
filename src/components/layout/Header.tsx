@@ -3,7 +3,12 @@
 import Link from "next/link";
 import { Mountain } from "lucide-react";
 
-export function Header() {
+interface HeaderProps {
+  userRole?: string | null;
+}
+
+export function Header({ userRole }: HeaderProps) {
+  const canManage = userRole === 'guide' || userRole === 'admin';
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white shadow-sm">
       <div className="container mx-auto flex h-16 items-center px-4">
@@ -18,6 +23,11 @@ export function Header() {
           <Link href="/touren" className="text-sm font-medium text-slate-600 hover:text-jdav-green transition-colors">Touren</Link>
           <Link href="/berichte" className="text-sm font-medium text-slate-600 hover:text-jdav-green transition-colors">Berichte</Link>
           <Link href="/dokumente" className="text-sm font-medium text-slate-600 hover:text-jdav-green transition-colors">Dokumente</Link>
+          {canManage && (
+            <Link href="/guide/dashboard" className="text-sm font-bold text-jdav-green hover:text-jdav-green-dark transition-colors">
+              Guide-Bereich
+            </Link>
+          )}
         </nav>
         <div className="ml-auto flex items-center space-x-4">
           <Link href="/profile" className="hidden md:block text-sm font-medium text-slate-600 hover:text-jdav-green transition-colors">Profil</Link>
