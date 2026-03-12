@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { type NextRequest, NextResponse } from "next/server";
+import { getServerURL } from "@/utils/url-helpers";
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Redirect back to profile page
-  return NextResponse.redirect(new URL("/profile", req.url), {
+  return NextResponse.redirect(new URL("/profile", await getServerURL()), {
     status: 303, // See Other (forces GET request after POST)
   });
 }

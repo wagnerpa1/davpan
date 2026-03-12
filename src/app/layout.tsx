@@ -233,20 +233,25 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
-export default function RootLayout({
+import { createClient } from "@/utils/supabase/server";
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const supabase = await createClient();
+  const { data: { session } } = await supabase.auth.getSession();
+
   return (
     <html lang="de">
       <body
         className={`${GeistSans.variable} ${GeistMono.variable} flex min-h-screen flex-col antialiased`}
       >
         <SerwistProvider swUrl="/serwist/sw.js">
-          <Header />
+          {session && <Header />}
           <main className="flex-1 pb-16 md:pb-0">{children}</main>
-          <BottomNavigation />
+          {session && <BottomNavigation />}
         </SerwistProvider>
       </body>
     </html>

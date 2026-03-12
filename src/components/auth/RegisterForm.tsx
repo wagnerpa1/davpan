@@ -51,7 +51,7 @@ export function RegisterForm({ className }: { className?: string }) {
         password,
         options: {
           data: finalData,
-          emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/auth/callback`,
+          emailRedirectTo: `${(globalThis as any).location?.origin || ""}/auth/callback`,
         },
       });
 

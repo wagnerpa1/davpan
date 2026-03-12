@@ -10,8 +10,12 @@ import { useRouter } from "next/navigation";
 export function LoginForm({ className }: { className?: string }) {
   const [supabase] = useState(() => createClient());
   const router = useRouter();
+  const [origin, setOrigin] = useState("");
 
   useEffect(() => {
+    if (typeof globalThis !== "undefined") {
+      setOrigin((globalThis as any).location?.origin || "");
+    }
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_IN" && session) {
         router.push("/");
@@ -84,7 +88,7 @@ export function LoginForm({ className }: { className?: string }) {
         view="sign_in"
         showLinks={false}
         theme="light"
-        redirectTo={`${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/auth/callback`}
+        redirectTo={`${origin}/auth/callback`}
       />
       <div className="text-center text-sm">
         <span className="text-slate-500">Du hast noch kein Konto? </span>

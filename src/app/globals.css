@@ -1,9 +1,13 @@
+/* noinspection CssUnknownAtRule */
 @import "tailwindcss";
 
+/* noinspection CssUnknownAtRule */
 @plugin "tailwindcss-animate";
 
+/* noinspection CssUnknownAtRule */
 @custom-variant dark (&:is(.dark *));
 
+/* noinspection CssUnknownAtRule */
 @theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
