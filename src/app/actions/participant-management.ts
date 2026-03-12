@@ -53,6 +53,29 @@ export async function updateParticipantStatus(
     throw new Error("Failed to update status: " + error.message);
   }
 
+  // Sync tour status
+  const { data: tour } = await supabase.from("tours").select("max_participants, status").eq("id", tourId).single();
+  if (tour && tour.max_participants) {
+    const { count } = await supabase
+      .from("tour_participants")
+      .select("*", { count: "exact", head: true })
+      .eq("tour_id", tourId)
+      .in("status", ["confirmed", "pending"]);
+    
+    const currentCount = count || 0;
+    let targetStatus = tour.status;
+
+    if (currentCount >= tour.max_participants) {
+      targetStatus = "full";
+    } else if (tour.status === "full") {
+      targetStatus = "open";
+    }
+
+    if (targetStatus !== tour.status) {
+      await supabase.from("tours").update({ status: targetStatus }).eq("id", tourId);
+    }
+  }
+
   revalidatePath(`/touren/${tourId}`);
   return { success: true };
 }

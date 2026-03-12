@@ -16,26 +16,41 @@ interface TourFormProps {
   onSubmit: (formData: FormData) => Promise<void>;
   isLoading?: boolean;
   guides?: { id: string; full_name: string }[];
+  currentUser?: { id: string; full_name: string };
 }
 
-export function TourForm({ initialData, onSubmit, isLoading, guides }: TourFormProps) {
+export function TourForm({ initialData, onSubmit, isLoading, guides, currentUser }: TourFormProps) {
   const router = useRouter();
   
   // State for selected guides
-  const [selectedGuides, setSelectedGuides] = useState<{id: string, name: string}[]>(
-    initialData?.tour_guides?.map((tg: any) => ({
-      id: tg.user_id,
-      name: tg.profiles?.full_name || "Unbekannt"
-    })) || []
-  );
+  const [selectedGuides, setSelectedGuides] = useState<{id: string, name: string}[]>(() => {
+    if (initialData?.tour_guides) {
+      return initialData.tour_guides.map((tg: any) => ({
+        id: tg.user_id,
+        name: tg.profiles?.full_name || "Unbekannt"
+      }));
+    }
+    
+    // If it's a new tour and we have a current user, auto-select them
+    if (!initialData && currentUser) {
+      return [{ id: currentUser.id, name: currentUser.full_name }];
+    }
+    
+    return [];
+  });
 
   const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const target = e.target as any;
     const form = target.form;
     if (!form) return;
     const endDateInput = form.elements.namedItem("end_date") as any;
-    if (endDateInput && !endDateInput.value) {
-      endDateInput.value = target.value;
+    if (endDateInput) {
+      // Set min date for end_date to start_date
+      endDateInput.min = target.value;
+      // If end_date is empty or before start_date, sync it
+      if (!endDateInput.value || endDateInput.value < target.value) {
+        endDateInput.value = target.value;
+      }
     }
   };
 
@@ -75,7 +90,7 @@ export function TourForm({ initialData, onSubmit, isLoading, guides }: TourFormP
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
               <Label htmlFor="category">Kategorie</Label>
               <select 
@@ -92,6 +107,19 @@ export function TourForm({ initialData, onSubmit, isLoading, guides }: TourFormP
                 <option value="kanu">Kanu</option>
                 <option value="mountainbike">Mountainbike</option>
                 <option value="camp">Camp</option>
+              </select>
+            </div>
+            <div>
+              <Label htmlFor="group">Zielgruppe</Label>
+              <select 
+                id="group" 
+                name="group" 
+                defaultValue={initialData?.group || "general"}
+                className="mt-1 flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-jdav-green"
+              >
+                <option value="general">Allgemein</option>
+                <option value="family">Familie</option>
+                <option value="youth">Jugend</option>
               </select>
             </div>
             <div>
@@ -113,6 +141,17 @@ export function TourForm({ initialData, onSubmit, isLoading, guides }: TourFormP
                 ))}
               </select>
             </div>
+          </div>
+
+          <div>
+            <Label htmlFor="target_area">Zielregion / Ort</Label>
+            <Input 
+              id="target_area" 
+              name="target_area" 
+              defaultValue={initialData?.target_area} 
+              placeholder="z.B. Berchtesgadener Alpen"
+              className="mt-1"
+            />
           </div>
 
           <div>
@@ -236,18 +275,6 @@ export function TourForm({ initialData, onSubmit, isLoading, guides }: TourFormP
         
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div>
-            <Label htmlFor="difficulty">Schwierigkeit (T1-T6)</Label>
-            <Input 
-              id="difficulty" 
-              name="difficulty" 
-              type="number" 
-              min="1" 
-              max="6" 
-              defaultValue={initialData?.difficulty} 
-              className="mt-1"
-            />
-          </div>
-          <div>
             <Label htmlFor="elevation">Aufstieg (hm)</Label>
             <Input 
               id="elevation" 
@@ -290,13 +317,17 @@ export function TourForm({ initialData, onSubmit, isLoading, guides }: TourFormP
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="max_participants">Max. Teilnehmer</Label>
+            <div className="flex justify-between items-center mb-1">
+              <Label htmlFor="max_participants">Max. Teilnehmer</Label>
+              <span className="text-[10px] text-slate-400">Leer lassen für unbegrenzt</span>
+            </div>
             <Input 
               id="max_participants" 
               name="max_participants" 
               type="number" 
               defaultValue={initialData?.max_participants} 
-              className="mt-1"
+              placeholder="Unbegrenzt"
+              className="mt-0"
             />
           </div>
           <div>

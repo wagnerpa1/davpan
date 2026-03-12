@@ -20,6 +20,7 @@ export function TourFilters({ categories, difficulties, guides }: TourFiltersPro
   const currentCategory = searchParams.get("category") || "";
   const currentDifficulty = searchParams.get("difficulty") || "";
   const currentGuide = searchParams.get("guide") || "";
+  const currentGroup = searchParams.get("group") || "";
   const currentAvailability = searchParams.get("available") || "";
   const currentSort = searchParams.get("sort") || "date_asc";
 
@@ -41,15 +42,15 @@ export function TourFilters({ categories, difficulties, guides }: TourFiltersPro
     router.push("/touren", { scroll: false });
   };
 
-  const hasActiveFilters = currentCategory || currentDifficulty || currentGuide || currentAvailability;
+  const hasActiveFilters = currentCategory || currentDifficulty || currentGuide || currentGroup || currentAvailability;
 
   return (
     <div className="mb-6 space-y-4">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <button 
           onClick={() => setIsOpen(!isOpen)}
           className={cn(
-            "flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-bold transition-all shadow-sm",
+            "flex items-center justify-center gap-2 rounded-xl border px-4 py-2 text-sm font-bold transition-all shadow-sm w-full sm:w-auto",
             isOpen || hasActiveFilters 
               ? "border-jdav-green bg-jdav-green/5 text-jdav-green" 
               : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
@@ -60,12 +61,12 @@ export function TourFilters({ categories, difficulties, guides }: TourFiltersPro
           {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </button>
 
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Sortierung:</span>
+        <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto overflow-hidden">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Sortierung:</span>
           <select 
             value={currentSort}
             onChange={(e) => updateFilters({ sort: e.target.value })}
-            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-jdav-green"
+            className="flex-1 sm:flex-none max-w-[200px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-jdav-green"
           >
             <option value="date_asc">Datum (Anstehend)</option>
             <option value="date_desc">Datum (Abstehend)</option>
@@ -120,6 +121,21 @@ export function TourFilters({ categories, difficulties, guides }: TourFiltersPro
                 {guides.map(guide => (
                   <option key={guide.id} value={guide.id}>{guide.full_name}</option>
                 ))}
+              </select>
+            </div>
+
+            {/* Group */}
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400">Zielgruppe</label>
+              <select 
+                value={currentGroup}
+                onChange={(e) => updateFilters({ group: e.target.value })}
+                className="w-full rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-jdav-green"
+              >
+                <option value="">Alle Gruppen</option>
+                <option value="general">Allgemein</option>
+                <option value="family">Familie</option>
+                <option value="youth">Jugend</option>
               </select>
             </div>
 

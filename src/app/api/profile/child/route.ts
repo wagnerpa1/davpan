@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
   const name = formData.get("child_name")?.toString();
   const birthdate = formData.get("child_birthdate")?.toString();
   const medicalNotes = formData.get("medical_notes")?.toString();
+  const imageConsent = formData.get("image_consent") === "on";
 
   if (!name || !birthdate) {
     return NextResponse.json({ error: "Name and birthdate are required" }, { status: 400 });
@@ -31,6 +32,7 @@ export async function POST(req: NextRequest) {
         full_name: name,
         birthdate,
         medical_notes: medicalNotes,
+        image_consent: imageConsent,
       })
       .eq("id", childId)
       .eq("parent_id", session.user.id);
@@ -46,6 +48,7 @@ export async function POST(req: NextRequest) {
       full_name: name,
       birthdate,
       medical_notes: medicalNotes,
+      image_consent: imageConsent,
     });
 
     if (error) {

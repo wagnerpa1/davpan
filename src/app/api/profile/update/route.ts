@@ -19,6 +19,7 @@ export async function POST(req: NextRequest) {
   const emergency_phone = formData.get("emergency_phone")?.toString();
   const birthdate = formData.get("birthdate")?.toString();
   const medical_notes = formData.get("medical_notes")?.toString();
+  const image_consent = formData.get("image_consent") === "on";
 
   const updatePayload: any = {};
   if (full_name !== undefined) updatePayload.full_name = full_name;
@@ -26,6 +27,7 @@ export async function POST(req: NextRequest) {
   if (emergency_phone !== undefined) updatePayload.emergency_phone = emergency_phone;
   if (birthdate !== undefined) updatePayload.birthdate = birthdate;
   if (medical_notes !== undefined) updatePayload.medical_notes = medical_notes;
+  updatePayload.image_consent = image_consent;
 
   const { error } = await supabase
     .from("profiles")

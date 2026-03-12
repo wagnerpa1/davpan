@@ -91,6 +91,15 @@ export async function registerForTour(formData: FormData) {
 
     if (pError) throw pError;
 
+    // 4.5 Auto-update tour status if full
+    const newCount = currentCount + 1;
+    if (tour.max_participants && newCount >= tour.max_participants && tour.status !== "full") {
+      await supabase
+        .from("tours")
+        .update({ status: "full" })
+        .eq("id", tourId);
+    }
+
     // 5. Create material reservations
     if (materials.length > 0) {
       const reservationData = materials.map(materialId => ({

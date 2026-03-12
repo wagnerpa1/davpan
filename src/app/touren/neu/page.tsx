@@ -17,16 +17,21 @@ export default async function NewTourPage() {
     redirect("/login");
   }
 
-  // Check role
+  // Check role and get name
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("id, full_name, role")
     .eq("id", session.user.id)
     .single();
 
   if (!profile || (profile.role !== "guide" && profile.role !== "admin")) {
     redirect("/touren");
   }
+
+  const currentUser = {
+    id: profile.id,
+    full_name: profile.full_name
+  };
 
   return (
     <div className="container mx-auto max-w-2xl px-4 py-8">
@@ -44,7 +49,11 @@ export default async function NewTourPage() {
         </div>
       </div>
 
-      <TourForm onSubmit={createTour} guides={guides} />
+      <TourForm 
+        onSubmit={createTour} 
+        guides={guides} 
+        currentUser={currentUser}
+      />
     </div>
   );
 }

@@ -119,6 +119,23 @@ export default async function ProfilePage() {
              />
            </div>
 
+           <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  name="image_consent"
+                  defaultChecked={profile?.image_consent}
+                  className="mt-1 h-4 w-4 rounded border-slate-300 text-jdav-green focus:ring-jdav-green"
+                />
+                <div className="text-sm">
+                  <span className="font-bold text-slate-900">Einwilligung zur Verwendung von Bildern</span>
+                  <p className="mt-1 text-xs text-slate-500 leading-relaxed">
+                    Ich erkläre mich damit einverstanden, dass Fotos von mir, die im Rahmen von Vereinsaktivitäten entstehen, auf der Webseite, in Druckerzeugnissen oder Social-Media-Kanälen der Sektion veröffentlicht werden dürfen.
+                  </p>
+                </div>
+              </label>
+            </div>
+
            <button 
              type="submit" 
              className="inline-flex w-full items-center justify-center rounded-md bg-jdav-green px-4 py-2 font-medium text-white transition-colors hover:bg-jdav-green-dark"
@@ -177,16 +194,30 @@ export default async function ProfilePage() {
                              />
                            </div>
                         </div>
-                        <div>
-                          <label className="block text-xs font-medium text-slate-700 uppercase tracking-wider">Medizinische Hinweise</label>
-                          <textarea 
-                            name="medical_notes"
-                            defaultValue={child.medical_notes || ""}
-                            placeholder="Allergien, Medikamente etc."
-                            rows={2}
-                            className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green" 
-                          />
-                        </div>
+                         <div>
+                           <label className="block text-xs font-medium text-slate-700 uppercase tracking-wider">Medizinische Hinweise</label>
+                           <textarea 
+                             name="medical_notes"
+                             defaultValue={child.medical_notes || ""}
+                             placeholder="Allergien, Medikamente etc."
+                             rows={2}
+                             className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green" 
+                           />
+                         </div>
+                         <div className="rounded-lg bg-slate-50 p-3">
+                            <label className="flex items-start gap-3 cursor-pointer">
+                              <input 
+                                type="checkbox" 
+                                name="image_consent"
+                                defaultChecked={child.image_consent}
+                                className="mt-1 h-3.5 w-3.5 rounded border-slate-300 text-jdav-green focus:ring-jdav-green"
+                              />
+                              <div className="text-[11px] leading-tight text-slate-600">
+                                <span className="font-bold text-slate-900">Einwilligung zur Bildverwendung</span>
+                                <p className="mt-0.5">Ich erlaube die Verwendung von Fotos dieses Kindes für Vereinszwecke.</p>
+                              </div>
+                            </label>
+                         </div>
                         <div className="flex justify-end">
                           <button 
                             type="submit" 
@@ -239,6 +270,19 @@ export default async function ProfilePage() {
                   rows={2}
                   className="mt-1 block w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green" 
                 />
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-white p-4">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    name="image_consent"
+                    className="mt-1 h-4 w-4 rounded border-slate-300 text-jdav-green focus:ring-jdav-green"
+                  />
+                  <div className="text-xs leading-relaxed text-slate-600">
+                    <span className="font-bold text-slate-900 uppercase tracking-wider">Bild-Einwilligung erteilen</span>
+                    <p className="mt-1">Hiermit willige ich in die Veröffentlichung von Bildmaterial meines Kindes für Vereinszwecke ein.</p>
+                  </div>
+                </label>
               </div>
               <button 
                 type="submit" 

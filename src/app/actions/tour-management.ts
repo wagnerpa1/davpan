@@ -212,3 +212,28 @@ export async function deleteTour(tourId: string) {
   revalidatePath("/touren");
   redirect("/touren");
 }
+
+export async function syncTourStatuses() {
+  const supabase = await createClient();
+  const today = new Date().toISOString().split('T')[0];
+
+  // Fins tours that are NOT completed but their end_date is in the past
+  // We complete them if today is strictly GREATER than end_date
+  const { data: expiredTours, error } = await supabase
+    .from("tours")
+    .update({ status: "completed" })
+    .lt("end_date", today)
+    .neq("status", "completed")
+    .select("id");
+
+  if (error) {
+    console.error("Error syncing tour statuses:", error);
+    return { error: error.message };
+  }
+
+  if (expiredTours && expiredTours.length > 0) {
+    revalidatePath("/touren");
+  }
+
+  return { completedCount: expiredTours?.length || 0 };
+}

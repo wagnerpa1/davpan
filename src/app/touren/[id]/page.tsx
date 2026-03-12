@@ -133,10 +133,18 @@ export default async function TourDetailPage({ params }: { params: Promise<{ id:
       <div className="overflow-hidden rounded-3xl bg-white shadow-xl ring-1 ring-slate-200">
         <div className="bg-jdav-green p-8 sm:p-12 text-center text-white relative">
             <div className="absolute top-4 right-4 flex flex-col items-end gap-2">
-                <div className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                   {tour.status === 'planning' ? 'In Planung' : 
-                    tour.status === 'open' ? 'Anmeldung Offen' : 
-                    tour.status === 'full' ? 'Ausgebucht' : 'Abgeschlossen'}
+                <div className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5">
+                   <span>
+                    {tour.status === 'planning' ? 'In Planung' : 
+                     tour.status === 'open' ? 'Anmeldung Offen' : 
+                     tour.status === 'full' ? 'Ausgebucht' : 'Abgeschlossen'}
+                   </span>
+                   {tour.group && tour.group !== 'general' && (
+                     <>
+                      <span className="opacity-30">|</span>
+                      <span>{tour.group === 'family' ? 'Familie' : 'Jugend'}</span>
+                     </>
+                   )}
                 </div>
                 {isFull && (
                   <div className="bg-red-500 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-lg animate-pulse">
