@@ -315,7 +315,7 @@ export function TourForm({ initialData, onSubmit, isLoading, guides, currentUser
           <Users className="h-5 w-5 text-jdav-green" /> Organisation
         </h3>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <div className="flex justify-between items-center mb-1">
               <Label htmlFor="max_participants">Max. Teilnehmer</Label>
@@ -327,6 +327,20 @@ export function TourForm({ initialData, onSubmit, isLoading, guides, currentUser
               type="number" 
               defaultValue={initialData?.max_participants} 
               placeholder="Unbegrenzt"
+              className="mt-0"
+            />
+          </div>
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <Label htmlFor="min_age">Mindestalter</Label>
+              <span className="text-[10px] text-slate-400">Leer lassen für kein Limit</span>
+            </div>
+            <Input 
+              id="min_age" 
+              name="min_age" 
+              type="number" 
+              defaultValue={initialData?.min_age} 
+              placeholder="Kein Mindestalter"
               className="mt-0"
             />
           </div>

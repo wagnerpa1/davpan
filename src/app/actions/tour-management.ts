@@ -44,11 +44,14 @@ export async function createTour(formData: FormData) {
   const end_date = formData.get("end_date")?.toString() || start_date;
   const meeting_point = formData.get("meeting_point")?.toString();
   const meeting_time = formData.get("meeting_time")?.toString();
-  const difficulty = parseInt(formData.get("difficulty")?.toString() || "0");
+  const difficulty = formData.get("difficulty")?.toString() || null;
   const elevation = parseInt(formData.get("elevation")?.toString() || "0");
   const distance = parseFloat(formData.get("distance")?.toString() || "0");
   const duration_hours = parseFloat(formData.get("duration_hours")?.toString() || "0");
-  const max_participants = parseInt(formData.get("max_participants")?.toString() || "0");
+  const max_participants_raw = formData.get("max_participants")?.toString();
+  const max_participants = max_participants_raw ? parseInt(max_participants_raw) || null : null;
+  const min_age_raw = formData.get("min_age")?.toString();
+  const min_age = min_age_raw ? parseInt(min_age_raw) || null : null;
   const cost_info = formData.get("cost_info")?.toString();
   const requirements = formData.get("requirements")?.toString();
   const status = formData.get("status")?.toString() || "planning";
@@ -72,6 +75,7 @@ export async function createTour(formData: FormData) {
       distance: distance || null,
       duration_hours: duration_hours || null,
       max_participants: max_participants || null,
+      min_age: min_age || null,
       cost_info,
       requirements,
       status,
@@ -144,7 +148,7 @@ export async function updateTour(tourId: string, formData: FormData) {
 
   const payload: any = {};
   const fields = [
-    "title", "description", "category", "target_area", "start_date", "end_date",
+    "title", "description", "category", "group", "target_area", "start_date", "end_date",
     "meeting_point", "meeting_time", "difficulty", "elevation", "distance",
     "duration_hours", "max_participants", "cost_info", "requirements", "status"
   ];
@@ -152,15 +156,22 @@ export async function updateTour(tourId: string, formData: FormData) {
   fields.forEach(field => {
     const val = formData.get(field);
     if (val !== null) {
-      if (["difficulty", "elevation", "max_participants"].includes(field)) {
-        payload[field] = parseInt(val.toString()) || null;
+      const strVal = val.toString();
+      if (["elevation", "max_participants"].includes(field)) {
+        payload[field] = strVal ? (parseInt(strVal) || null) : null;
       } else if (["distance", "duration_hours"].includes(field)) {
-        payload[field] = parseFloat(val.toString()) || null;
+        payload[field] = strVal ? (parseFloat(strVal) || null) : null;
       } else {
-        payload[field] = val.toString();
+        payload[field] = strVal || null;
       }
     }
   });
+
+  // min_age – only include if the column exists (added via migration)
+  const minAgeRaw = formData.get("min_age")?.toString();
+  if (minAgeRaw !== undefined && minAgeRaw !== null) {
+    payload.min_age = minAgeRaw ? (parseInt(minAgeRaw) || null) : null;
+  }
 
   const { error } = await supabase
     .from("tours")
@@ -168,8 +179,9 @@ export async function updateTour(tourId: string, formData: FormData) {
     .eq("id", tourId);
 
   if (error) {
-    console.error("Error updating tour:", error);
-    throw new Error("Failed to update tour");
+    console.error("Error updating tour — payload sent:", JSON.stringify(payload, null, 2));
+    console.error("Supabase error details:", error);
+    throw new Error(`Failed to update tour: ${error.message}`);
   }
 
   // Sync guides

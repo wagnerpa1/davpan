@@ -134,3 +134,51 @@ export async function registerForTour(formData: FormData) {
     return { error: "Bei der Anmeldung ist ein Fehler aufgetreten." };
   }
 }
+
+export async function cancelRegistration(participantId: string) {
+  "use server";
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht eingeloggt." };
+
+  // Get the registration to verify ownership and get tourId
+  const { data: reg, error: regError } = await supabase
+    .from("tour_participants")
+    .select("tour_id, user_id, status")
+    .eq("id", participantId)
+    .single();
+
+  if (regError || !reg) return { error: "Anmeldung nicht gefunden." };
+  if (reg.user_id !== user.id) return { error: "Keine Berechtigung." };
+
+  const { error } = await supabase
+    .from("tour_participants")
+    .update({ status: "cancelled" })
+    .eq("id", participantId);
+
+  if (error) return { error: "Absage fehlgeschlagen." };
+
+  const tourId = reg.tour_id;
+
+  // If the tour was full & status was confirmed, open it up again
+  const { data: tour } = await supabase
+    .from("tours")
+    .select("max_participants, status")
+    .eq("id", tourId)
+    .single();
+
+  if (tour && tour.max_participants && tour.status === "full") {
+    const { count } = await supabase
+      .from("tour_participants")
+      .select("*", { count: "exact", head: true })
+      .eq("tour_id", tourId)
+      .in("status", ["confirmed", "pending"]);
+
+    if ((count || 0) < tour.max_participants) {
+      await supabase.from("tours").update({ status: "open" }).eq("id", tourId);
+    }
+  }
+
+  revalidatePath(`/touren/${tourId}`);
+  return { success: true };
+}

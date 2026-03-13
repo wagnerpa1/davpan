@@ -30,17 +30,25 @@ export function TourCard({ tour }: TourCardProps) {
           <div className="mb-3 flex items-start justify-between">
             <div>
               <div className="mb-2 flex flex-wrap gap-2">
-                <span className="inline-block rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
-                  {tour.category}
-                </span>
-                {tour.group && tour.group !== 'general' && (
+                {/* Group comes FIRST */}
+                {tour.group && (
                   <span className={cn(
-                    "inline-block rounded-full px-2.5 py-0.5 text-xs font-bold uppercase",
-                    tour.group === 'family' ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"
+                    "inline-block rounded-full px-2.5 py-0.5 text-xs font-bold uppercase tracking-tight",
+                    tour.group === 'family'
+                      ? "bg-blue-100 text-blue-700"
+                      : tour.group === 'youth'
+                        ? "bg-purple-100 text-purple-700"
+                        : "bg-slate-100 text-slate-500"
                   )}>
-                    {tour.group === 'family' ? "Familie" : "Jugend"}
+                    {tour.group === 'family' ? '👨‍👩‍👧 Familie'
+                      : tour.group === 'youth' ? '🧒 Jugend'
+                      : '🌍 Allgemein'}
                   </span>
                 )}
+                {/* Category */}
+                <span className="inline-block rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600 capitalize">
+                  {tour.category}
+                </span>
                 {isFull && (
                   <span className="inline-block rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-bold text-red-600 uppercase">
                     Warteliste aktiv
