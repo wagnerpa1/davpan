@@ -189,7 +189,9 @@ export default async function TourDetailPage({
     userRegistrations = rData || [];
 
     const userRole = profile?.role;
-    const isLead = tourData.tour_guides?.some((tg) => tg.profiles?.id === user.id);
+    const isLead = tourData.tour_guides?.some(
+      (tg: TourGuide) => tg.profiles?.id === user.id,
+    );
     tourData.canManage =
       userRole === "admin" || isLead || tourData.created_by === user.id;
     tourData.userRole = userRole;
@@ -262,7 +264,7 @@ export default async function TourDetailPage({
             <div className="mt-4 flex flex-wrap justify-center gap-4 text-sm font-medium">
               <div className="flex items-center gap-1.5 text-white/90">
                 <span className="opacity-70 font-normal">Leitung:</span>
-                {tour.tour_guides.map((tg) => (
+                {tour.tour_guides.map((tg: TourGuide) => (
                   <span
                     key={tg.profiles?.id || tg.profiles?.full_name || "guide"}
                     className="bg-white/10 px-2 py-0.5 rounded-lg"
