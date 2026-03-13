@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import type React from "react";
+import { useState } from "react";
 import { registerForTour } from "@/app/actions/tour-registration";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, CheckCircle2, Loader2, X } from "lucide-react";
 
 interface Material {
   id: string;
@@ -28,7 +29,7 @@ export function TourRegistrationForm({
   onSuccess,
   onCancel,
   childrenProfiles,
-  availableMaterials
+  availableMaterials,
 }: TourRegistrationFormProps) {
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +45,9 @@ export function TourRegistrationForm({
     const formData = new FormData();
     formData.append("tourId", tourId);
     formData.append("childId", selectedChild);
-    selectedMaterials.forEach(m => formData.append("materials", m));
+    selectedMaterials.forEach((m) => {
+      formData.append("materials", m);
+    });
 
     const result = await registerForTour(formData);
 
@@ -60,8 +63,8 @@ export function TourRegistrationForm({
   }
 
   const toggleMaterial = (id: string) => {
-    setSelectedMaterials(prev => 
-      prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id]
+    setSelectedMaterials((prev) =>
+      prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id],
     );
   };
 
@@ -73,7 +76,9 @@ export function TourRegistrationForm({
         </div>
         <h3 className="text-xl font-bold text-slate-900">Geschafft!</h3>
         <p className="mt-2 text-slate-600">{success}</p>
-        <p className="mt-4 text-xs text-slate-400">Das Fenster schließt sich automatisch...</p>
+        <p className="mt-4 text-xs text-slate-400">
+          Das Fenster schließt sich automatisch...
+        </p>
       </div>
     );
   }
@@ -82,41 +87,49 @@ export function TourRegistrationForm({
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
         <div className="flex items-center gap-3 rounded-lg bg-red-50 p-4 text-sm text-red-800 border border-red-100">
-          <AlertCircle className="h-5 w-5 flex-shrink-0" />
+          <AlertCircle className="h-5 w-5 shrink-0" />
           <p>{error}</p>
         </div>
       )}
 
       {/* Profile Selection */}
       <div className="space-y-3">
-        <label className="text-sm font-semibold text-slate-900">Wer soll angemeldet werden?</label>
+        <p className="text-sm font-semibold text-slate-900">
+          Wer soll angemeldet werden?
+        </p>
         <div className="grid grid-cols-1 gap-2">
           <button
             type="button"
             onClick={() => setSelectedChild("self")}
             className={`flex items-center justify-between rounded-xl border p-4 text-left transition-all ${
-              selectedChild === "self" 
-                ? "border-jdav-green bg-green-50 ring-1 ring-jdav-green" 
+              selectedChild === "self"
+                ? "border-jdav-green bg-green-50 ring-1 ring-jdav-green"
                 : "border-slate-200 hover:border-slate-300 bg-white"
             }`}
           >
             <span className="font-medium text-slate-900">Ich selbst</span>
-            {selectedChild === "self" && <div className="h-2 w-2 rounded-full bg-jdav-green" />}
+            {selectedChild === "self" && (
+              <div className="h-2 w-2 rounded-full bg-jdav-green" />
+            )}
           </button>
 
-          {childrenProfiles.map(child => (
+          {childrenProfiles.map((child) => (
             <button
               key={child.id}
               type="button"
               onClick={() => setSelectedChild(child.id)}
               className={`flex items-center justify-between rounded-xl border p-4 text-left transition-all ${
-                selectedChild === child.id 
-                  ? "border-jdav-green bg-green-50 ring-1 ring-jdav-green" 
+                selectedChild === child.id
+                  ? "border-jdav-green bg-green-50 ring-1 ring-jdav-green"
                   : "border-slate-200 hover:border-slate-300 bg-white"
               }`}
             >
-              <span className="font-medium text-slate-900">{child.full_name}</span>
-              {selectedChild === child.id && <div className="h-2 w-2 rounded-full bg-jdav-green" />}
+              <span className="font-medium text-slate-900">
+                {child.full_name}
+              </span>
+              {selectedChild === child.id && (
+                <div className="h-2 w-2 rounded-full bg-jdav-green" />
+              )}
             </button>
           ))}
         </div>
@@ -125,10 +138,12 @@ export function TourRegistrationForm({
       {/* Material Selection */}
       {availableMaterials.length > 0 && (
         <div className="space-y-3">
-          <label className="text-sm font-semibold text-slate-900">Benötigtes Leihmaterial</label>
+          <p className="text-sm font-semibold text-slate-900">
+            Benötigtes Leihmaterial
+          </p>
           <div className="grid grid-cols-1 gap-2">
-            {availableMaterials.map(material => (
-              <label 
+            {availableMaterials.map((material) => (
+              <label
                 key={material.id}
                 className={`flex items-center gap-3 rounded-xl border p-4 cursor-pointer transition-all ${
                   selectedMaterials.includes(material.id)
@@ -136,23 +151,27 @@ export function TourRegistrationForm({
                     : "border-slate-200 hover:border-slate-300 bg-white"
                 }`}
               >
-                <input 
+                <input
                   type="checkbox"
                   className="h-5 w-5 rounded border-slate-300 text-jdav-green focus:ring-jdav-green"
                   checked={selectedMaterials.includes(material.id)}
                   onChange={() => toggleMaterial(material.id)}
                 />
-                <span className="font-medium text-slate-700">{material.name}</span>
+                <span className="font-medium text-slate-700">
+                  {material.name}
+                </span>
               </label>
             ))}
           </div>
-          <p className="text-xs text-slate-500 italic">Material wird erst bei tatsächlicher Ausgabe reserviert.</p>
+          <p className="text-xs text-slate-500 italic">
+            Material wird erst bei tatsächlicher Ausgabe reserviert.
+          </p>
         </div>
       )}
 
       <div className="flex flex-col gap-3 pt-4 sm:flex-row-reverse">
-        <Button 
-          type="submit" 
+        <Button
+          type="submit"
           disabled={isPending}
           size="lg"
           className="w-full bg-jdav-green hover:bg-jdav-green-dark text-white font-bold h-12 rounded-xl shadow-lg shadow-green-900/10"
@@ -166,9 +185,9 @@ export function TourRegistrationForm({
             "Anmeldung abschicken"
           )}
         </Button>
-        <Button 
-          type="button" 
-          variant="ghost" 
+        <Button
+          type="button"
+          variant="ghost"
           onClick={onCancel}
           className="w-full text-slate-500 hover:text-slate-900"
         >

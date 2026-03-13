@@ -1,11 +1,20 @@
-import { createClient } from "@/utils/supabase/server";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { FileText, Calendar } from "lucide-react";
+import { Calendar, FileText } from "lucide-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { createClient } from "@/utils/supabase/server";
 
 export default async function BerichtePage() {
   const supabase = await createClient();
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) {
+    redirect("/login");
+  }
 
   const { data: reports } = await supabase
     .from("tour_reports")
@@ -23,7 +32,11 @@ export default async function BerichtePage() {
       <div className="grid gap-6">
         {reports && reports.length > 0 ? (
           reports.map((report) => (
-            <Link key={report.id} href={`/berichte/${report.id}`} className="block">
+            <Link
+              key={report.id}
+              href={`/berichte/${report.id}`}
+              className="block"
+            >
               <div className="group overflow-hidden rounded-2xl border border-slate-200 bg-white transition-all hover:border-jdav-green hover:shadow-md">
                 <div className="p-6">
                   <div className="mb-4 flex items-center gap-3 text-sm text-slate-500">
@@ -33,10 +46,12 @@ export default async function BerichtePage() {
                     <span>•</span>
                     <span className="flex items-center gap-1">
                       <Calendar className="h-4 w-4" />
-                      {format(new Date(report.created_at), "dd.MM.yyyy", { locale: de })}
+                      {format(new Date(report.created_at), "dd.MM.yyyy", {
+                        locale: de,
+                      })}
                     </span>
                   </div>
-                  
+
                   <h2 className="mb-2 text-xl font-bold text-slate-900 group-hover:text-jdav-green">
                     {report.title}
                   </h2>
@@ -45,7 +60,7 @@ export default async function BerichtePage() {
                       Tour: {report.tours.title}
                     </span>
                   )}
-                  
+
                   <p className="mt-4 line-clamp-3 text-slate-600">
                     {report.text}
                   </p>

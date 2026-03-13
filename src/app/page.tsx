@@ -1,7 +1,7 @@
-import { createClient } from "@/utils/supabase/server";
+import { Calendar, LogOut } from "lucide-react";
 import { redirect } from "next/navigation";
-import { LogOut, Calendar } from "lucide-react";
 import { TourCard } from "@/components/tours/TourCard";
+import { createClient } from "@/utils/supabase/server";
 import { syncTourStatuses } from "./actions/tour-management";
 
 export default async function Home() {
@@ -11,10 +11,11 @@ export default async function Home() {
   await syncTourStatuses();
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (userError || !user) {
     return redirect("/login");
   }
 
@@ -22,13 +23,13 @@ export default async function Home() {
   const { data: profile } = await supabase
     .from("profiles")
     .select("full_name")
-    .eq("id", session.user.id)
+    .eq("id", user.id)
     .single();
 
-  const displayName = profile?.full_name || session.user.email?.split('@')[0];
+  const displayName = profile?.full_name || user.email?.split("@")[0];
 
   // Fetch only the single next upcoming or currently running tour
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Date().toISOString().split("T")[0];
   const { data: nextTour } = await supabase
     .from("tours")
     .select(`
@@ -66,41 +67,46 @@ export default async function Home() {
         <section>
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-jdav-green" /> Deine nächste Tour
+              <Calendar className="h-5 w-5 text-jdav-green" /> Deine nächste
+              Tour
             </h2>
           </div>
-          
+
           {nextTour ? (
             <TourCard tour={nextTour} />
           ) : (
             <div className="rounded-2xl border border-slate-200 border-dashed p-8 text-center bg-slate-50/50">
-               <p className="text-sm text-slate-400 italic">Aktuell sind keine Touren geplant.</p>
+              <p className="text-sm text-slate-400 italic">
+                Aktuell sind keine Touren geplant.
+              </p>
             </div>
           )}
         </section>
 
         {/* Vereinsfeed Section */}
         <section>
-          <h2 className="mb-4 text-xl font-bold text-slate-900 border-b border-slate-100 pb-2">Vereins-Neuigkeiten</h2>
-          
+          <h2 className="mb-4 text-xl font-bold text-slate-900 border-b border-slate-100 pb-2">
+            Vereins-Neuigkeiten
+          </h2>
+
           {/* Placeholder for the Club Feed (Tour Reports & News) */}
           <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-slate-400 shadow-sm italic">
-             <p>Der News-Feed wird derzeit überarbeitet.</p>
+            <p>Der News-Feed wird derzeit überarbeitet.</p>
           </div>
         </section>
       </div>
 
       {/* Development tool to sign out */}
       <div className="mt-16 flex justify-center border-t border-slate-100 pt-8">
-         <form action="/auth/signout" method="POST">
-           <button
-             type="submit"
-             className="group flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-red-500 transition-all uppercase tracking-widest"
-           >
-             <LogOut className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-             Abmelden
-           </button>
-         </form>
+        <form action="/auth/signout" method="POST">
+          <button
+            type="submit"
+            className="group flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-red-500 transition-all uppercase tracking-widest"
+          >
+            <LogOut className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+            Abmelden
+          </button>
+        </form>
       </div>
     </div>
   );

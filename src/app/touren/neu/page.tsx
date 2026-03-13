@@ -1,19 +1,19 @@
-import React from "react";
-import { createClient } from "@/utils/supabase/server";
-import { redirect } from "next/navigation";
-import { TourForm } from "@/components/tours/TourForm";
-import { createTour, getAvailableGuides } from "@/app/actions/tour-management";
 import { Mountain } from "lucide-react";
+import { redirect } from "next/navigation";
+import { createTour, getAvailableGuides } from "@/app/actions/tour-management";
+import { TourForm } from "@/components/tours/TourForm";
+import { createClient } from "@/utils/supabase/server";
 
 export default async function NewTourPage() {
   const supabase = await createClient();
   const guides = await getAvailableGuides();
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (userError || !user) {
     redirect("/login");
   }
 
@@ -21,7 +21,7 @@ export default async function NewTourPage() {
   const { data: profile } = await supabase
     .from("profiles")
     .select("id, full_name, role")
-    .eq("id", session.user.id)
+    .eq("id", user.id)
     .single();
 
   if (!profile || (profile.role !== "guide" && profile.role !== "admin")) {
@@ -30,7 +30,7 @@ export default async function NewTourPage() {
 
   const currentUser = {
     id: profile.id,
-    full_name: profile.full_name
+    full_name: profile.full_name,
   };
 
   return (
@@ -49,9 +49,9 @@ export default async function NewTourPage() {
         </div>
       </div>
 
-      <TourForm 
-        onSubmit={createTour} 
-        guides={guides} 
+      <TourForm
+        onSubmit={createTour}
+        guides={guides}
         currentUser={currentUser}
       />
     </div>

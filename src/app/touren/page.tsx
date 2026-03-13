@@ -1,20 +1,52 @@
-import { createClient } from "@/utils/supabase/server";
-import Link from "next/link";
 import { Search } from "lucide-react";
-import { TourFilters } from "@/components/tours/TourFilters";
-import { TourCard } from "@/components/tours/TourCard";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import type { ComponentProps } from "react";
 import { syncTourStatuses } from "@/app/actions/tour-management";
+import { TourCard } from "@/components/tours/TourCard";
+import { TourFilters } from "@/components/tours/TourFilters";
+import { createClient } from "@/utils/supabase/server";
+
+interface TourGuideLink {
+  user_id: string;
+}
+
+interface TourParticipantSummary {
+  id: string;
+  status: string;
+}
+
+interface TourListItem {
+  id: string;
+  title: string;
+  status: string;
+  start_date: string;
+  max_participants: number | null;
+  tour_guides?: TourGuideLink[];
+  tour_participants?: TourParticipantSummary[];
+}
+
+type TourCardItem = ComponentProps<typeof TourCard>["tour"];
 
 export default async function TourenPage({
   searchParams,
 }: {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const supabase = await createClient();
   const params = await searchParams;
 
   // Sync statuses before fetching
   await syncTourStatuses();
+
+  // Auth check – internal area requires login
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) {
+    redirect("/login");
+  }
 
   const categoryFilter = params.category as string;
   const difficultyFilter = params.difficulty as string;
@@ -29,9 +61,13 @@ export default async function TourenPage({
     .select("category, difficulty")
     .neq("status", "completed");
 
-  const categories = Array.from(new Set(allToursData?.map(t => t.category).filter(Boolean))) as string[];
-  const difficulties = Array.from(new Set(allToursData?.map(t => t.difficulty).filter(Boolean))) as string[];
-  
+  const categories = Array.from(
+    new Set(allToursData?.map((t) => t.category).filter(Boolean)),
+  ) as string[];
+  const difficulties = Array.from(
+    new Set(allToursData?.map((t) => t.difficulty).filter(Boolean)),
+  ) as string[];
+
   const { data: guides } = await supabase
     .from("profiles")
     .select("id, full_name")
@@ -60,37 +96,40 @@ export default async function TourenPage({
   if (difficultyFilter) query = query.eq("difficulty", difficultyFilter);
   if (groupFilter) query = query.eq("group", groupFilter);
 
-  const { data: tours, error } = await query.order("start_date", { ascending: sortBy === "date_asc" });
+  const { data: tours, error } = await query.order("start_date", {
+    ascending: sortBy === "date_asc",
+  });
 
   if (error) {
     console.error("Error fetching tours:", error);
   }
 
-  // Check if user is logged in for "Create" button
-  const { data: { session } } = await supabase.auth.getSession();
+  // Check if user is logged in for "Create" button (session already fetched above)
   let userRole = null;
-  if (session) {
+  if (user) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("role")
-      .eq("id", session.user.id)
+      .eq("id", user.id)
       .single();
     userRole = profile?.role;
   }
-  const canCreate = userRole === 'guide' || userRole === 'admin';
+  const canCreate = userRole === "guide" || userRole === "admin";
 
   // Apply in-memory filters (Guide & Availability) and Sorting (Capacity)
-  let filteredTours = tours || [];
+  let filteredTours: TourCardItem[] = (tours as TourCardItem[]) || [];
 
   if (guideFilter) {
-    filteredTours = filteredTours.filter(tour => 
-      tour.tour_guides?.some((tg: any) => tg.user_id === guideFilter)
+    filteredTours = filteredTours.filter((tour) =>
+      tour.tour_guides?.some((tg) => tg.user_id === guideFilter),
     );
   }
 
   if (availableOnly) {
-    filteredTours = filteredTours.filter(tour => {
-      const confirmedCount = tour.tour_participants?.filter((p: any) => p.status === 'confirmed').length || 0;
+    filteredTours = filteredTours.filter((tour) => {
+      const confirmedCount =
+        tour.tour_participants?.filter((p) => p.status === "confirmed")
+          .length || 0;
       const maxParticipants = tour.max_participants || 0;
       return maxParticipants === 0 || confirmedCount < maxParticipants;
     });
@@ -98,15 +137,22 @@ export default async function TourenPage({
 
   if (sortBy.startsWith("capacity")) {
     filteredTours.sort((a, b) => {
-      const getCapacity = (t: any) => {
-        const conf = t.tour_participants?.filter((p: any) => p.status === 'confirmed').length || 0;
+      const getCapacity = (t: TourCardItem) => {
+        const conf =
+          t.tour_participants?.filter((p) => p.status === "confirmed").length ||
+          0;
         const max = t.max_participants || 999;
         return conf / max;
       };
-      return sortBy === "capacity_low" ? getCapacity(b) - getCapacity(a) : getCapacity(a) - getCapacity(b);
+      return sortBy === "capacity_low"
+        ? getCapacity(b) - getCapacity(a)
+        : getCapacity(a) - getCapacity(b);
     });
   } else if (sortBy === "date_desc") {
-    filteredTours.sort((a, b) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime());
+    filteredTours.sort(
+      (a, b) =>
+        new Date(b.start_date).getTime() - new Date(a.start_date).getTime(),
+    );
   }
 
   return (
@@ -117,14 +163,17 @@ export default async function TourenPage({
         </h1>
         {canCreate && (
           <Link href="/touren/neu" className="w-full xs:w-auto">
-            <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-jdav-green px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-jdav-green-dark shadow-sm">
+            <button
+              type="button"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-jdav-green px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-jdav-green-dark shadow-sm"
+            >
               Tour erstellen
             </button>
           </Link>
         )}
       </div>
 
-      <TourFilters 
+      <TourFilters
         categories={categories}
         difficulties={difficulties}
         guides={guides || []}
@@ -133,14 +182,20 @@ export default async function TourenPage({
       <div className="space-y-4">
         {filteredTours.length > 0 ? (
           filteredTours.map((tour) => (
-            <TourCard key={tour.id} tour={tour} />
+            <TourCard
+              key={tour.id}
+              tour={tour as ComponentProps<typeof TourCard>["tour"]}
+            />
           ))
         ) : (
           <div className="rounded-2xl border border-slate-200 border-dashed p-12 text-center">
             <Search className="mx-auto mb-4 h-12 w-12 text-slate-300" />
-            <h3 className="text-lg font-medium text-slate-900">Keine passenden Touren gefunden</h3>
+            <h3 className="text-lg font-medium text-slate-900">
+              Keine passenden Touren gefunden
+            </h3>
             <p className="mt-2 text-sm text-slate-500">
-              Versuche es mit anderen Filtereinstellungen oder setze alle Filter zurück.
+              Versuche es mit anderen Filtereinstellungen oder setze alle Filter
+              zurück.
             </p>
           </div>
         )}

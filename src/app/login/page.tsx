@@ -13,7 +13,7 @@ export default function LoginPage() {
           </p>
         </div>
         <LoginForm />
-        
+
         <div className="mt-8 text-center text-sm text-slate-500">
           <p>Du bist noch kein Mitglied oder möchtest nur stöbern?</p>
           <a

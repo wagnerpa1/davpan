@@ -1,15 +1,21 @@
-import { createClient } from "@/utils/supabase/server";
 import { type NextRequest, NextResponse } from "next/server";
+import { isSameOriginRequest } from "@/lib/security";
+import { createClient } from "@/utils/supabase/server";
 import { getServerURL } from "@/utils/url-helpers";
 
 export async function POST(req: NextRequest) {
+  if (!isSameOriginRequest(req)) {
+    return NextResponse.json({ error: "CSRF validation failed" }, { status: 403 });
+  }
+
   const supabase = await createClient();
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (userError || !user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -21,7 +27,10 @@ export async function POST(req: NextRequest) {
   const imageConsent = formData.get("image_consent") === "on";
 
   if (!name || !birthdate) {
-    return NextResponse.json({ error: "Name and birthdate are required" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Name and birthdate are required" },
+      { status: 400 },
+    );
   }
 
   if (childId) {
@@ -35,16 +44,19 @@ export async function POST(req: NextRequest) {
         image_consent: imageConsent,
       })
       .eq("id", childId)
-      .eq("parent_id", session.user.id);
+      .eq("parent_id", user.id);
 
     if (error) {
       console.error("Error updating child:", error);
-      return NextResponse.json({ error: "Failed to update child" }, { status: 500 });
+      return NextResponse.json(
+        { error: "Failed to update child" },
+        { status: 500 },
+      );
     }
   } else {
     // Add new child
     const { error } = await supabase.from("child_profiles").insert({
-      parent_id: session.user.id,
+      parent_id: user.id,
       full_name: name,
       birthdate,
       medical_notes: medicalNotes,
@@ -53,7 +65,10 @@ export async function POST(req: NextRequest) {
 
     if (error) {
       console.error("Error adding child:", error);
-      return NextResponse.json({ error: "Failed to add child" }, { status: 500 });
+      return NextResponse.json(
+        { error: "Failed to add child" },
+        { status: 500 },
+      );
     }
   }
 

@@ -1,19 +1,23 @@
-import React from "react";
-import { createClient } from "@/utils/supabase/server";
-import { notFound, redirect } from "next/navigation";
-import { TourForm } from "@/components/tours/TourForm";
-import { updateTour, getAvailableGuides } from "@/app/actions/tour-management";
 import { Edit } from "lucide-react";
+import { notFound, redirect } from "next/navigation";
+import { getAvailableGuides, updateTour } from "@/app/actions/tour-management";
+import { TourForm } from "@/components/tours/TourForm";
+import { createClient } from "@/utils/supabase/server";
 
-export default async function EditTourPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function EditTourPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = await params;
   const supabase = await createClient();
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (userError || !user) {
     redirect("/login");
   }
 
@@ -27,8 +31,8 @@ export default async function EditTourPage({ params }: { params: Promise<{ id: s
       `)
       .eq("id", id)
       .single(),
-    supabase.from("profiles").select("role").eq("id", session.user.id).single(),
-    getAvailableGuides()
+    supabase.from("profiles").select("role").eq("id", user.id).single(),
+    getAvailableGuides(),
   ]);
 
   if (!tourRes.data) {
@@ -39,16 +43,16 @@ export default async function EditTourPage({ params }: { params: Promise<{ id: s
   const userRole = profileRes.data?.role;
 
   // Check permissions: Admin can edit all. Guide can edit if lead.
-  let canEdit = userRole === 'admin';
-  if (!canEdit && userRole === 'guide') {
+  let canEdit = userRole === "admin";
+  if (!canEdit && userRole === "guide") {
     const { data: leadCheck } = await supabase
       .from("tour_guides")
       .select("id")
       .eq("tour_id", id)
-      .eq("user_id", session.user.id)
+      .eq("user_id", user.id)
       .single();
-    
-    if (leadCheck || tour.created_by === session.user.id) {
+
+    if (leadCheck || tour.created_by === user.id) {
       canEdit = true;
     }
   }
@@ -71,14 +75,15 @@ export default async function EditTourPage({ params }: { params: Promise<{ id: s
             Tour bearbeiten
           </h1>
           <p className="text-sm text-slate-500">
-            Aktualisiere die Details für: <span className="font-semibold">{tour.title}</span>
+            Aktualisiere die Details für:{" "}
+            <span className="font-semibold">{tour.title}</span>
           </p>
         </div>
       </div>
 
-      <TourForm 
-        initialData={tour} 
-        onSubmit={updateTourWithId} 
+      <TourForm
+        initialData={tour}
+        onSubmit={updateTourWithId}
         guides={guides}
       />
     </div>

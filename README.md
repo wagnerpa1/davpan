@@ -1,75 +1,135 @@
-# 🏔️ JDAV / DAV Pfarrkirchen Touren-Portal
+# JDAV / DAV Pfarrkirchen Touren-Portal
 
-![JDAV Pfarrkirchen Banner](file:///C:/Users/paulw/.gemini/antigravity/brain/0a549dd2-dd28-43d0-b2a7-bd7d5809bc8a/davpan_banner_1773261096131.png)
+Webanwendung zur Verwaltung von Touren, Teilnehmern, Eltern-/Kind-Profilen, Dokumenten und (vorbereitet) Materialverwaltung.
 
-Willkommen beim zentralen Organisations-Portal der **JDAV / DAV Sektion Pfarrkirchen**. Diese Anwendung dient der effizienten Planung und Verwaltung von Bergtouren, Material und Vereinsaktivitäten.
+## Kurzstatus
 
----
-
-## 🚀 Key Features
-
-### 📅 Tourenverwaltung
-*   **Planung & Anmeldung:** Umfangreiches System für Tourenleiter zur Erstellung und Verwaltung von Touren.
-*   **Wartelisten-Logik:** Automatisches Nachrücken bei Abmeldungen.
-*   **Bestätigungssystem:** Guides können Anmeldungen prüfen und bestätigen.
-
-### 🎒 Materialmanagement
-*   **Reservierung:** Teilnehmer können benötigtes Material (Gurt, Helm, etc.) direkt bei der Touranmeldung reservieren.
-*   **Bestandskontrolle:** Echtzeit-Überprüfung der verfügbaren Mengen.
-
-### 👨‍👩‍👧‍👦 Eltern-Kind-System
-*   Eltern können Profile für ihre Kinder verwalten und diese gesammelt zu Touren anmelden.
-*   Altersbeschränkungen werden automatisch geprüft.
-
-### 📱 PWA & Offline
-*   Optimiert für mobile Endgeräte als **Progressive Web App**.
-*   Offline-Verfügbarkeit von Tourendetails und Berichten.
-*   Push-Benachrichtigungen bei Statusänderungen.
+- Framework: Next.js 16.1.6
+- Runtime im Projekt aktuell: `webpack` (über npm scripts)
+- Backend: Supabase (Auth + Postgres)
+- PWA: Serwist integriert
+- Sicherheitsbericht: siehe `sicherheit.md`
 
 ---
 
-## 🛠️ Tech Stack
+## Funktionsumfang
 
-*   **Framework:** [Next.js 15 (App Router)](https://nextjs.org/)
-*   **Sprache:** [TypeScript](https://www.typescriptlang.org/)
-*   **Styling:** [Tailwind CSS v4](https://tailwindcss.com/)
-*   **Backend & DB:** [Supabase](https://supabase.com/) (PostgreSQL, Auth, Storage)
-*   **Icons:** [Lucide React](https://lucide.dev/)
-*   **PWA:** [@serwist/next](https://serwist.js.org/)
+- Tourenplanung und Verwaltung (Guide/Admin)
+- Anmeldung inkl. Wartelistenlogik
+- Teilnehmer-Statusverwaltung durch berechtigte Nutzer
+- Eltern-/Kind-Profile mit separaten Anmeldungen
+- Dokumentbereich
+- PWA-Grundfunktionen inkl. Offline-Fallbackseite
 
 ---
 
-## 🏗️ Getting Started
+## Architektur
 
-### Voraussetzungen
-Stelle sicher, dass du eine `.env.local` Datei mit den entsprechenden Supabase-Credentials hast:
+## Frontend / App-Layer
+
+- `src/app` – Next.js App Router (Pages, Route Handlers, Server Actions)
+- `src/components` – UI-Komponenten (Auth, Touren, Layout)
+- `src/utils` – Supabase-Clients und URL-Helfer
+
+## Backend / Daten
+
+- Supabase Projekt (ref): `amjxgutnnnpjbjigzwpo`
+- DB Host: `db.amjxgutnnnpjbjigzwpo.supabase.co`
+- Hauptschema: `public`
+
+Wichtige Tabellen:
+- `profiles`
+- `child_profiles`
+- `tours`
+- `tour_guides`
+- `tour_participants`
+- `materials`
+- `tour_materials`
+- `material_reservations`
+- `tour_reports`
+- `report_images`
+- `documents`
+
+---
+
+## Lokale Entwicklung
+
+## Voraussetzungen
+
+- Node.js LTS
+- npm
+- `.env.local` mit Supabase-Werten
+
+Beispiel:
+
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=...
 ```
 
-### Installation & Development
-1.  **Dependencies installieren:**
-    ```bash
-    npm install
-    ```
-2.  **Dev-Server starten:**
-    ```bash
-    npm run dev
-    ```
-3.  **App öffnen:** [http://localhost:3000](http://localhost:3000)
+## Installation
+
+```bash
+npm install
+```
+
+## Development-Server
+
+```bash
+npm run dev
+```
+
+## Lint
+
+```bash
+npm run lint
+```
+
+## Production Build
+
+```bash
+npm run build
+npm run start
+```
 
 ---
 
-## 📂 Projektstruktur
+## PWA / Offline
 
--   `src/app`: Next.js App Router (Pages & API Routes)
--   `src/components`: UI-Komponenten (Layout, Auth, etc.)
--   `src/utils`: Supabase-Clients und Hilfsfunktionen
--   `src/lib`: Gemeinsam genutzte Hilfsmittel & Utilities
+- Manifest: `public/manifest.json`
+- Service Worker Entry: `src/app/sw.ts`
+- Serwist Route: `src/app/serwist/[path]/route.ts`
+- Offline-Seite: `src/app/~offline/page.tsx`
+
+Aktuell ist ein Offline-Fallback auf `"/~offline"` definiert.  
+Precache umfasst Startseite, Tourenseite und Offline-Seite.
 
 ---
 
-## ⚖️ Lizenz
-Dieses Projekt ist für die interne Nutzung der DAV Sektion Pfarrkirchen bestimmt. Alle Rechte vorbehalten.
+## Sicherheit (wichtig)
 
+Der aktuelle Sicherheitsstatus ist in `sicherheit.md` detailliert dokumentiert.
+
+Kernaussagen:
+- In Supabase sind im `public`-Schema derzeit Tabellen ohne RLS aktiv.
+- Das ist fuer produktiven Betrieb kritisch und muss vor Go-Live behoben werden.
+- Weitere Punkte: Redirect-Haertung im Auth-Callback, CSRF-Haertung, Migration von `middleware` auf `proxy`.
+
+Empfohlene Reihenfolge:
+1. RLS + Policies
+2. Auth/Redirect/CSRF Hardening
+3. PWA-Cache-Hardening fuer sensible Inhalte
+
+---
+
+## Bekannte Laufzeit-Hinweise
+
+- Next.js weist auf deprecate `middleware`-Konvention hin (`proxy` empfohlen).
+- Serwist kann im Development je nach Konfiguration deaktiviert sein; PWA-Checks immer auch im Production-Run validieren.
+
+---
+
+## Haftung / Nutzung
+
+Dieses Repository ist fuer die interne Nutzung der DAV Sektion Pfarrkirchen gedacht.  
+Vor produktiver Nutzung bitte die Punkte aus `sicherheit.md` vollständig umsetzen.
