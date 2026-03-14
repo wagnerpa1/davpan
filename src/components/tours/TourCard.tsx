@@ -70,10 +70,10 @@ export function TourCard({ tour }: TourCardProps) {
                     )}
                   >
                     {tour.group === "family"
-                      ? "👨‍👩‍👧 Familie"
+                      ? "Familie"
                       : tour.group === "youth"
-                        ? "🧒 Jugend"
-                        : "🌍 Allgemein"}
+                        ? "Jugend"
+                        : "Allgemein"}
                   </span>
                 )}
                 {/* Category */}

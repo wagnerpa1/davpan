@@ -42,6 +42,7 @@ interface UserRegistration {
 }
 
 interface TourGuide {
+  user_id?: string | null;
   profiles?: {
     id?: string | null;
     full_name?: string | null;
@@ -117,6 +118,7 @@ export default async function TourDetailPage({
     .select(`
       *,
       tour_guides (
+        user_id,
         profiles (
           id,
           full_name
@@ -264,12 +266,12 @@ export default async function TourDetailPage({
             <div className="mt-4 flex flex-wrap justify-center gap-4 text-sm font-medium">
               <div className="flex items-center gap-1.5 text-white/90">
                 <span className="opacity-70 font-normal">Leitung:</span>
-                {tour.tour_guides.map((tg: TourGuide) => (
+                {tour.tour_guides.map((tg: TourGuide, idx: number) => (
                   <span
-                    key={tg.profiles?.id || tg.profiles?.full_name || "guide"}
+                    key={tg.user_id || tg.profiles?.id || `${tg.profiles?.full_name || "guide"}-${idx}`}
                     className="bg-white/10 px-2 py-0.5 rounded-lg"
                   >
-                    {tg.profiles?.full_name}
+                    {tg.profiles?.full_name || "Tourenleitung"}
                   </span>
                 ))}
               </div>
