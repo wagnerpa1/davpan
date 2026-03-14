@@ -1,5 +1,6 @@
 "use server";
 
+import { cache } from "react";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
@@ -263,12 +264,19 @@ export async function deleteTour(tourId: string) {
   redirect("/touren");
 }
 
-export async function syncTourStatuses() {
+// Throttle: do not run DB-write more than once every 60 seconds process-wide.
+let _lastSyncTs = 0;
+
+async function _doSyncTourStatuses() {
+  const now = Date.now();
+  if (now - _lastSyncTs < 60_000) {
+    return { completedCount: 0, skipped: true };
+  }
+  _lastSyncTs = now;
+
   const supabase = await createClient();
   const today = new Date().toISOString().split("T")[0];
 
-  // Finds tours that are NOT completed but their end_date is in the past
-  // We complete them if today is strictly GREATER than end_date
   const { data: expiredTours, error } = await supabase
     .from("tours")
     .update({ status: "completed" })
@@ -287,3 +295,7 @@ export async function syncTourStatuses() {
 
   return { completedCount: expiredTours?.length || 0 };
 }
+
+// React cache() deduplicates within the same render pass (layout + page run together).
+export const syncTourStatuses = cache(_doSyncTourStatuses);
+

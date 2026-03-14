@@ -7,26 +7,13 @@ import { TourCard } from "@/components/tours/TourCard";
 import { TourFilters } from "@/components/tours/TourFilters";
 import { createClient } from "@/utils/supabase/server";
 
-interface TourGuideLink {
-  user_id: string;
-}
-
-interface TourParticipantSummary {
-  id: string;
-  status: string;
-}
-
-interface TourListItem {
-  id: string;
-  title: string;
-  status: string;
-  start_date: string;
-  max_participants: number | null;
-  tour_guides?: TourGuideLink[];
-  tour_participants?: TourParticipantSummary[];
-}
-
 type TourCardItem = ComponentProps<typeof TourCard>["tour"];
+
+function toTimestamp(value: string | null | undefined) {
+  if (!value) return 0;
+  const ts = Date.parse(value);
+  return Number.isNaN(ts) ? 0 : ts;
+}
 
 export default async function TourenPage({
   searchParams,
@@ -69,10 +56,10 @@ export default async function TourenPage({
   ) as string[];
 
   const { data: guides } = await supabase
-    .from("profiles")
-    .select("id, full_name")
-    .in("role", ["guide", "admin"])
-    .order("full_name");
+      .from("profiles")
+      .select("id, full_name")
+      .in("role", ["guide", "admin"])
+      .order("full_name");
 
   // Build query
   let query = supabase
@@ -150,8 +137,7 @@ export default async function TourenPage({
     });
   } else if (sortBy === "date_desc") {
     filteredTours.sort(
-      (a, b) =>
-        new Date(b.start_date).getTime() - new Date(a.start_date).getTime(),
+      (a, b) => toTimestamp(b.start_date) - toTimestamp(a.start_date),
     );
   }
 

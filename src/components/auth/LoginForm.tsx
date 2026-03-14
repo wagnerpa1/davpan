@@ -10,12 +10,12 @@ import { createClient } from "@/utils/supabase/client";
 export function LoginForm({ className }: { className?: string }) {
   const [supabase] = useState(() => createClient());
   const router = useRouter();
-  const [origin, setOrigin] = useState("");
+  // Derived lazily to avoid hydration mismatch (window is undefined on server)
+  const [redirectTo, setRedirectTo] = useState<string>("");
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      setOrigin(window.location.origin);
-    }
+    setRedirectTo(`${window.location.origin}/auth/callback`);
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event) => {
@@ -95,7 +95,7 @@ export function LoginForm({ className }: { className?: string }) {
         view="sign_in"
         showLinks={false}
         theme="light"
-        redirectTo={`${origin}/auth/callback`}
+        redirectTo={redirectTo || undefined}
       />
       <div className="text-center text-sm">
         <span className="text-slate-500">Du hast noch kein Konto? </span>

@@ -46,9 +46,11 @@ export default async function BerichtePage() {
                     <span>•</span>
                     <span className="flex items-center gap-1">
                       <Calendar className="h-4 w-4" />
-                      {format(new Date(report.created_at), "dd.MM.yyyy", {
-                        locale: de,
-                      })}
+                      {report.created_at
+                        ? format(new Date(report.created_at), "dd.MM.yyyy", {
+                            locale: de,
+                          })
+                        : "–"}
                     </span>
                   </div>
 
