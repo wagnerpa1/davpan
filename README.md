@@ -5,7 +5,7 @@ Webanwendung zur Verwaltung von Touren, Teilnehmern, Eltern-/Kind-Profilen, Doku
 ## Kurzstatus
 
 - Framework: Next.js 16.1.6
-- Runtime im Projekt aktuell: `webpack` (über npm scripts)
+- Runtime im Projekt aktuell: `turbopack` (über npm scripts)
 - Backend: Supabase (Auth + Postgres)
 - PWA: Serwist integriert
 - Sicherheitsbericht: siehe `sicherheit.md`
@@ -24,7 +24,7 @@ Webanwendung zur Verwaltung von Touren, Teilnehmern, Eltern-/Kind-Profilen, Doku
 | 4 | `src/app/berichte/page.tsx` | `new Date(report.created_at)` ohne Null-Guard | Optional-Chaining mit Fallback `"–"` |
 | 5 | `src/components/auth/LoginForm.tsx` | Hydration-Mismatch: `origin`-State leer beim SSR, führt zu leerem `redirectTo` | State zu `redirectTo` umbenannt, `window`-Zugriff sicher nur im `useEffect` |
 | 6 | `src/app/actions/tour-management.ts` | `syncTourStatuses()` feuert DB-Write bei jedem Page-Request (Race Condition, unnötige Writes) | `React.cache()` für Request-Dedup + 60s In-Memory-Throttle |
-| 7 | `next.config.ts` | `turbopack: {}` im Config-Objekt trotz `--webpack`-Build-Flag (Konfigurations-Konflikt) | Entfernt; webpack-only Warnung via `exprContextCritical: false` unterdrückt |
+| 7 | `next.config.ts` | Service-Worker-Scope-Fehler bei `/serwist/sw.js` + Scope `/` | `Service-Worker-Allowed: /` Header gesetzt, Root-Scope stabil registrierbar |
 | 8 | `package.json` | `@supabase/auth-helpers-nextjs@0.15.0` (deprecated, nirgends importiert) | Entfernt |
 | 9 | `package.json` | `uuid@13.0.0` + `@types/uuid` (nirgends genutzt) | Entfernt |
 
@@ -130,7 +130,7 @@ npm run start
 - Offline-Seite: `src/app/~offline/page.tsx`
 
 Aktuell ist ein Offline-Fallback auf `"/~offline"` definiert.  
-Precache umfasst Startseite, Tourenseite und Offline-Seite.
+Precache umfasst `"/login"` und `"/~offline"` (bewusst keine dynamischen Start-/Tourseiten).
 
 ---
 
@@ -153,7 +153,7 @@ Einziger offener Punkt:
 
 ## Bekannte Laufzeit-Hinweise
 
-- Die `browserslist`-Warnung (`Critical dependency`) aus `@serwist/turbopack` ist ein bekanntes Paket-Problem und hat keine Auswirkung auf die Funktionalität. Sie wird per `exprContextCritical: false` in `next.config.ts` unterdrückt.
+- Die `browserslist`-Warnung (`Critical dependency`) aus `@serwist/turbopack` ist ein bekanntes Paket-Thema und aktuell nur ein Warning, kein Build-Blocker.
 - Serwist ist im Development-Modus deaktiviert; PWA-Checks immer auch im Production-Run validieren.
 
 ---

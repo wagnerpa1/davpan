@@ -291,7 +291,11 @@ export default async function RootLayout({
       <body
         className={`${GeistSans.variable} ${GeistMono.variable} flex min-h-screen flex-col antialiased`}
       >
-        <SerwistProvider swUrl="/serwist/sw.js">
+        <SerwistProvider
+          swUrl="/serwist/sw.js"
+          register={process.env.NODE_ENV === "production"}
+          options={{ scope: "/" }}
+        >
           {user && <Header userRole={userRole} />}
           <main className="flex-1 pb-16 md:pb-0">{children}</main>
           {user && <BottomNavigation userRole={userRole} />}
