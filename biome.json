@@ -13,7 +13,9 @@
       "!.next",
       "!dist",
       "!build",
+      "!public/serwist",
       "!index.html",
+      "!report.json",
       "!script.js",
       "!styles.css"
     ]

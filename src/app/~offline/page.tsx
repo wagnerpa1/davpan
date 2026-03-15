@@ -25,9 +25,9 @@ export default function OfflinePage() {
       </div>
 
       <p className="mt-6 text-xs text-slate-500">
-        Sobald du wieder online bist, werden die Inhalte automatisch aktualisiert.
+        Sobald du wieder online bist, werden die Inhalte automatisch
+        aktualisiert.
       </p>
     </main>
   );
 }
-

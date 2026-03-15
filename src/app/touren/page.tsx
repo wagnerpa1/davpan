@@ -5,6 +5,7 @@ import type { ComponentProps } from "react";
 import { syncTourStatuses } from "@/app/actions/tour-management";
 import { TourCard } from "@/components/tours/TourCard";
 import { TourFilters } from "@/components/tours/TourFilters";
+import { getCurrentUserProfile } from "@/lib/auth";
 import { createClient } from "@/utils/supabase/server";
 
 type TourCardItem = ComponentProps<typeof TourCard>["tour"];
@@ -20,18 +21,16 @@ export default async function TourenPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const supabase = await createClient();
-  const params = await searchParams;
+  const [supabase, params, authContext] = await Promise.all([
+    createClient(),
+    searchParams,
+    getCurrentUserProfile(),
+  ]);
 
   // Sync statuses before fetching
   await syncTourStatuses();
 
-  // Auth check – internal area requires login
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-  if (userError || !user) {
+  if (!authContext.user) {
     redirect("/login");
   }
 
@@ -56,10 +55,10 @@ export default async function TourenPage({
   ) as string[];
 
   const { data: guides } = await supabase
-      .from("profiles")
-      .select("id, full_name")
-      .in("role", ["guide", "admin"])
-      .order("full_name");
+    .from("profiles")
+    .select("id, full_name")
+    .in("role", ["guide", "admin"])
+    .order("full_name");
 
   // Build query
   let query = supabase
@@ -92,15 +91,7 @@ export default async function TourenPage({
   }
 
   // Check if user is logged in for "Create" button (session already fetched above)
-  let userRole = null;
-  if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-    userRole = profile?.role;
-  }
+  const userRole = authContext.role;
   const canCreate = userRole === "guide" || userRole === "admin";
 
   // Apply in-memory filters (Guide & Availability) and Sorting (Capacity)

@@ -16,6 +16,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DeleteTourButton } from "@/components/tours/DeleteTourButton";
 import { TourRegistrationSection } from "@/components/tours/TourRegistrationSection";
+import { getCurrentUserProfile } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/server";
 
@@ -101,7 +102,8 @@ const statusLabel = (status: string) => {
 };
 
 const getMedicalNotesTitle = (reg: TourParticipant): string | undefined => {
-  const notes = reg.child_profiles?.medical_notes ?? reg.profiles?.medical_notes;
+  const notes =
+    reg.child_profiles?.medical_notes ?? reg.profiles?.medical_notes;
   return notes ?? undefined;
 };
 
@@ -149,37 +151,28 @@ export default async function TourDetailPage({
   if (error || !tour) notFound();
   const tourData = tour as typeof tour & TourDetailUiState;
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-  const isLoggedIn = !userError && !!user;
+  const authContext = await getCurrentUserProfile();
+  const isLoggedIn = !!authContext.user;
 
   const { data: tmData } = await supabase
     .from("tour_materials")
     .select("material_id, materials(id, name)")
     .eq("tour_id", id);
   const availableMaterials =
-    tmData?.flatMap((tm) => ((tm as TourMaterialRow).materials ?? [])) || [];
+    tmData?.flatMap((tm) => (tm as TourMaterialRow).materials ?? []) || [];
 
   let childrenProfiles: ChildProfileOption[] = [];
   let userRegistrations: UserRegistration[] = [];
   let userBirthdate: string | null = null;
 
-  if (isLoggedIn && user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role, birthdate")
-      .eq("id", user.id)
-      .single();
+  if (authContext.user) {
+    userBirthdate = authContext.birthdate;
 
-    userBirthdate = profile?.birthdate || null;
-
-    if (profile?.role === "parent") {
+    if (authContext.role === "parent") {
       const { data: cData } = await supabase
         .from("child_profiles")
         .select("id, full_name")
-        .eq("parent_id", user.id);
+        .eq("parent_id", authContext.user.id);
       childrenProfiles = cData || [];
     }
 
@@ -187,15 +180,17 @@ export default async function TourDetailPage({
       .from("tour_participants")
       .select("id, user_id, child_profile_id, status, waitlist_position")
       .eq("tour_id", id)
-      .eq("user_id", user.id);
+      .eq("user_id", authContext.user.id);
     userRegistrations = rData || [];
 
-    const userRole = profile?.role;
+    const userRole = authContext.role;
     const isLead = tourData.tour_guides?.some(
-      (tg: TourGuide) => tg.profiles?.id === user.id,
+      (tg: TourGuide) => tg.profiles?.id === authContext.user?.id,
     );
     tourData.canManage =
-      userRole === "admin" || isLead || tourData.created_by === user.id;
+      userRole === "admin" ||
+      isLead ||
+      tourData.created_by === authContext.user.id;
     tourData.userRole = userRole;
   }
 
@@ -268,7 +263,11 @@ export default async function TourDetailPage({
                 <span className="opacity-70 font-normal">Leitung:</span>
                 {tour.tour_guides.map((tg: TourGuide, idx: number) => (
                   <span
-                    key={tg.user_id || tg.profiles?.id || `${tg.profiles?.full_name || "guide"}-${idx}`}
+                    key={
+                      tg.user_id ||
+                      tg.profiles?.id ||
+                      `${tg.profiles?.full_name || "guide"}-${idx}`
+                    }
                     className="bg-white/10 px-2 py-0.5 rounded-lg"
                   >
                     {tg.profiles?.full_name || "Tourenleitung"}

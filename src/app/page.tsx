@@ -1,32 +1,20 @@
 import { Calendar, LogOut } from "lucide-react";
 import { redirect } from "next/navigation";
 import { TourCard } from "@/components/tours/TourCard";
+import { getCurrentUserProfile } from "@/lib/auth";
 import { createClient } from "@/utils/supabase/server";
-import { syncTourStatuses } from "./actions/tour-management";
 
 export default async function Home() {
-  const supabase = await createClient();
+  const [{ fullName, user }, supabase] = await Promise.all([
+    getCurrentUserProfile(),
+    createClient(),
+  ]);
 
-  // Sync statuses lazily
-  await syncTourStatuses();
-
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
+  if (!user) {
     return redirect("/login");
   }
 
-  // Fetch active profile for personalization
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name")
-    .eq("id", user.id)
-    .single();
-
-  const displayName = profile?.full_name || user.email?.split("@")[0];
+  const displayName = fullName || user.email?.split("@")[0];
 
   // Fetch only the single next upcoming or currently running tour
   const today = new Date().toISOString().split("T")[0];

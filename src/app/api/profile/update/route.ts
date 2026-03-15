@@ -14,7 +14,10 @@ type ProfileUpdatePayload = Partial<{
 
 export async function POST(req: NextRequest) {
   if (!isSameOriginRequest(req)) {
-    return NextResponse.json({ error: "CSRF validation failed" }, { status: 403 });
+    return NextResponse.json(
+      { error: "CSRF validation failed" },
+      { status: 403 },
+    );
   }
 
   const supabase = await createClient();

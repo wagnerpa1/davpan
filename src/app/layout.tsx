@@ -5,6 +5,7 @@ import "./globals.css";
 import type React from "react";
 import { BottomNavigation } from "@/components/layout/BottomNavigation";
 import { Header } from "@/components/layout/Header";
+import { getCurrentUserProfile } from "@/lib/auth";
 import { SerwistProvider } from "./serwist";
 
 const APP_NAME = "JDAV Pfarrkirchen";
@@ -278,27 +279,12 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
-import { createClient } from "@/utils/supabase/server";
-
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  let userRole = null;
-  if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-    userRole = profile?.role;
-  }
+  const { role: userRole, user } = await getCurrentUserProfile();
 
   return (
     <html lang="de">

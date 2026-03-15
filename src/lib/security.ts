@@ -54,4 +54,3 @@ export function sanitizeNextPath(next: string | null): string {
     return "/";
   }
 }
-
