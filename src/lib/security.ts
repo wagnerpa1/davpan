@@ -1,34 +1,131 @@
 import type { NextRequest } from "next/server";
 
-function getExpectedOrigin(request: Request | NextRequest): string | null {
-  const host =
-    request.headers.get("x-forwarded-host") || request.headers.get("host");
-  if (!host) return null;
+function firstHeaderValue(value: string | null): string | null {
+  if (!value) {
+    return null;
+  }
 
-  const protocol = request.headers.get("x-forwarded-proto") || "https";
-  return `${protocol}://${host}`;
+  return (
+    value
+      .split(",")
+      .map((part) => part.trim())
+      .find(Boolean) || null
+  );
+}
+
+function toOrigin(value: string): string | null {
+  try {
+    return new URL(value).origin;
+  } catch {
+    return null;
+  }
+}
+
+function toOriginFromEnv(value: string | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+
+  const candidate = value.trim();
+  if (!candidate) {
+    return null;
+  }
+
+  const withProtocol = /^https?:\/\//i.test(candidate)
+    ? candidate
+    : `${
+        candidate.includes("localhost") || candidate.includes("127.0.0.1")
+          ? "http"
+          : "https"
+      }://${candidate}`;
+
+  return toOrigin(withProtocol);
+}
+
+function normalizeOrigin(origin: string): string {
+  return origin.replace(/\/+$/, "");
+}
+
+function getTrustedOriginsFromEnv(): Set<string> {
+  const trusted = new Set<string>();
+  const rawOrigins = process.env.CSRF_TRUSTED_ORIGINS;
+
+  if (!rawOrigins) {
+    return trusted;
+  }
+
+  for (const value of rawOrigins.split(",")) {
+    const origin = toOriginFromEnv(value);
+    if (origin) {
+      trusted.add(normalizeOrigin(origin));
+    }
+  }
+
+  return trusted;
+}
+
+function getExpectedOrigins(request: Request | NextRequest): Set<string> {
+  const expected = getTrustedOriginsFromEnv();
+
+  const siteOrigin = toOriginFromEnv(process.env.SITE_URL);
+  if (siteOrigin) {
+    expected.add(normalizeOrigin(siteOrigin));
+  }
+
+  const publicSiteOrigin = toOriginFromEnv(process.env.NEXT_PUBLIC_SITE_URL);
+  if (publicSiteOrigin) {
+    expected.add(normalizeOrigin(publicSiteOrigin));
+  }
+
+  const requestOrigin = toOrigin(request.url);
+  if (requestOrigin) {
+    expected.add(normalizeOrigin(requestOrigin));
+  }
+
+  const host = firstHeaderValue(request.headers.get("host"));
+  const forwardedHost = firstHeaderValue(
+    request.headers.get("x-forwarded-host"),
+  );
+  const forwardedProto = firstHeaderValue(
+    request.headers.get("x-forwarded-proto"),
+  );
+
+  if (host) {
+    const protocol =
+      forwardedProto || (host.includes("localhost") ? "http" : "https");
+    expected.add(normalizeOrigin(`${protocol}://${host}`));
+  }
+
+  if (forwardedHost) {
+    const protocol = forwardedProto || "https";
+    expected.add(normalizeOrigin(`${protocol}://${forwardedHost}`));
+  }
+
+  return expected;
 }
 
 export function isSameOriginRequest(request: Request | NextRequest): boolean {
-  const expectedOrigin = getExpectedOrigin(request);
-  if (!expectedOrigin) return false;
+  const expectedOrigins = getExpectedOrigins(request);
+  if (expectedOrigins.size === 0) return false;
 
   const originHeader = request.headers.get("origin");
   if (originHeader) {
-    try {
-      return new URL(originHeader).origin === expectedOrigin;
-    } catch {
+    const origin = toOrigin(originHeader);
+    if (!origin) {
       return false;
     }
+
+    return expectedOrigins.has(normalizeOrigin(origin));
   }
 
   const refererHeader = request.headers.get("referer");
   if (refererHeader) {
-    try {
-      return new URL(refererHeader).origin === expectedOrigin;
-    } catch {
+    const refererOrigin = toOrigin(refererHeader);
+    if (!refererOrigin) {
       return false;
     }
+
+    return expectedOrigins.has(normalizeOrigin(refererOrigin));
   }
 
   return false;
