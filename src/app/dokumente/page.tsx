@@ -1,5 +1,7 @@
-import { Download, File } from "lucide-react";
+import { Download, File, Settings } from "lucide-react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getCurrentUserProfile } from "@/lib/auth";
 import { createClient } from "@/utils/supabase/server";
 
 interface DocumentItem {
@@ -12,11 +14,9 @@ interface DocumentItem {
 export default async function DokumentePage() {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-  if (userError || !user) {
+  const authContext = await getCurrentUserProfile();
+
+  if (!authContext.user) {
     redirect("/login");
   }
 
@@ -38,13 +38,23 @@ export default async function DokumentePage() {
 
   return (
     <div className="container mx-auto max-w-3xl px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-          Dokumente & Downloads
-        </h1>
-        <p className="mt-2 text-slate-600">
-          Wichtige Formulare und Leitfäden der Sektion.
-        </p>
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+            Dokumente & Downloads
+          </h1>
+          <p className="mt-2 text-slate-600">
+            Wichtige Formulare und Leitfäden der Sektion.
+          </p>
+        </div>
+        {authContext.role === "admin" && (
+          <Link
+            href="/admin/dokumente"
+            className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-4 py-2 rounded-xl flex items-center gap-2 transition shadow-sm border border-slate-200"
+          >
+            <Settings className="h-4 w-4 text-jdav-green" /> Verwalten
+          </Link>
+        )}
       </div>
 
       <div className="space-y-10">

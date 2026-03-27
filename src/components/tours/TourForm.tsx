@@ -1,9 +1,10 @@
 "use client";
 
-import { Calendar, Info, Mountain, Users, X } from "lucide-react";
+import { Calendar, Info, Mountain, Package, Users, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -14,6 +15,10 @@ interface TourFormGuide {
   profiles?: {
     full_name?: string | null;
   } | null;
+}
+
+interface TourFormMaterial {
+  material_id: string;
 }
 
 interface TourFormInitialData {
@@ -36,6 +41,8 @@ interface TourFormInitialData {
   cost_info?: string;
   requirements?: string;
   tour_guides?: TourFormGuide[];
+  tour_materials?: TourFormMaterial[];
+  resource_bookings?: { resource_id: string }[];
 }
 
 interface TourFormProps {
@@ -44,6 +51,9 @@ interface TourFormProps {
   isLoading?: boolean;
   guides?: { id: string; full_name: string }[];
   currentUser?: { id: string; full_name: string };
+  availableMaterials?: { id: string; name: string; size: string | null }[];
+  availableResources?: { id: string; name: string }[];
+  tourGroups?: { id: string; group_name: string }[];
 }
 
 export function TourForm({
@@ -52,6 +62,9 @@ export function TourForm({
   isLoading,
   guides,
   currentUser,
+  availableMaterials = [],
+  availableResources = [],
+  tourGroups = [],
 }: TourFormProps) {
   const router = useRouter();
 
@@ -71,6 +84,14 @@ export function TourForm({
       return [{ id: currentUser.id, name: currentUser.full_name }];
     }
 
+    return [];
+  });
+
+  // State for selected resources
+  const [selectedResources, setSelectedResources] = useState<string[]>(() => {
+    if (initialData?.resource_bookings) {
+      return initialData.resource_bookings.map((rb) => rb.resource_id);
+    }
     return [];
   });
 
@@ -100,9 +121,25 @@ export function TourForm({
 
   return (
     <form action={onSubmit} className="space-y-8">
-      {/* Hidden inputs for selected guides to ensure they are sent with FormData */}
+      {/* Hidden inputs for selected guides/materials/resources to ensure they are sent with FormData */}
       {selectedGuides.map((g) => (
         <input key={g.id} type="hidden" name="guide_ids" value={g.id} />
+      ))}
+      {initialData?.tour_materials?.map((m) => (
+        <input
+          key={`init-m-${m.material_id}`}
+          type="hidden"
+          name="initial_material_ids"
+          value={m.material_id}
+        />
+      ))}
+      {selectedResources.map((rid) => (
+        <input
+          key={`res-${rid}`}
+          type="hidden"
+          name="resource_ids"
+          value={rid}
+        />
       ))}
 
       {/* Basic Info */}
@@ -148,12 +185,15 @@ export function TourForm({
               <select
                 id="group"
                 name="group"
-                defaultValue={initialData?.group || "general"}
+                defaultValue={initialData?.group || ""}
                 className="mt-1 flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-jdav-green"
               >
-                <option value="general">Allgemein</option>
-                <option value="family">Familie</option>
-                <option value="youth">Jugend</option>
+                <option value="">-- Keine spezifiziert --</option>
+                {tourGroups.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.group_name}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
@@ -293,6 +333,105 @@ export function TourForm({
           </div>
         </div>
       </div>
+
+      {/* Materials Section */}
+      <div className="space-y-4 rounded-2xl bg-white p-6 shadow-sm border border-slate-100">
+        <h3 className="text-lg font-bold flex items-center gap-2 text-slate-900 border-b border-slate-50 pb-2">
+          <Package className="h-5 w-5 text-jdav-green" /> Ausrüstungsverleih
+        </h3>
+        <p className="text-xs text-slate-500 mb-2">
+          Wähle Materialien aus dem Bestand, die Teilnehmer für diese Tour
+          direkt mitbuchen können.
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+          {availableMaterials.length > 0 ? (
+            availableMaterials.map((material) => {
+              const isSelected =
+                initialData?.tour_materials?.some(
+                  (tm) => tm.material_id === material.id,
+                ) || false;
+              return (
+                <label
+                  key={material.id}
+                  className="flex items-start gap-3 p-3 rounded-xl border border-slate-200 cursor-pointer hover:border-jdav-green hover:bg-jdav-green/5 transition-colors has-[:checked]:border-jdav-green has-[:checked]:bg-jdav-green/10"
+                >
+                  <input
+                    type="checkbox"
+                    name="material_ids"
+                    value={material.id}
+                    defaultChecked={isSelected}
+                    className="mt-1 h-4 w-4 rounded border-slate-300 text-jdav-green focus:ring-jdav-green"
+                  />
+                  <div>
+                    <div className="font-bold text-sm text-slate-900 leading-tight">
+                      {material.name}
+                    </div>
+                    {material.size && (
+                      <div className="text-[10px] text-slate-500 mt-0.5">
+                        Größen: {material.size}
+                      </div>
+                    )}
+                  </div>
+                </label>
+              );
+            })
+          ) : (
+            <p className="text-sm text-slate-500 italic">
+              Kein Material im Bestand gefunden.
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Resources */}
+      {availableResources.length > 0 && (
+        <div className="space-y-4 rounded-2xl bg-white p-6 shadow-sm border border-slate-100">
+          <h3 className="text-lg font-bold flex items-center gap-2 text-slate-900 border-b border-slate-50 pb-2">
+            <Package className="h-5 w-5 text-jdav-green" /> Vereinsressourcen
+          </h3>
+          <p className="text-sm text-slate-500 mb-2">
+            Wähle Ressourcen (z.B. Vereinsbus), die du für diese Tour zwingend
+            benötigst. Die Reservierung erfolgt automatisch für den
+            Tour-Zeitraum, sofern verfügbar.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 max-h-48 overflow-y-auto p-1">
+            {availableResources.map((res) => {
+              const isSelected = selectedResources.includes(res.id);
+              return (
+                <label
+                  key={res.id}
+                  className={cn(
+                    "flex items-center gap-3 rounded-xl border p-3 cursor-pointer transition-all hover:bg-slate-50",
+                    isSelected
+                      ? "border-jdav-green bg-jdav-green/5 ring-1 ring-jdav-green"
+                      : "border-slate-200",
+                  )}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={(e) => {
+                      if (e.target.checked)
+                        setSelectedResources([...selectedResources, res.id]);
+                      else
+                        setSelectedResources(
+                          selectedResources.filter((id) => id !== res.id),
+                        );
+                    }}
+                    className="h-4 w-4 rounded border-slate-300 text-jdav-green focus:ring-jdav-green cursor-pointer"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold text-slate-800">
+                      {res.name}
+                    </span>
+                  </div>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Timing & Location */}
       <div className="space-y-4 rounded-2xl bg-white p-6 shadow-sm border border-slate-100">

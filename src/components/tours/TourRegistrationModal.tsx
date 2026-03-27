@@ -6,13 +6,15 @@ import { useEffect } from "react";
 import { TourRegistrationForm } from "./TourRegistrationForm";
 
 interface Material {
-  id: string;
+  id: string; // material_type_id
   name: string;
+  sizes: string[];
 }
 
 interface Child {
   id: string;
   full_name: string;
+  birthdate: string;
 }
 
 interface TourRegistrationModalProps {
@@ -20,6 +22,8 @@ interface TourRegistrationModalProps {
   onClose: () => void;
   tourId: string;
   tourTitle: string;
+  tourStartDate: string;
+  minAge: number | null;
   childrenProfiles: Child[];
   availableMaterials: Material[];
 }
@@ -29,6 +33,8 @@ export function TourRegistrationModal({
   onClose,
   tourId,
   tourTitle,
+  tourStartDate,
+  minAge,
   childrenProfiles,
   availableMaterials,
 }: TourRegistrationModalProps) {
@@ -80,6 +86,8 @@ export function TourRegistrationModal({
         <div className="p-6 max-h-[80vh] overflow-y-auto">
           <TourRegistrationForm
             tourId={tourId}
+            tourStartDate={tourStartDate}
+            minAge={minAge}
             childrenProfiles={childrenProfiles}
             availableMaterials={availableMaterials}
             onCancel={onClose}

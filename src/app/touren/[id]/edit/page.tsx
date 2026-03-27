@@ -1,6 +1,12 @@
 import { Edit } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
-import { getAvailableGuides, updateTour } from "@/app/actions/tour-management";
+import { getResources } from "@/app/actions/admin-resources";
+import {
+  getAvailableGuides,
+  getAvailableMaterials,
+  getTourGroups,
+  updateTour,
+} from "@/app/actions/tour-management";
 import { TourForm } from "@/components/tours/TourForm";
 import { createClient } from "@/utils/supabase/server";
 
@@ -21,18 +27,30 @@ export default async function EditTourPage({
     redirect("/login");
   }
 
-  // Fetch tour, profile and available guides in parallel
-  const [tourRes, profileRes, guides] = await Promise.all([
+  // Fetch tour, profile, materials and available guides in parallel
+  const [
+    tourRes,
+    profileRes,
+    guides,
+    availableMaterials,
+    tourGroups,
+    availableResources,
+  ] = await Promise.all([
     supabase
       .from("tours")
       .select(`
         *,
-        tour_guides (user_id)
+        tour_guides (user_id),
+        tour_material_requirements (material_type_id),
+        resource_bookings (resource_id)
       `)
       .eq("id", id)
       .single(),
     supabase.from("profiles").select("role").eq("id", user.id).single(),
     getAvailableGuides(),
+    getAvailableMaterials(),
+    getTourGroups(),
+    getResources(),
   ]);
 
   if (!tourRes.data) {
@@ -85,6 +103,9 @@ export default async function EditTourPage({
         initialData={tour}
         onSubmit={updateTourWithId}
         guides={guides}
+        availableMaterials={availableMaterials}
+        availableResources={availableResources}
+        tourGroups={tourGroups}
       />
     </div>
   );

@@ -9,12 +9,14 @@ interface TourFiltersProps {
   categories: string[];
   difficulties: string[];
   guides: { id: string; full_name: string }[];
+  tourGroups: { id: string; group_name: string }[];
 }
 
 export function TourFilters({
   categories,
   difficulties,
   guides,
+  tourGroups,
 }: TourFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -163,9 +165,11 @@ export function TourFilters({
                 className="w-full rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-jdav-green"
               >
                 <option value="">Alle Gruppen</option>
-                <option value="general">Allgemein</option>
-                <option value="family">Familie</option>
-                <option value="youth">Jugend</option>
+                {tourGroups.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.group_name}
+                  </option>
+                ))}
               </select>
             </div>
 

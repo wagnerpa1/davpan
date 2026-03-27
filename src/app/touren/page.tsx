@@ -60,6 +60,11 @@ export default async function TourenPage({
     .in("role", ["guide", "admin"])
     .order("full_name");
 
+  const { data: tourGroups } = await supabase
+    .from("tour_groups")
+    .select("id, group_name")
+    .order("group_name");
+
   // Build query
   let query = supabase
     .from("tours")
@@ -74,6 +79,9 @@ export default async function TourenPage({
       tour_participants (
         id,
         status
+      ),
+      tour_groups!tours_group_fkey (
+        group_name
       )
     `)
     .neq("status", "completed"); // Only show active tours
@@ -154,6 +162,7 @@ export default async function TourenPage({
         categories={categories}
         difficulties={difficulties}
         guides={guides || []}
+        tourGroups={tourGroups || []}
       />
 
       <div className="space-y-4">

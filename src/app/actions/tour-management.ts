@@ -4,13 +4,99 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { createClient } from "@/utils/supabase/server";
+import { checkAndBookResource } from "./admin-resources";
+
+export interface TourGuide {
+  user_id: string;
+  profiles?: {
+    id: string;
+    full_name: string | null;
+  } | null;
+}
+
+export interface TourParticipant {
+  id: string;
+  status: string;
+  user_id: string;
+  child_profile_id: string | null;
+  created_at?: string | null;
+  profiles?: {
+    full_name: string | null;
+    phone: string | null;
+    emergency_phone: string | null;
+    medical_notes: string | null;
+  } | null;
+  child_profiles?: {
+    full_name: string | null;
+    medical_notes: string | null;
+  } | null;
+}
+
+interface MaterialTypeWithInventory {
+  id: string;
+  name: string;
+  material_inventory: Array<{ size: string | null }> | null;
+}
+
+type TourUpdatePayload = {
+  [K in
+    | "title"
+    | "description"
+    | "category"
+    | "group"
+    | "target_area"
+    | "start_date"
+    | "end_date"
+    | "meeting_point"
+    | "meeting_time"
+    | "difficulty"
+    | "elevation"
+    | "distance"
+    | "duration_hours"
+    | "max_participants"
+    | "cost_info"
+    | "requirements"
+    | "status"
+    | "min_age"]?: string | number | null;
+};
+
+export async function getTourGroups() {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("tour_groups")
+    .select("id, group_name")
+    .order("group_name");
+  return data || [];
+}
+
+export async function getAvailableMaterials() {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("material_types")
+    .select(`
+      id, 
+      name,
+      material_inventory (size)
+    `)
+    .order("name");
+
+  return ((data || []) as MaterialTypeWithInventory[]).map((mt) => ({
+    id: mt.id,
+    name: mt.name,
+    size:
+      mt.material_inventory
+        ?.map((i) => i.size)
+        .filter(Boolean)
+        .join(", ") || "Universal",
+  }));
+}
 
 export async function getAvailableGuides() {
   const supabase = await createClient();
   const { data } = await supabase
     .from("profiles")
     .select("id, full_name")
-    .or("role.eq.guide,role.eq.admin")
+    .in("role", ["guide", "admin"])
     .order("full_name");
   return data || [];
 }
@@ -24,7 +110,7 @@ export async function createTour(formData: FormData) {
   } = await supabase.auth.getUser();
 
   if (userError || !user) {
-    throw new Error("Unauthorized");
+    redirect("/login");
   }
 
   // Check role
@@ -41,6 +127,7 @@ export async function createTour(formData: FormData) {
   const title = formData.get("title")?.toString();
   const description = formData.get("description")?.toString();
   const category = formData.get("category")?.toString();
+  const group = formData.get("group")?.toString() || null;
   const target_area = formData.get("target_area")?.toString();
   const start_date = formData.get("start_date")?.toString();
   const end_date = formData.get("end_date")?.toString() || start_date;
@@ -62,8 +149,10 @@ export async function createTour(formData: FormData) {
   const requirements = formData.get("requirements")?.toString();
   const status = formData.get("status")?.toString() || "planning";
 
-  // Get all selected guides
+  // Get all selected guides & materials
   const guideIds = formData.getAll("guide_ids") as string[];
+  const materialIds = formData.getAll("material_ids") as string[];
+  const resourceIds = formData.getAll("resource_ids") as string[];
 
   const { data: tour, error } = await supabase
     .from("tours")
@@ -71,6 +160,7 @@ export async function createTour(formData: FormData) {
       title,
       description,
       category,
+      group,
       target_area,
       start_date,
       end_date,
@@ -110,6 +200,28 @@ export async function createTour(formData: FormData) {
     });
   }
 
+  // Insert materials (tour_material_requirements)
+  if (materialIds.length > 0) {
+    const materialInserts = materialIds.map((mid) => ({
+      tour_id: tour.id,
+      material_type_id: mid,
+    }));
+    await supabase.from("tour_material_requirements").insert(materialInserts);
+  }
+
+  // Insert resource bookings
+  if (resourceIds.length > 0 && start_date) {
+    for (const resId of resourceIds) {
+      await checkAndBookResource(
+        resId,
+        tour.id,
+        start_date,
+        end_date || start_date,
+        user.id,
+      );
+    }
+  }
+
   revalidatePath("/touren");
   redirect(`/touren/${tour.id}`);
 }
@@ -121,43 +233,9 @@ export async function updateTour(tourId: string, formData: FormData) {
     data: { user },
     error: userError,
   } = await supabase.auth.getUser();
+  if (userError || !user) throw new Error("Unauthorized");
 
-  if (userError || !user) {
-    throw new Error("Unauthorized");
-  }
-
-  // Check role and permissions
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile) throw new Error("Profile not found");
-
-  // Admins can update anything. Guides only if they are assigned.
-  if (profile.role !== "admin") {
-    const { data: isGuide } = await supabase
-      .from("tour_guides")
-      .select("id")
-      .eq("tour_id", tourId)
-      .eq("user_id", user.id)
-      .single();
-
-    if (!isGuide && profile.role !== "guide") {
-      // Check if they are the creator as fallback
-      const { data: tourCheck } = await supabase
-        .from("tours")
-        .select("created_by")
-        .eq("id", tourId)
-        .single();
-      if (tourCheck?.created_by !== user.id) {
-        throw new Error("Forbidden: You are not authorized to edit this tour");
-      }
-    }
-  }
-
-  const payload: Record<string, string | number | null> = {};
+  const payload: TourUpdatePayload = {};
   const fields = [
     "title",
     "description",
@@ -176,7 +254,7 @@ export async function updateTour(tourId: string, formData: FormData) {
     "cost_info",
     "requirements",
     "status",
-  ];
+  ] as const;
 
   fields.forEach((field) => {
     const val = formData.get(field);
@@ -192,7 +270,7 @@ export async function updateTour(tourId: string, formData: FormData) {
     }
   });
 
-  // min_age – only include if the column exists (added via migration)
+  // min_age
   const minAgeRaw = formData.get("min_age")?.toString();
   if (minAgeRaw !== undefined && minAgeRaw !== null) {
     payload.min_age = minAgeRaw ? parseInt(minAgeRaw, 10) || null : null;
@@ -204,25 +282,51 @@ export async function updateTour(tourId: string, formData: FormData) {
     .eq("id", tourId);
 
   if (error) {
-    console.error(
-      "Error updating tour — payload sent:",
-      JSON.stringify(payload, null, 2),
-    );
-    console.error("Supabase error details:", error);
+    console.error("Error updating tour:", error);
     throw new Error(`Failed to update tour: ${error.message}`);
   }
 
   // Sync guides
   const guideIds = formData.getAll("guide_ids") as string[];
   if (guideIds.length > 0) {
-    // Delete existing
     await supabase.from("tour_guides").delete().eq("tour_id", tourId);
-    // Insert new
     const guideInserts = guideIds.map((uid) => ({
       tour_id: tourId,
       user_id: uid,
     }));
     await supabase.from("tour_guides").insert(guideInserts);
+  }
+
+  // Sync materials
+  const materialIds = formData.getAll("material_ids") as string[];
+  await supabase
+    .from("tour_material_requirements")
+    .delete()
+    .eq("tour_id", tourId);
+  if (materialIds.length > 0) {
+    const materialInserts = materialIds.map((mid) => ({
+      tour_id: tourId,
+      material_type_id: mid,
+    }));
+    await supabase.from("tour_material_requirements").insert(materialInserts);
+  }
+
+  // Sync Resource Bookings
+  const resourceIds = formData.getAll("resource_ids") as string[];
+  await supabase.from("resource_bookings").delete().eq("tour_id", tourId);
+
+  const sd =
+    (typeof payload.start_date === "string" && payload.start_date) ||
+    formData.get("start_date")?.toString();
+  const edCandidate =
+    (typeof payload.end_date === "string" && payload.end_date) ||
+    formData.get("end_date")?.toString();
+  const ed = edCandidate || sd;
+
+  if (resourceIds.length > 0 && sd && ed) {
+    for (const resId of resourceIds) {
+      await checkAndBookResource(resId, tourId, sd, ed, user.id);
+    }
   }
 
   revalidatePath("/touren");
@@ -233,7 +337,6 @@ export async function updateTour(tourId: string, formData: FormData) {
 export async function deleteTour(tourId: string) {
   const supabase = await createClient();
 
-  // Similar check as update
   const {
     data: { user },
     error: userError,
@@ -264,7 +367,6 @@ export async function deleteTour(tourId: string) {
   redirect("/touren");
 }
 
-// Throttle: do not run DB-write more than once every 60 seconds process-wide.
 let _lastSyncTs = 0;
 
 async function _doSyncTourStatuses() {
@@ -289,12 +391,7 @@ async function _doSyncTourStatuses() {
     return { error: error.message };
   }
 
-  if (expiredTours && expiredTours.length > 0) {
-    revalidatePath("/touren");
-  }
-
   return { completedCount: expiredTours?.length || 0 };
 }
 
-// React cache() deduplicates within the same render pass (layout + page run together).
 export const syncTourStatuses = cache(_doSyncTourStatuses);

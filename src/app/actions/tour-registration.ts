@@ -16,23 +16,69 @@ export async function registerForTour(formData: FormData) {
 
   const tourId = formData.get("tourId") as string;
   const childId = formData.get("childId") as string | null;
-  const materials = formData.getAll("materials") as string[];
+  const materialsDataRaw = formData.get("materialsData") as string;
+  let materials: { material_type_id: string; size: string }[] = [];
+  try {
+    materials = materialsDataRaw ? JSON.parse(materialsDataRaw) : [];
+  } catch (e) {
+    console.warn("Could not parse materials JSON", e);
+  }
 
   if (!tourId) {
     return { error: "Tour ID fehlt." };
   }
 
-  // Prevent IDOR: child registrations are only allowed for children owned by the current user.
-  if (childId && childId !== "self") {
-    const { data: ownedChild, error: childError } = await supabase
-      .from("child_profiles")
-      .select("id")
-      .eq("id", childId)
-      .eq("parent_id", user.id)
-      .single();
+  // 1.5 Fetch Tour data for capacity and age checks
+  const { data: tour, error: tError } = await supabase
+    .from("tours")
+    .select("max_participants, status, start_date, end_date, min_age")
+    .eq("id", tourId)
+    .single();
 
-    if (childError || !ownedChild) {
-      return { error: "Ungültiges Kind-Profil für diese Anmeldung." };
+  if (tError || !tour) {
+    return { error: "Tour nicht gefunden." };
+  }
+
+  // 1.6 Age Check
+  if (tour.min_age && tour.start_date) {
+    let birthdate: string | null = null;
+    if (childId && childId !== "self") {
+      const { data: child } = await supabase
+        .from("child_profiles")
+        .select("birthdate, parent_id")
+        .eq("id", childId)
+        .single();
+
+      if (child && child.parent_id === user.id) {
+        birthdate = child.birthdate;
+      } else {
+        return { error: "Ungültiges Kind-Profil." };
+      }
+    } else {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("birthdate")
+        .eq("id", user.id)
+        .single();
+      birthdate = profile?.birthdate || null;
+    }
+
+    if (birthdate) {
+      const bDate = new Date(birthdate);
+      const sDate = new Date(tour.start_date);
+      let age = sDate.getFullYear() - bDate.getFullYear();
+      const m = sDate.getMonth() - bDate.getMonth();
+      if (m < 0 || (m === 0 && sDate.getDate() < bDate.getDate())) {
+        age--;
+      }
+
+      const isUnderMinAge = age < tour.min_age;
+      if (isUnderMinAge) {
+        // Registrierung bleibt bewusst möglich (Guide kann Ausnahme manuell prüfen/bestätigen).
+      }
+
+      // We allow the registration even if too young, but it will be pending/waitlisted
+      // The frontend shows a warning. The Guide decides eventually.
     }
   }
 
@@ -54,18 +100,7 @@ export async function registerForTour(formData: FormData) {
       return { error: "Für diese Tour bereits angemeldet." };
     }
 
-    // 3. Check tour capacity
-    const { data: tour, error: tError } = await supabase
-      .from("tours")
-      .select("max_participants, status")
-      .eq("id", tourId)
-      .single();
-
-    if (tError || !tour) {
-      return { error: "Tour nicht gefunden." };
-    }
-
-    // Get current count of active participants (pending or confirmed)
+    // 3. Check capacity
     const { count, error: cError } = await supabase
       .from("tour_participants")
       .select("*", { count: "exact", head: true })
@@ -82,7 +117,6 @@ export async function registerForTour(formData: FormData) {
     let waitlistPosition = null;
 
     if (isWaitlist) {
-      // Find current max waitlist position
       const { data: lastPos } = await supabase
         .from("tour_participants")
         .select("waitlist_position")
@@ -117,21 +151,64 @@ export async function registerForTour(formData: FormData) {
 
     // 5. Create material reservations
     if (materials.length > 0) {
-      const reservationData = materials.map((materialId) => ({
-        tour_id: tourId,
-        material_id: materialId,
-        user_id: user.id,
-        child_profile_id: childId && childId !== "self" ? childId : null,
-        quantity: 1,
-      }));
+      const reservationData = [];
+      const inventoryUpdates = [];
 
-      const { error: mError } = await supabase
-        .from("material_reservations")
-        .insert(reservationData);
+      for (const mReq of materials) {
+        // 5.1 Find first available inventory item for this type and size
+        const { data: invItem, error: invError } = await supabase
+          .from("material_inventory")
+          .select("id, quantity_available")
+          .eq("material_type_id", mReq.material_type_id)
+          .eq("size", mReq.size)
+          .gt("quantity_available", 0)
+          .limit(1)
+          .single();
 
-      if (mError) {
-        console.error("Material reservation failed:", mError);
-        // We don't fail the whole registration if materials fail, but log it
+        if (invError || !invItem) {
+          // If a requested material is not available, we fail the WHOLE reservation
+          // (or at least inform the user). The user said "materialreservierung funktioniert nicht".
+          // We'll return an error here to prevent partial success confusion.
+          return {
+            error: `Material in Größe "${mReq.size}" ist leider nicht mehr verfügbar.`,
+          };
+        }
+
+        reservationData.push({
+          tour_id: tourId,
+          material_inventory_id: invItem.id,
+          user_id: user.id,
+          child_profile_id: childId && childId !== "self" ? childId : null,
+          quantity: 1,
+          status: "reserved",
+          loan_date: tour.start_date || null,
+          return_date: tour.end_date || tour.start_date || null,
+        });
+
+        inventoryUpdates.push({
+          id: invItem.id,
+          new_quantity: invItem.quantity_available - 1,
+        });
+      }
+
+      if (reservationData.length > 0) {
+        // 5.2 Insert reservations
+        const { error: mError } = await supabase
+          .from("material_reservations")
+          .insert(reservationData);
+
+        if (mError) {
+          console.error("Material reservation failed:", mError);
+          return { error: "Fehler beim Reservieren der Materialien." };
+        }
+
+        // 5.3 Decrement inventory
+        for (const update of inventoryUpdates) {
+          await supabase
+            .from("material_inventory")
+            .update({ quantity_available: update.new_quantity })
+            .eq("id", update.id);
+        }
       }
     }
 
@@ -140,8 +217,8 @@ export async function registerForTour(formData: FormData) {
       success: true,
       status: status,
       message: isWaitlist
-        ? `Du wurdest auf die Warteliste (Position ${waitlistPosition}) gesetzt.`
-        : "Anmeldung erfolgreich! Ein Tourenleiter wird sie prüfen.",
+        ? `Warteliste (Position ${waitlistPosition})`
+        : "Erfolgreich angemeldet! Status: Offen",
     };
   } catch (err: unknown) {
     console.error("Registration error:", err);
@@ -159,7 +236,7 @@ export async function cancelRegistration(participantId: string) {
   // Get the registration to verify ownership and get tourId
   const { data: reg, error: regError } = await supabase
     .from("tour_participants")
-    .select("tour_id, user_id, status")
+    .select("tour_id, user_id, status, child_profile_id")
     .eq("id", participantId)
     .single();
 
@@ -172,6 +249,42 @@ export async function cancelRegistration(participantId: string) {
     .eq("id", participantId);
 
   if (error) return { error: "Absage fehlgeschlagen." };
+
+  // Cancel associated material reservations & restore inventory
+  const childProfileMatch = reg.child_profile_id
+    ? `child_profile_id.eq.${reg.child_profile_id}`
+    : `child_profile_id.is.null`;
+
+  const { data: resItems } = await supabase
+    .from("material_reservations")
+    .select("id, material_inventory_id")
+    .match({ tour_id: reg.tour_id, user_id: user.id })
+    .or(childProfileMatch)
+    .neq("status", "cancelled");
+
+  if (resItems && resItems.length > 0) {
+    for (const resItem of resItems) {
+      // Restore inventory
+      const { data: inv } = await supabase
+        .from("material_inventory")
+        .select("quantity_available")
+        .eq("id", resItem.material_inventory_id)
+        .single();
+
+      if (inv) {
+        await supabase
+          .from("material_inventory")
+          .update({ quantity_available: inv.quantity_available + 1 })
+          .eq("id", resItem.material_inventory_id);
+      }
+
+      // Update reservation status
+      await supabase
+        .from("material_reservations")
+        .update({ status: "cancelled" })
+        .eq("id", resItem.id);
+    }
+  }
 
   const tourId = reg.tour_id;
 

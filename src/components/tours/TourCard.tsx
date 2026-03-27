@@ -19,7 +19,7 @@ interface TourParticipant {
 interface TourCardData {
   id: string;
   title: string;
-  group?: string | null;
+  tour_groups?: { group_name: string | null } | null;
   category?: string | null;
   status: string;
   start_date?: string | null;
@@ -58,22 +58,13 @@ export function TourCard({ tour }: TourCardProps) {
             <div>
               <div className="mb-2 flex flex-wrap gap-2">
                 {/* Group comes FIRST */}
-                {tour.group && (
+                {tour.tour_groups?.group_name && (
                   <span
                     className={cn(
-                      "inline-block rounded-full px-2.5 py-0.5 text-xs font-bold uppercase tracking-tight",
-                      tour.group === "family"
-                        ? "bg-blue-100 text-blue-700"
-                        : tour.group === "youth"
-                          ? "bg-purple-100 text-purple-700"
-                          : "bg-slate-100 text-slate-500",
+                      "inline-block rounded-full px-2.5 py-0.5 text-xs font-bold uppercase tracking-tight bg-slate-100 text-slate-500",
                     )}
                   >
-                    {tour.group === "family"
-                      ? "Familie"
-                      : tour.group === "youth"
-                        ? "Jugend"
-                        : "Allgemein"}
+                    {tour.tour_groups.group_name}
                   </span>
                 )}
                 {/* Category */}

@@ -157,6 +157,12 @@ using (
     from public.tour_guides tg
     where tg.user_id = public.profiles.id
   )
+  or exists (
+    select 1
+    from public.tour_participants tp
+    where tp.user_id = public.profiles.id
+      and public.can_manage_tour(tp.tour_id)
+  )
 );
 
 create policy profiles_insert_self

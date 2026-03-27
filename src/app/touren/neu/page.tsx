@@ -1,12 +1,21 @@
 import { Mountain } from "lucide-react";
 import { redirect } from "next/navigation";
-import { createTour, getAvailableGuides } from "@/app/actions/tour-management";
+import { getResources } from "@/app/actions/admin-resources";
+import {
+  createTour,
+  getAvailableGuides,
+  getAvailableMaterials,
+  getTourGroups,
+} from "@/app/actions/tour-management";
 import { TourForm } from "@/components/tours/TourForm";
 import { createClient } from "@/utils/supabase/server";
 
 export default async function NewTourPage() {
   const supabase = await createClient();
   const guides = await getAvailableGuides();
+  const availableMaterials = await getAvailableMaterials();
+  const tourGroups = await getTourGroups();
+  const availableResources = await getResources();
 
   const {
     data: { user },
@@ -53,6 +62,9 @@ export default async function NewTourPage() {
         onSubmit={createTour}
         guides={guides}
         currentUser={currentUser}
+        availableMaterials={availableMaterials}
+        availableResources={availableResources}
+        tourGroups={tourGroups}
       />
     </div>
   );

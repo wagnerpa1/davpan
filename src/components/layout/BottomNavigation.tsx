@@ -43,11 +43,11 @@ export function BottomNavigation({ userRole }: BottomNavigationProps) {
       desc: "Formulare und Mitgliedsanträge",
     },
     {
-      name: "Material (Demnächst)",
+      name: "Material",
       href: "/material",
       icon: Package,
       desc: "Materialreservierung & Bestand",
-      disabled: true,
+      disabled: false,
     },
     {
       name: "Guide-Bereich",
@@ -57,11 +57,18 @@ export function BottomNavigation({ userRole }: BottomNavigationProps) {
       disabled: !canManage,
     },
     {
-      name: "Admin (Demnächst)",
-      href: "/admin",
+      name: "Ressourcen",
+      href: "/admin/resources",
+      icon: Compass, // Using Compass instead of MountainSnow if it's about overall scheduling
+      desc: "Vereinsbus & Kalender",
+      disabled: !canManage,
+    },
+    {
+      name: "Admin Material",
+      href: "/admin/material",
       icon: ShieldCheck,
-      desc: "Systemverwaltung",
-      disabled: true,
+      desc: "Systemverwaltung für Material",
+      disabled: !canManage,
     },
   ];
 

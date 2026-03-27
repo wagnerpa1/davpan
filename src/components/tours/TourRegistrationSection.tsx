@@ -15,12 +15,14 @@ import { cn } from "@/lib/utils";
 import { TourRegistrationModal } from "./TourRegistrationModal";
 
 interface Material {
-  id: string;
+  id: string; // material_type_id
   name: string;
+  sizes: string[];
 }
 interface Child {
   id: string;
   full_name: string;
+  birthdate: string;
 }
 interface Registration {
   id: string;
@@ -52,7 +54,7 @@ const statusConfig = {
     className: "text-green-700 bg-green-50 border-green-200",
   },
   pending: {
-    label: "Wartet auf Bestätigung",
+    label: "Offen",
     icon: Clock,
     className: "text-amber-700 bg-amber-50 border-amber-200",
   },
@@ -370,6 +372,8 @@ export function TourRegistrationSection({
         onClose={() => setIsModalOpen(false)}
         tourId={tourId}
         tourTitle={tourTitle}
+        tourStartDate={tourStartDate}
+        minAge={minAge}
         childrenProfiles={childrenProfiles}
         availableMaterials={availableMaterials}
       />

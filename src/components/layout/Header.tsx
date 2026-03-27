@@ -1,6 +1,6 @@
 "use client";
 
-import { Mountain } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
 interface HeaderProps {
@@ -12,11 +12,14 @@ export function Header({ userRole }: HeaderProps) {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white shadow-sm">
       <div className="container mx-auto flex h-16 items-center px-4">
-        <Link href="/" className="flex items-center gap-2">
-          <Mountain className="h-6 w-6 text-jdav-green" />
-          <span className="text-xl font-bold tracking-tight text-slate-900">
-            DAV <span className="text-jdav-green">Pfarrkirchen</span>
-          </span>
+        <Link href="/" className="flex items-center">
+          <Image
+            src="/JDAV-Logo-grün-ganz.svg"
+            alt="JDAV Pfarrkirchen Logo"
+            width={180}
+            height={48}
+            className="h-10 w-auto sm:h-12"
+          />
         </Link>
         <nav className="ml-8 hidden md:flex items-center space-x-6">
           <Link
@@ -43,6 +46,36 @@ export function Header({ userRole }: HeaderProps) {
           >
             Dokumente
           </Link>
+          <Link
+            href="/material"
+            className="text-sm font-medium text-slate-600 hover:text-jdav-green transition-colors"
+          >
+            Material
+          </Link>
+          {canManage && (
+            <Link
+              href="/admin/resources"
+              className="text-sm font-medium text-slate-600 hover:text-jdav-green transition-colors"
+            >
+              Ressourcen
+            </Link>
+          )}
+          {canManage && (
+            <Link
+              href="/admin/material"
+              className="text-sm font-medium text-slate-600 hover:text-jdav-green transition-colors"
+            >
+              Inventar
+            </Link>
+          )}
+          {userRole === "admin" && (
+            <Link
+              href="/admin/dokumente"
+              className="text-sm font-medium text-slate-600 hover:text-jdav-green transition-colors"
+            >
+              Dokumente-Admin
+            </Link>
+          )}
           {canManage && (
             <Link
               href="/guide/dashboard"
