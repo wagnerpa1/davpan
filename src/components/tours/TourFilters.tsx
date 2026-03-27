@@ -78,10 +78,15 @@ export function TourFilters({
         </button>
 
         <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto overflow-hidden">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">
+          <label
+            htmlFor="tour-sort"
+            className="text-[10px] font-bold text-slate-600 uppercase tracking-wider whitespace-nowrap"
+          >
             Sortierung:
-          </span>
+          </label>
           <select
+            id="tour-sort"
+            aria-label="Sortierung"
             value={currentSort}
             onChange={(e) => updateFilters({ sort: e.target.value })}
             className="flex-1 sm:flex-none max-w-50 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-jdav-green"
@@ -99,10 +104,15 @@ export function TourFilters({
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {/* Category */}
             <div className="space-y-2">
-              <p className="text-xs font-black uppercase tracking-widest text-slate-400">
+              <label
+                htmlFor="filter-category"
+                className="text-xs font-black uppercase tracking-widest text-slate-600"
+              >
                 Tour-Art
-              </p>
+              </label>
               <select
+                id="filter-category"
+                aria-label="Tour-Art"
                 value={currentCategory}
                 onChange={(e) => updateFilters({ category: e.target.value })}
                 className="w-full rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-jdav-green"
@@ -118,10 +128,15 @@ export function TourFilters({
 
             {/* Difficulty */}
             <div className="space-y-2">
-              <p className="text-xs font-black uppercase tracking-widest text-slate-400">
+              <label
+                htmlFor="filter-difficulty"
+                className="text-xs font-black uppercase tracking-widest text-slate-600"
+              >
                 Schwierigkeit
-              </p>
+              </label>
               <select
+                id="filter-difficulty"
+                aria-label="Schwierigkeit"
                 value={currentDifficulty}
                 onChange={(e) => updateFilters({ difficulty: e.target.value })}
                 className="w-full rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-jdav-green"
@@ -137,10 +152,15 @@ export function TourFilters({
 
             {/* Guide */}
             <div className="space-y-2">
-              <p className="text-xs font-black uppercase tracking-widest text-slate-400">
+              <label
+                htmlFor="filter-guide"
+                className="text-xs font-black uppercase tracking-widest text-slate-600"
+              >
                 Leitung
-              </p>
+              </label>
               <select
+                id="filter-guide"
+                aria-label="Leitung"
                 value={currentGuide}
                 onChange={(e) => updateFilters({ guide: e.target.value })}
                 className="w-full rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-jdav-green"
@@ -156,10 +176,15 @@ export function TourFilters({
 
             {/* Group */}
             <div className="space-y-2">
-              <p className="text-xs font-black uppercase tracking-widest text-slate-400">
+              <label
+                htmlFor="filter-group"
+                className="text-xs font-black uppercase tracking-widest text-slate-600"
+              >
                 Zielgruppe
-              </p>
+              </label>
               <select
+                id="filter-group"
+                aria-label="Zielgruppe"
                 value={currentGroup}
                 onChange={(e) => updateFilters({ group: e.target.value })}
                 className="w-full rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-jdav-green"
@@ -175,7 +200,7 @@ export function TourFilters({
 
             {/* Availability */}
             <div className="space-y-2">
-              <p className="text-xs font-black uppercase tracking-widest text-slate-400">
+              <p className="text-xs font-black uppercase tracking-widest text-slate-600">
                 Verfügbarkeit
               </p>
               <div className="flex flex-col gap-2">

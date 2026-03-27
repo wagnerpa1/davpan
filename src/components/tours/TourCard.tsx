@@ -61,14 +61,14 @@ export function TourCard({ tour }: TourCardProps) {
                 {tour.tour_groups?.group_name && (
                   <span
                     className={cn(
-                      "inline-block rounded-full px-2.5 py-0.5 text-xs font-bold uppercase tracking-tight bg-slate-100 text-slate-500",
+                      "inline-block rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold uppercase tracking-tight text-slate-700",
                     )}
                   >
                     {tour.tour_groups.group_name}
                   </span>
                 )}
                 {/* Category */}
-                <span className="inline-block rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600 capitalize">
+                <span className="inline-block rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium capitalize text-slate-700">
                   {tour.category}
                 </span>
                 {isFull && (
@@ -98,7 +98,7 @@ export function TourCard({ tour }: TourCardProps) {
             <div className="flex items-center gap-2 min-w-0">
               <MapPin className="h-4 w-4 text-jdav-green shrink-0" />
               <span className="truncate">
-                <span className="text-slate-400 mr-1">Ziel:</span>
+                <span className="mr-1 text-slate-600">Ziel:</span>
                 {tour.target_area || "n/a"}
               </span>
             </div>
@@ -114,7 +114,7 @@ export function TourCard({ tour }: TourCardProps) {
 
           {tour.tour_guides && tour.tour_guides.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
-              <span className="font-medium text-slate-400">Leitung:</span>
+              <span className="font-medium text-slate-600">Leitung:</span>
               {tour.tour_guides.map((tg) => (
                 <span key={tg.user_id}>{tg.profiles?.full_name}</span>
               ))}
@@ -126,7 +126,7 @@ export function TourCard({ tour }: TourCardProps) {
               className={cn(
                 "inline-flex rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset",
                 tour.status === "open"
-                  ? "bg-green-50 text-jdav-green-dark ring-green-600/20"
+                  ? "bg-green-100 text-green-800 ring-green-700/20"
                   : tour.status === "full"
                     ? "bg-amber-50 text-amber-800 ring-amber-600/20"
                     : tour.status === "completed"

@@ -62,7 +62,7 @@ export function LoginForm({ className }: { className?: string }) {
           className: {
             button: "font-medium shadow-sm transition-colors",
             input: "shadow-sm transition-colors",
-            label: "text-slate-700 font-medium",
+            label: "text-slate-800 font-semibold",
             message: "text-sm",
           },
         }}
@@ -101,7 +101,7 @@ export function LoginForm({ className }: { className?: string }) {
         <span className="text-slate-500">Du hast noch kein Konto? </span>
         <a
           href="/register"
-          className="font-medium text-jdav-green hover:underline"
+          className="font-medium text-jdav-green-dark hover:underline"
         >
           Registrieren
         </a>

@@ -150,7 +150,7 @@ export default async function TourenPage({
           <Link href="/touren/neu" className="w-full xs:w-auto">
             <button
               type="button"
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-jdav-green px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-jdav-green-dark shadow-sm"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-jdav-green-dark px-4 py-2 text-sm font-bold text-white shadow-sm transition-colors hover:bg-jdav-green"
             >
               Tour erstellen
             </button>

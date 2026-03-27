@@ -12,7 +12,7 @@ import {
   X,
 } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { updateParticipantStatus } from "@/app/actions/participant-management";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -81,6 +81,43 @@ export function ParticipantManagement({
   const [filter, setFilter] = useState<string>("all");
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
 
+  const counts = useMemo(() => {
+    let active = 0;
+    let confirmed = 0;
+    let waitlist = 0;
+    let cancelled = 0;
+
+    for (const participant of participants) {
+      if (participant.status === "cancelled") {
+        cancelled++;
+      } else {
+        active++;
+      }
+
+      if (participant.status === "confirmed") confirmed++;
+      if (participant.status === "waitlist") waitlist++;
+    }
+
+    return { active, confirmed, waitlist, cancelled };
+  }, [participants]);
+
+  const reservationsByParticipant = useMemo(() => {
+    const grouped = new Map<string, Reservation[]>();
+
+    for (const reservation of reservations) {
+      // Composite key hält parent/child-Reservierungen eindeutig und stabil.
+      const key = `${reservation.user_id}:${reservation.child_profile_id ?? "self"}`;
+      const bucket = grouped.get(key);
+      if (bucket) {
+        bucket.push(reservation);
+      } else {
+        grouped.set(key, [reservation]);
+      }
+    }
+
+    return grouped;
+  }, [reservations]);
+
   const filteredParticipants = participants.filter((p) => {
     if (filter === "all") return p.status !== "cancelled";
     return p.status === filter;
@@ -106,10 +143,8 @@ export function ParticipantManagement({
   };
 
   const getParticipantReservations = (p: Participant) => {
-    return reservations.filter(
-      (r) =>
-        r.user_id === p.user_id && r.child_profile_id === p.child_profile_id,
-    );
+    const key = `${p.user_id}:${p.child_profile_id ?? "self"}`;
+    return reservationsByParticipant.get(key) || [];
   };
 
   return (
@@ -150,8 +185,7 @@ export function ParticipantManagement({
                 <span className="font-bold text-slate-500 uppercase text-[10px] block">
                   Status
                 </span>{" "}
-                {participants.filter((p) => p.status === "confirmed").length} /{" "}
-                {maxParticipants || "∞"} Teilnehmer
+                {counts.confirmed} / {maxParticipants || "∞"} Teilnehmer
               </p>
               <p>
                 <span className="font-bold text-slate-500 uppercase text-[10px] block">
@@ -184,7 +218,7 @@ export function ParticipantManagement({
                 : "text-slate-500 hover:text-slate-700",
             )}
           >
-            Alle ({participants.filter((p) => p.status !== "cancelled").length})
+            Alle ({counts.active})
           </button>
           <button
             type="button"
@@ -196,8 +230,7 @@ export function ParticipantManagement({
                 : "text-slate-500 hover:text-slate-700",
             )}
           >
-            Bestätigt (
-            {participants.filter((p) => p.status === "confirmed").length})
+            Bestätigt ({counts.confirmed})
           </button>
           <button
             type="button"
@@ -209,8 +242,7 @@ export function ParticipantManagement({
                 : "text-slate-500 hover:text-slate-700",
             )}
           >
-            Warteliste (
-            {participants.filter((p) => p.status === "waitlist").length})
+            Warteliste ({counts.waitlist})
           </button>
         </div>
 

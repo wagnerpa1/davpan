@@ -10,7 +10,7 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Calendar,
   dateFnsLocalizer,
@@ -30,6 +30,20 @@ const localizer = dateFnsLocalizer({
   getDay,
   locales,
 });
+
+const calendarMessages = {
+  next: "Vor",
+  previous: "Zurück",
+  today: "Heute",
+  month: "Monat",
+  week: "Woche",
+  day: "Tag",
+  agenda: "Agenda",
+  date: "Datum",
+  time: "Zeit",
+  event: "Buchung",
+  noEventsInRange: "Keine Buchungen in diesem Zeitraum.",
+};
 
 interface ResourceCalendarProps {
   bookings: ResourceBooking[];
@@ -64,23 +78,44 @@ export function ResourceCalendar({ bookings }: ResourceCalendarProps) {
   const [selectedEvent, setSelectedEvent] =
     useState<CalendarBookingEvent | null>(null);
 
-  // Convert our DB bookings to react-big-calendar events
-  const events: CalendarBookingEvent[] = bookings.map((b) => ({
-    id: b.id,
-    title: b.tours ? `${b.tours.title}` : `${b.resources?.name} - Privat`,
-    start: new Date(b.start_date),
-    end: new Date(b.end_date),
-    allDay: true,
-    resource: b,
-  }));
+  const events: CalendarBookingEvent[] = useMemo(
+    () =>
+      bookings.map((booking) => ({
+        id: booking.id,
+        title: booking.tours
+          ? `${booking.tours.title}`
+          : `${booking.resources?.name} - Privat`,
+        start: new Date(booking.start_date),
+        end: new Date(booking.end_date),
+        allDay: true,
+        resource: booking,
+      })),
+    [bookings],
+  );
 
-  const handleSelectEvent = (event: CalendarBookingEvent) => {
+  const handleSelectEvent = useCallback((event: CalendarBookingEvent) => {
     setSelectedEvent(event);
-  };
+  }, []);
 
-  const closeModal = () => {
+  const closeModal = useCallback(() => {
     setSelectedEvent(null);
-  };
+  }, []);
+
+  const eventPropGetter = useCallback((event: CalendarBookingEvent) => {
+    const backgroundColor =
+      event.resource.status === "requested" ? "#f59e0b" : "#76a355";
+
+    return {
+      style: {
+        backgroundColor,
+        borderRadius: "8px",
+        border: "none",
+        display: "block",
+        fontSize: "12px",
+        fontWeight: "bold",
+      },
+    };
+  }, []);
 
   return (
     <div className="h-full relative">
@@ -96,35 +131,8 @@ export function ResourceCalendar({ bookings }: ResourceCalendarProps) {
         view={view}
         onView={(newView) => setView(newView)}
         onSelectEvent={handleSelectEvent}
-        messages={{
-          next: "Vor",
-          previous: "Zurück",
-          today: "Heute",
-          month: "Monat",
-          week: "Woche",
-          day: "Tag",
-          agenda: "Agenda",
-          date: "Datum",
-          time: "Zeit",
-          event: "Buchung",
-          noEventsInRange: "Keine Buchungen in diesem Zeitraum.",
-        }}
-        eventPropGetter={(event) => {
-          let backgroundColor = "#76a355"; // jdav-green
-          if (event.resource.status === "requested") {
-            backgroundColor = "#f59e0b"; // amber-500
-          }
-          return {
-            style: {
-              backgroundColor,
-              borderRadius: "8px",
-              border: "none",
-              display: "block",
-              fontSize: "12px",
-              fontWeight: "bold",
-            },
-          };
-        }}
+        messages={calendarMessages}
+        eventPropGetter={eventPropGetter}
       />
 
       {/* Detail Modal */}
