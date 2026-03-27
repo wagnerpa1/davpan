@@ -12,13 +12,13 @@ export function Header({ userRole }: HeaderProps) {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white shadow-sm">
       <div className="container mx-auto flex h-16 items-center px-4">
-        <Link href="/" className="flex items-center">
+        <Link href="/" className="motion-press flex items-center">
           <Image
             src="/JDAV-Logo-grün-ganz.svg"
             alt="JDAV Pfarrkirchen Logo"
             width={180}
             height={48}
-            className="h-10 w-auto sm:h-12"
+            className="h-10 w-auto transition-transform duration-200 hover:scale-[1.02] sm:h-12"
           />
         </Link>
         <nav className="ml-8 hidden md:flex items-center space-x-6">
@@ -99,7 +99,7 @@ export function Header({ userRole }: HeaderProps) {
           >
             <button
               type="submit"
-              className="text-sm font-medium text-red-600 hover:text-red-700 transition-colors"
+              className="motion-press text-sm font-medium text-red-600 transition-colors hover:text-red-700"
             >
               Abmelden
             </button>

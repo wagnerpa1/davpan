@@ -77,7 +77,7 @@ export function BottomNavigation({ userRole }: BottomNavigationProps) {
       {/* OVERLAY MENU for "Mehr" */}
       <div
         className={cn(
-          "fixed inset-0 z-60 bg-white/95 backdrop-blur-md transition-all duration-300 ease-in-out md:hidden",
+          "motion-enter fixed inset-0 z-60 bg-white/95 backdrop-blur-md transition-all duration-300 ease-in-out md:hidden",
           isMoreOpen
             ? "opacity-100 translate-y-0"
             : "opacity-0 translate-y-full pointer-events-none",
@@ -95,7 +95,7 @@ export function BottomNavigation({ userRole }: BottomNavigationProps) {
           <button
             type="button"
             onClick={() => setIsMoreOpen(false)}
-            className="rounded-full bg-slate-100 p-2.5 text-slate-600 transition-transform active:scale-90"
+            className="motion-press rounded-full bg-slate-100 p-2.5 text-slate-600 transition-transform active:scale-90"
           >
             <X className="h-6 w-6" />
           </button>
@@ -111,7 +111,7 @@ export function BottomNavigation({ userRole }: BottomNavigationProps) {
                   href={item.disabled ? "#" : item.href}
                   onClick={() => !item.disabled && setIsMoreOpen(false)}
                   className={cn(
-                    "flex items-center gap-4 rounded-2xl p-4 transition-all border border-transparent shadow-sm",
+                    "motion-card motion-press flex items-center gap-4 rounded-2xl border border-transparent p-4 shadow-sm transition-all",
                     item.disabled
                       ? "opacity-40 grayscale cursor-not-allowed bg-slate-50"
                       : "bg-white hover:bg-slate-50 active:scale-[0.98] active:bg-slate-100 border-slate-100",
@@ -144,7 +144,7 @@ export function BottomNavigation({ userRole }: BottomNavigationProps) {
             <form action="/auth/signout" method="POST">
               <button
                 type="submit"
-                className="group flex w-full items-center gap-4 rounded-2xl p-4 text-red-600 transition-all hover:bg-red-50 bg-white border border-red-50"
+                className="motion-card motion-press group flex w-full items-center gap-4 rounded-2xl border border-red-50 bg-white p-4 text-red-600 transition-all hover:bg-red-50"
               >
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-red-100/50 text-red-600 transition-colors group-hover:bg-red-100">
                   <LogOut className="h-6 w-6" strokeWidth={2.5} />
@@ -173,7 +173,7 @@ export function BottomNavigation({ userRole }: BottomNavigationProps) {
               href={item.href}
               onClick={() => setIsMoreOpen(false)}
               className={cn(
-                "group relative flex flex-col items-center justify-center px-1.5 py-1 transition-all duration-300",
+                "motion-press group relative flex flex-col items-center justify-center px-1.5 py-1 transition-all duration-300",
                 isActive
                   ? "text-jdav-green"
                   : "text-slate-400 hover:text-slate-600",
@@ -213,7 +213,7 @@ export function BottomNavigation({ userRole }: BottomNavigationProps) {
           type="button"
           onClick={() => setIsMoreOpen(!isMoreOpen)}
           className={cn(
-            "group relative flex flex-col items-center justify-center px-1.5 py-1 transition-all duration-300",
+            "motion-press group relative flex flex-col items-center justify-center px-1.5 py-1 transition-all duration-300",
             isMoreOpen
               ? "text-jdav-green"
               : "text-slate-400 hover:text-slate-600",

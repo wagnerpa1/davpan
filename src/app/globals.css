@@ -53,6 +53,58 @@ body {
   -webkit-tap-highlight-color: transparent; /* Youtube advice */
 }
 
+/* Subtle motion helpers for a smoother, app-like feel */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  @keyframes ui-fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .motion-enter {
+    animation: ui-fade-up 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .motion-card {
+    transition:
+      transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 180ms cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 180ms ease;
+    will-change: transform;
+  }
+
+  .motion-card:hover {
+    transform: translateY(-2px);
+  }
+
+  .motion-press {
+    transition: transform 120ms ease;
+  }
+
+  .motion-press:active {
+    transform: scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion-enter,
+  .motion-card,
+  .motion-press {
+    animation: none;
+    transition: none;
+    transform: none;
+  }
+}
+
 @media print {
   /* Hide UI elements */
   nav,
