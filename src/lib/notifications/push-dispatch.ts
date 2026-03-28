@@ -18,13 +18,13 @@ function configureWebPush() {
     return;
   }
 
-  const publicKey = process.env.VAPID_PUBLIC_KEY;
+  const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
   const privateKey = process.env.VAPID_PRIVATE_KEY;
   const subject = process.env.VAPID_SUBJECT || "mailto:admin@example.com";
 
   if (!publicKey || !privateKey) {
     console.warn(
-      "[Push] VAPID keys not configured (VAPID_PUBLIC_KEY or VAPID_PRIVATE_KEY missing). Push notifications disabled."
+      "[Push] VAPID keys not configured (NEXT_PUBLIC_VAPID_PUBLIC_KEY or VAPID_PRIVATE_KEY missing). Push notifications disabled."
     );
     pushDisabled = true;
     return;
@@ -159,7 +159,7 @@ export async function dispatchPushForNotification(input: PushDispatchInput) {
 
       console.debug(`[Push] Successfully sent to subscription ${sub.id}`);
 
-      await admin
+      await (admin as any)
         .from("push_subscriptions")
         .update({ last_used_at: new Date().toISOString() })
         .eq("id", sub.id);
@@ -178,7 +178,7 @@ export async function dispatchPushForNotification(input: PushDispatchInput) {
         console.log(
           `[Push] Disabling subscription ${sub.id} (endpoint no longer valid)`
         );
-        await admin
+        await (admin as any)
           .from("push_subscriptions")
           .update({ disabled_at: new Date().toISOString() })
           .eq("id", sub.id);
@@ -186,5 +186,10 @@ export async function dispatchPushForNotification(input: PushDispatchInput) {
     }
   }
 }
+
+
+
+
+
 
 

@@ -217,11 +217,11 @@ export async function dispatchNotification(
   const audience: Audience = recipientChildId ? "child" : "user";
   const payload = sanitizePayload(input.type, input.payload ?? {}, audience);
 
-  const { error } = await supabase.from("notifications").insert({
+  const { error } = await (supabase as any).from("notifications").insert({
     type: input.type,
     title: input.title,
     body: input.body,
-    payload,
+    payload: payload,
     recipient_user_id: recipientUserId,
     recipient_child_id: recipientChildId,
     related_tour_id: input.relatedTourId ?? null,
@@ -259,4 +259,6 @@ export async function dispatchToUsers(
     });
   }
 }
+
+
 

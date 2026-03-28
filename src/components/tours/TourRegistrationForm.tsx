@@ -3,6 +3,7 @@
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import type React from "react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { registerForTour } from "@/app/actions/tour-registration";
 import { Button } from "@/components/ui/button";
 
@@ -37,6 +38,7 @@ export function TourRegistrationForm({
   childrenProfiles,
   availableMaterials,
 }: TourRegistrationFormProps) {
+  const router = useRouter();
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -95,6 +97,8 @@ export function TourRegistrationForm({
       setError(result.error);
     } else if (result.success) {
       setSuccess(result.message || "Erfolgreich angemeldet.");
+      // Refresh the page to update tour registrations
+      router.refresh();
       if (onSuccess) {
         setTimeout(onSuccess, 2000);
       }

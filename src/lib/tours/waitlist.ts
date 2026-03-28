@@ -38,7 +38,7 @@ async function resequenceWaitlist(
       continue;
     }
 
-    await supabase
+    await (supabase as any)
       .from("tour_participants")
       .update({ waitlist_position: targetPosition })
       .eq("id", row.id);
@@ -53,9 +53,9 @@ async function getManagerIds(
   const managerIds = new Set<string>();
 
   const [{ data: guidesData }, { data: ownerProfile }] = await Promise.all([
-    supabase.from("tour_guides").select("user_id").eq("tour_id", tourId),
+    (supabase as any).from("tour_guides").select("user_id").eq("tour_id", tourId),
     tourCreatedBy
-      ? supabase
+      ? (supabase as any)
           .from("profiles")
           .select("id, role")
           .eq("id", tourCreatedBy)
@@ -71,8 +71,8 @@ async function getManagerIds(
     }
   }
 
-  if (ownerProfile?.id && ownerProfile.role === "admin") {
-    managerIds.add(ownerProfile.id);
+  if ((ownerProfile as any)?.id && (ownerProfile as any)?.role === "admin") {
+    managerIds.add((ownerProfile as any).id);
   }
 
   return [...managerIds];
@@ -82,7 +82,7 @@ export async function promoteWaitlistParticipants({
   supabase,
   tourId,
 }: PromoteWaitlistArgs): Promise<PromoteWaitlistResult> {
-  const { data: tour } = await supabase
+  const { data: tour } = await (supabase as any)
     .from("tours")
     .select("id, title, group, max_participants, status, created_by")
     .eq("id", tourId)
@@ -95,17 +95,17 @@ export async function promoteWaitlistParticipants({
   const managerIds = await getManagerIds(
     supabase,
     tourId,
-    tour.created_by ?? null,
+    (tour as any).created_by ?? null,
   );
 
-  const { count: activeCountRaw } = await supabase
+  const { count: activeCountRaw } = await (supabase as any)
     .from("tour_participants")
     .select("id", { count: "exact", head: true })
     .eq("tour_id", tourId)
     .in("status", ["confirmed", "pending"]);
 
-  let availableSlots = tour.max_participants
-    ? Math.max(tour.max_participants - (activeCountRaw ?? 0), 0)
+  let availableSlots = (tour as any).max_participants
+    ? Math.max((tour as any).max_participants - (activeCountRaw ?? 0), 0)
     : Number.MAX_SAFE_INTEGER;
 
   if (availableSlots <= 0) {
@@ -135,7 +135,7 @@ export async function promoteWaitlistParticipants({
       break;
     }
 
-    const { error: promoteError } = await supabase
+    const { error: promoteError } = await (supabase as any)
       .from("tour_participants")
       .update({ status: "confirmed", waitlist_position: null })
       .eq("id", firstWaitlist.id)
@@ -150,32 +150,32 @@ export async function promoteWaitlistParticipants({
     await dispatchNotification(supabase, {
       type: "waitlist",
       title: "Du bist nachgerueckt",
-      body: `Fuer "${tour.title}" ist ein Platz frei geworden. Du bist jetzt bestaetigt.`,
+      body: `Fuer "${(tour as any).title}" ist ein Platz frei geworden. Du bist jetzt bestaetigt.`,
       payload: {
         tour_id: tourId,
-        participant_id: firstWaitlist.id,
+        participant_id: (firstWaitlist as any).id,
         status: "confirmed",
       },
-      recipientUserId: firstWaitlist.child_profile_id
+      recipientUserId: (firstWaitlist as any).child_profile_id
         ? null
-        : firstWaitlist.user_id,
-      recipientChildId: firstWaitlist.child_profile_id,
+        : (firstWaitlist as any).user_id,
+      recipientChildId: (firstWaitlist as any).child_profile_id,
       relatedTourId: tourId,
-      relatedGroupId: tour.group,
+      relatedGroupId: (tour as any).group,
     });
 
     if (managerIds.length > 0) {
       await dispatchToUsers(supabase, managerIds, {
         type: "waitlist",
         title: "Warteliste nachgerueckt",
-        body: `Bei "${tour.title}" ist ein Wartelistenplatz automatisch nachgerueckt.`,
+        body: `Bei "${(tour as any).title}" ist ein Wartelistenplatz automatisch nachgerueckt.`,
         payload: {
           tour_id: tourId,
-          participant_id: firstWaitlist.id,
+          participant_id: (firstWaitlist as any).id,
           status: "confirmed",
         },
         relatedTourId: tourId,
-        relatedGroupId: tour.group,
+        relatedGroupId: (tour as any).group,
       });
     }
 
@@ -187,11 +187,11 @@ export async function promoteWaitlistParticipants({
   await resequenceWaitlist(supabase, tourId);
 
   if (
-    tour.max_participants &&
-    tour.status !== "completed" &&
-    tour.status !== "planning"
+    (tour as any).max_participants &&
+    (tour as any).status !== "completed" &&
+    (tour as any).status !== "planning"
   ) {
-    const { count: activeCountAfterRaw } = await supabase
+    const { count: activeCountAfterRaw } = await (supabase as any)
       .from("tour_participants")
       .select("id", { count: "exact", head: true })
       .eq("tour_id", tourId)
@@ -199,10 +199,10 @@ export async function promoteWaitlistParticipants({
 
     const activeCountAfter = activeCountAfterRaw ?? 0;
     const targetStatus =
-      activeCountAfter >= tour.max_participants ? "full" : "open";
+      activeCountAfter >= (tour as any).max_participants ? "full" : "open";
 
-    if (tour.status !== targetStatus) {
-      await supabase
+    if ((tour as any).status !== targetStatus) {
+      await (supabase as any)
         .from("tours")
         .update({ status: targetStatus })
         .eq("id", tourId);
@@ -211,3 +211,8 @@ export async function promoteWaitlistParticipants({
 
   return { promotedCount };
 }
+
+
+
+
+
