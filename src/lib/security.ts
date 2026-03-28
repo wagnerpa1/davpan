@@ -101,6 +101,20 @@ function getExpectedOrigins(request: Request | NextRequest): Set<string> {
     expected.add(normalizeOrigin(`${protocol}://${forwardedHost}`));
   }
 
+  const forwarded = request.headers.get("forwarded");
+  if (forwarded) {
+    const hostMatch = forwarded.match(/host=([^;\s,]+)/i);
+    const protoMatch = forwarded.match(/proto=([^;\s,]+)/i);
+    const hostValue = hostMatch?.[1]?.replace(/^"|"$/g, "");
+    const protoValue = protoMatch?.[1]?.replace(/^"|"$/g, "");
+
+    if (hostValue) {
+      const protocol =
+        protoValue || (hostValue.includes("localhost") ? "http" : "https");
+      expected.add(normalizeOrigin(`${protocol}://${hostValue}`));
+    }
+  }
+
   return expected;
 }
 
@@ -126,6 +140,16 @@ export function isSameOriginRequest(request: Request | NextRequest): boolean {
     }
 
     return expectedOrigins.has(normalizeOrigin(refererOrigin));
+  }
+
+  // Fallback for browser form submissions where origin/referer are stripped by proxies.
+  const fetchSite = request.headers.get("sec-fetch-site")?.toLowerCase();
+  if (fetchSite) {
+    return (
+      fetchSite === "same-origin" ||
+      fetchSite === "same-site" ||
+      fetchSite === "none"
+    );
   }
 
   return false;

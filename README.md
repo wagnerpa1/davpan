@@ -22,6 +22,11 @@ Webanwendung zur Verwaltung von Touren, Teilnehmern, Eltern-/Kind-Profilen, Doku
 - Build-Validierung erfolgreich (`next build --turbopack` inkl. TypeScript)
 - Security-Update: `next` auf `16.2.1` erhöht (Audit-Findings behoben)
 - Produktions-Audit sauber (`npm audit --omit=dev` → 0 Vulnerabilities)
+- CSRF-/Origin-Härtung für Deployments hinter Reverse Proxy verbessert (`forwarded`, `x-forwarded-*`, `sec-fetch-site` Fallback)
+- Next Server Actions auf vertrauenswürdige Origins beschränkt (`experimental.serverActions.allowedOrigins`)
+- Öffentliche Touren repariert: `anon`-Read-Policy für `tours` ergänzt (nur `planning/open/full`)
+- PWA-Start beschleunigt: `start_url` auf `/oeffentlich/touren`, Precache um öffentliche Startseite erweitert
+- Service-Worker-Caching überarbeitet (gezielte Runtime-Strategien statt generischem Default-Cache)
 
 ### Behobene Fehler
 
@@ -150,8 +155,17 @@ npm run start
 - Serwist Route: `src/app/serwist/[path]/route.ts`
 - Offline-Seite: `src/app/~offline/page.tsx`
 
+Runtime-Caching (Serwist):
+- Dokumente: `NetworkFirst` mit kurzem Timeout (4s) für spürbar schnelleren Erststart
+- JS/CSS/Worker: `StaleWhileRevalidate`
+- Bilder: `CacheFirst` mit Ablaufregeln
+- Sensible Pfade (`/api`, `/auth`, `/admin`, `/guide`, `/profile`) werden nicht als Seiten gecacht
+
 Aktuell ist ein Offline-Fallback auf `"/~offline"` definiert.  
-Precache umfasst `"/login"` und `"/~offline"` (bewusst keine dynamischen Start-/Tourseiten).
+Precache umfasst `"/login"`, `"/oeffentlich/touren"` und `"/~offline"`.
+
+Startverhalten (Android PWA):
+- `manifest.json` nutzt `start_url: "/oeffentlich/touren"`, um Login-Redirects und Session-Refresh beim Kaltstart zu minimieren.
 
 ---
 
@@ -163,6 +177,7 @@ Alle kritischen Findings sind behoben:
 - RLS + FORCE RLS aktiv auf allen 11 Kern-Tabellen
 - Auth-Callback mit Open-Redirect-Schutz (`sanitizeNextPath`)
 - CSRF-Schutz auf API-Routen (`isSameOriginRequest`)
+- Deployment-Härtung: zusätzliche Proxy-/Forwarded-Origin-Erkennung gegen `CSRF validation failed` im Domain-Betrieb
 - `getUser()` statt `getSession()` in allen Auth-relevanten Pfaden
 - Rolle wird nie aus Client-Metadata übernommen
 - Next.js auf gepatchte Version aktualisiert (`16.2.1`)
@@ -177,6 +192,22 @@ Einziger offener Punkt:
 
 - Die `browserslist`-Warnung (`Critical dependency`) aus `@serwist/turbopack` ist ein bekanntes Paket-Thema und aktuell nur ein Warning, kein Build-Blocker.
 - Serwist ist im Development-Modus deaktiviert; PWA-Checks immer auch im Production-Run validieren.
+
+---
+
+## Deployment-Variablen (CSRF/Origin)
+
+Für stabile POST-/Server-Action-Requests im Deployment sollten diese Variablen gesetzt sein:
+
+```powershell
+SITE_URL=https://deine-domain.tld
+NEXT_PUBLIC_SITE_URL=https://deine-domain.tld
+CSRF_TRUSTED_ORIGINS=https://deine-domain.tld,https://www.deine-domain.tld
+```
+
+Hinweis:
+- `CSRF_TRUSTED_ORIGINS` akzeptiert kommagetrennte Einträge.
+- Bei Deployments hinter Proxy/CDN müssen `x-forwarded-host` und `x-forwarded-proto` korrekt weitergereicht werden.
 
 ---
 

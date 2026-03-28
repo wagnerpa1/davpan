@@ -1,8 +1,8 @@
 {
   "theme_color": "#5a8040",
   "background_color": "#f8fafc",
-  "id": "/",
-  "start_url": "/",
+  "id": "/oeffentlich/touren",
+  "start_url": "/oeffentlich/touren",
   "scope": "/",
   "icons": [
     {

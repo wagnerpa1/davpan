@@ -21,6 +21,7 @@ export const { dynamic, dynamicParams, revalidate, generateStaticParams, GET } =
   createSerwistRoute({
     additionalPrecacheEntries: [
       { url: "/login", revision },
+      { url: "/oeffentlich/touren", revision },
       { url: "/~offline", revision },
     ],
     swSrc: "src/app/sw.ts",
