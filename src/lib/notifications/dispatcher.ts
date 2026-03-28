@@ -230,8 +230,13 @@ export async function dispatchNotification(
   });
 
   if (error) {
+    console.error("[Notification] Failed to insert notification:", error);
     return;
   }
+
+  console.log(
+    `[Notification] Created ${input.type} notification for ${recipientUserId ? "user" : "child"} ${recipientUserId || recipientChildId}: "${input.title}"`
+  );
 
   await dispatchPushForNotification({
     recipientUserId,
@@ -254,3 +259,4 @@ export async function dispatchToUsers(
     });
   }
 }
+

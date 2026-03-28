@@ -57,6 +57,9 @@ export function PushSubscriptionControl({
 
     const publicVapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
     if (!publicVapidKey) {
+      console.error(
+        "[Push] NEXT_PUBLIC_VAPID_PUBLIC_KEY not configured in environment"
+      );
       return;
     }
 
@@ -66,6 +69,7 @@ export function PushSubscriptionControl({
       setPermission(result);
 
       if (result !== "granted") {
+        console.log("[Push] User denied notification permission");
         return;
       }
 
@@ -73,12 +77,14 @@ export function PushSubscriptionControl({
       let subscription = await registration.pushManager.getSubscription();
 
       if (!subscription) {
+        console.log("[Push] Creating new subscription...");
         subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: urlBase64ToUint8Array(publicVapidKey),
         });
       }
 
+      console.log("[Push] Sending subscription to server...");
       const response = await fetch("/api/push/subscription", {
         method: "POST",
         credentials: "same-origin",
@@ -91,10 +97,15 @@ export function PushSubscriptionControl({
       });
 
       if (!response.ok) {
+        const error = await response.json();
+        console.error("[Push] Server rejected subscription:", error);
         return;
       }
 
+      console.log("[Push] Subscription registered successfully");
       setIsSubscribed(true);
+    } catch (error) {
+      console.error("[Push] Error enabling push:", error);
     } finally {
       setIsLoading(false);
     }
@@ -114,6 +125,7 @@ export function PushSubscriptionControl({
         return;
       }
 
+      console.log("[Push] Removing subscription from server...");
       await fetch("/api/push/subscription", {
         method: "DELETE",
         credentials: "same-origin",
@@ -126,7 +138,10 @@ export function PushSubscriptionControl({
       });
 
       await subscription.unsubscribe();
+      console.log("[Push] Subscription disabled");
       setIsSubscribed(false);
+    } catch (error) {
+      console.error("[Push] Error disabling push:", error);
     } finally {
       setIsLoading(false);
     }
@@ -177,3 +192,5 @@ export function PushSubscriptionControl({
     </div>
   );
 }
+
+

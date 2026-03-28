@@ -293,7 +293,7 @@ export default async function RootLayout({
       >
         <SerwistProvider
           swUrl="/serwist/sw.js"
-          register={process.env.NODE_ENV === "production"}
+          register={true}
           options={{ scope: "/" }}
         >
           {user && <Header userRole={userRole} />}
