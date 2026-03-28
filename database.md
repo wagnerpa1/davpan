@@ -108,6 +108,7 @@ CREATE TABLE public.report_images (
 id uuid NOT NULL DEFAULT uuid_generate_v4(),
 report_id uuid,
 image_url text NOT NULL,
+order_index integer,
 CONSTRAINT report_images_pkey PRIMARY KEY (id),
 CONSTRAINT report_images_report_id_fkey FOREIGN KEY (report_id) REFERENCES public.tour_reports(id)
 );
@@ -133,6 +134,12 @@ type text,
 capacity integer,
 created_at timestamp with time zone DEFAULT now(),
 CONSTRAINT resources_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.tour_categorys (
+id uuid NOT NULL DEFAULT gen_random_uuid(),
+category text,
+created_at timestamp with time zone NOT NULL DEFAULT now(),
+CONSTRAINT tour_categorys_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.tour_groups (
 id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -193,7 +200,6 @@ CREATE TABLE public.tours (
 id uuid NOT NULL DEFAULT uuid_generate_v4(),
 title text NOT NULL,
 description text,
-category USER-DEFINED,
 difficulty USER-DEFINED DEFAULT 'Keine'::tour_difficulty,
 target_area text,
 requirements text,
@@ -211,9 +217,11 @@ created_by uuid,
 created_at timestamp without time zone DEFAULT now(),
 min_age integer,
 group uuid,
+category uuid,
 CONSTRAINT tours_pkey PRIMARY KEY (id),
 CONSTRAINT tours_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.profiles(id),
-CONSTRAINT tours_group_fkey FOREIGN KEY (group) REFERENCES public.tour_groups(id)
+CONSTRAINT tours_group_fkey FOREIGN KEY (group) REFERENCES public.tour_groups(id),
+CONSTRAINT tours_category_fkey FOREIGN KEY (category) REFERENCES public.tour_categorys(id)
 );
 
 Enum TYPES:
@@ -223,8 +231,6 @@ user_role	member, guide, admin, parent
 tour_status	planning, open, full, completed
 
 participant_status	pending, confirmed, waitlist, cancelled
-
-tour_category	wandern, klettersteig, klettern, mehrseillaenge, kletterhalle, kanu, mountainbike, camp
 
 tour_difficulty	T1, T2, T3, T4, B1, B2, B3, B4, L, WS, ZS, K1, K2, K3, K4, WT1, WT2, WT3, WT4, WT5, ST2, ST3, S0, S1, S2, S3, S4, S5, UIAA 1, UIAA 2, UIAA 3, UIAA 4, UIAA 5, UIAA 6, UIAA 7, UIAA 8, Keine
 

@@ -8,7 +8,6 @@ interface PublicTourDetail {
   id: string;
   title: string;
   description: string | null;
-  category: string | null;
   target_area: string | null;
   difficulty: string | null;
   elevation: number | null;
@@ -18,6 +17,7 @@ interface PublicTourDetail {
   meeting_time: string | null;
   start_date: string | null;
   end_date: string | null;
+  tour_categorys?: { category: string | null } | null;
 }
 
 export default async function PublicTourDetailPage({
@@ -31,7 +31,7 @@ export default async function PublicTourDetailPage({
   const { data, error } = await supabase
     .from("tours")
     .select(
-      "id, title, description, category, target_area, difficulty, elevation, distance, duration_hours, meeting_point, meeting_time, start_date, end_date",
+      "id, title, description, target_area, difficulty, elevation, distance, duration_hours, meeting_point, meeting_time, start_date, end_date, tour_categorys!tours_category_fkey(category)",
     )
     .eq("id", id)
     .single();
@@ -40,7 +40,12 @@ export default async function PublicTourDetailPage({
     notFound();
   }
 
-  const tour = data as PublicTourDetail;
+  const tour = {
+    ...data,
+    tour_categorys: Array.isArray(data.tour_categorys)
+      ? data.tour_categorys[0]
+      : data.tour_categorys,
+  } as PublicTourDetail;
 
   return (
     <div className="container mx-auto max-w-3xl px-4 py-8">
@@ -55,9 +60,9 @@ export default async function PublicTourDetailPage({
 
       <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
         <div className="mb-4 flex flex-wrap gap-2">
-          {tour.category && (
+          {tour.tour_categorys?.category && (
             <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold uppercase text-slate-700">
-              {tour.category}
+              {tour.tour_categorys.category}
             </span>
           )}
           {tour.difficulty && (

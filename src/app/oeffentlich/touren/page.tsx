@@ -6,11 +6,11 @@ import { createClient } from "@/utils/supabase/server";
 interface PublicTour {
   id: string;
   title: string;
-  category: string | null;
   target_area: string | null;
   start_date: string | null;
   end_date: string | null;
   status: string;
+  tour_categorys?: { category: string | null } | null;
 }
 
 export default async function PublicToursPage() {
@@ -18,11 +18,18 @@ export default async function PublicToursPage() {
 
   const { data, error } = await supabase
     .from("tours")
-    .select("id, title, category, target_area, start_date, end_date, status")
+    .select(
+      "id, title, target_area, start_date, end_date, status, tour_categorys!tours_category_fkey(category)",
+    )
     .neq("status", "completed")
     .order("start_date", { ascending: true });
 
-  const tours = (data || []) as PublicTour[];
+  const tours = (data || []).map((t) => ({
+    ...t,
+    tour_categorys: Array.isArray(t.tour_categorys)
+      ? t.tour_categorys[0]
+      : t.tour_categorys,
+  })) as PublicTour[];
 
   return (
     <div className="container mx-auto max-w-3xl px-4 py-8">
@@ -51,9 +58,9 @@ export default async function PublicToursPage() {
               className="block rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-jdav-green hover:shadow-md"
             >
               <div className="mb-2 flex items-center gap-2">
-                {tour.category && (
+                {tour.tour_categorys?.category && (
                   <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold uppercase text-slate-700">
-                    {tour.category}
+                    {tour.tour_categorys.category}
                   </span>
                 )}
                 <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700">

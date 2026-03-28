@@ -517,7 +517,7 @@ create index if not exists idx_report_images_report_id on public.report_images(r
 create index if not exists idx_tour_materials_tour_id on public.tour_materials(tour_id);
 create index if not exists idx_tour_materials_material_id on public.tour_materials(material_id);
 create index if not exists idx_material_reservations_tour_id on public.material_reservations(tour_id);
-create index if not exists idx_material_reservations_material_id on public.material_reservations(material_id);
+create index if not exists idx_material_reservations_material_inventory_id on public.material_reservations(material_inventory_id);
 create index if not exists idx_material_reservations_user_id on public.material_reservations(user_id);
 create index if not exists idx_material_reservations_child_profile_id on public.material_reservations(child_profile_id);
 
@@ -526,6 +526,142 @@ alter function if exists public.assign_waitlist_position() set search_path = pub
 alter function if exists public.check_material_availability() set search_path = public, pg_temp;
 alter function if exists public.promote_waitlist() set search_path = public, pg_temp;
 alter function if exists public.limit_report_images() set search_path = public, pg_temp;
+
+commit;
+```
+
+## Ergänzung: Policies für bislang ungeschützte Tabellen (neue Struktur)
+
+Die folgenden Tabellen waren in der neuen Struktur (`database.md`) aktiv, aber ohne vollständige RLS-Absicherung:
+
+- `material_types`
+- `material_inventory`
+- `material_pricing`
+- `tour_groups`
+- `tour_material_requirements`
+- `resources`
+- `resource_bookings`
+- `material_reservations` (RLS aktiv, aber ohne Policies)
+
+Policy-Zielbild:
+
+- `admin`: Vollzugriff
+- `guide`: nur tourbezogene Datensätze der eigenen Touren (`can_manage_tour(tour_id)`)
+- `anon`: nur öffentliche Tour-bezogene Lesedaten
+- `authenticated`: Lesen wie `anon` plus interne Leserechte je Tabelle
+
+Bereits angewendete Migration (Kurzfassung):
+
+```sql
+begin;
+
+alter table public.material_types enable row level security;
+alter table public.material_inventory enable row level security;
+alter table public.material_pricing enable row level security;
+alter table public.tour_groups enable row level security;
+alter table public.tour_material_requirements enable row level security;
+alter table public.resources enable row level security;
+alter table public.resource_bookings enable row level security;
+alter table public.material_reservations enable row level security;
+
+alter table public.material_types force row level security;
+alter table public.material_inventory force row level security;
+alter table public.material_pricing force row level security;
+alter table public.tour_groups force row level security;
+alter table public.tour_material_requirements force row level security;
+alter table public.resources force row level security;
+alter table public.resource_bookings force row level security;
+alter table public.material_reservations force row level security;
+
+-- Öffentliche Leserechte für Tour-Kontext
+create policy material_types_read_anon on public.material_types for select to anon using (true);
+create policy tour_groups_read_anon on public.tour_groups for select to anon using (true);
+create policy tour_material_requirements_read_anon on public.tour_material_requirements for select to anon using (true);
+
+-- Authenticated-Lesen
+create policy material_types_read_authenticated on public.material_types for select to authenticated using (true);
+create policy material_inventory_read_authenticated on public.material_inventory for select to authenticated using (true);
+create policy material_pricing_read_authenticated on public.material_pricing for select to authenticated using (true);
+create policy tour_groups_read_authenticated on public.tour_groups for select to authenticated using (true);
+create policy tour_material_requirements_read_authenticated on public.tour_material_requirements for select to authenticated using (true);
+create policy resources_read_authenticated on public.resources for select to authenticated using (true);
+
+-- Admin-Schreibrechte auf globale Stammdaten
+create policy material_types_write_admin on public.material_types for all to authenticated using (public.is_admin()) with check (public.is_admin());
+create policy material_inventory_write_admin on public.material_inventory for all to authenticated using (public.is_admin()) with check (public.is_admin());
+create policy material_pricing_write_admin on public.material_pricing for all to authenticated using (public.is_admin()) with check (public.is_admin());
+create policy tour_groups_write_admin on public.tour_groups for all to authenticated using (public.is_admin()) with check (public.is_admin());
+create policy resources_write_admin on public.resources for all to authenticated using (public.is_admin()) with check (public.is_admin());
+
+-- Tour-gebundene Schreibrechte für Guide/Admin
+create policy tour_material_requirements_write_manage on public.tour_material_requirements
+for all to authenticated
+using (public.can_manage_tour(tour_id))
+with check (public.can_manage_tour(tour_id));
+
+create policy resource_bookings_read_authenticated on public.resource_bookings
+for select to authenticated
+using (public.is_admin() or public.can_manage_tour(tour_id));
+
+create policy resource_bookings_write_manage on public.resource_bookings
+for all to authenticated
+using (public.is_admin() or public.can_manage_tour(tour_id))
+with check (public.is_admin() or (public.can_manage_tour(tour_id) and created_by = auth.uid()));
+
+-- Materialreservierungen: eigene/Kind oder tourverantwortliche Guides/Admin
+create policy material_reservations_select_own_or_manage on public.material_reservations
+for select to authenticated
+using (
+  public.is_admin()
+  or public.can_manage_tour(tour_id)
+  or user_id = auth.uid()
+  or exists (
+    select 1 from public.child_profiles cp
+    where cp.id = material_reservations.child_profile_id
+      and cp.parent_id = auth.uid()
+  )
+);
+
+create policy material_reservations_insert_own_or_manage on public.material_reservations
+for insert to authenticated
+with check (
+  public.is_admin()
+  or public.can_manage_tour(tour_id)
+  or (
+    user_id = auth.uid()
+    and (
+      child_profile_id is null
+      or exists (
+        select 1 from public.child_profiles cp
+        where cp.id = material_reservations.child_profile_id
+          and cp.parent_id = auth.uid()
+      )
+    )
+  )
+);
+
+create policy material_reservations_update_own_or_manage on public.material_reservations
+for update to authenticated
+using (public.is_admin() or public.can_manage_tour(tour_id) or user_id = auth.uid())
+with check (
+  public.is_admin()
+  or public.can_manage_tour(tour_id)
+  or (
+    user_id = auth.uid()
+    and (
+      child_profile_id is null
+      or exists (
+        select 1 from public.child_profiles cp
+        where cp.id = material_reservations.child_profile_id
+          and cp.parent_id = auth.uid()
+      )
+    )
+  )
+);
+
+create policy material_reservations_delete_own_or_manage on public.material_reservations
+for delete to authenticated
+using (public.is_admin() or public.can_manage_tour(tour_id) or user_id = auth.uid());
 
 commit;
 ```

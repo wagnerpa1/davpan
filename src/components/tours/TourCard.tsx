@@ -21,6 +21,7 @@ interface TourCardData {
   title: string;
   tour_groups?: { group_name: string | null } | null;
   category?: string | null;
+  tour_categorys?: { category: string | null } | null;
   status: string;
   start_date?: string | null;
   end_date?: string | null;
@@ -73,7 +74,7 @@ export function TourCard({ tour }: TourCardProps) {
                 )}
                 {/* Category */}
                 <span className="inline-block rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium capitalize text-slate-700">
-                  {tour.category}
+                  {tour.tour_categorys?.category || "Tour"}
                 </span>
                 {isFull && (
                   <span className="inline-block rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-bold text-red-600 uppercase">

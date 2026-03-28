@@ -5,6 +5,7 @@ import {
   createTour,
   getAvailableGuides,
   getAvailableMaterials,
+  getTourCategories,
   getTourGroups,
 } from "@/app/actions/tour-management";
 import { TourForm } from "@/components/tours/TourForm";
@@ -15,6 +16,7 @@ export default async function NewTourPage() {
   const guides = await getAvailableGuides();
   const availableMaterials = await getAvailableMaterials();
   const tourGroups = await getTourGroups();
+  const tourCategories = await getTourCategories();
   const availableResources = await getResources();
 
   const {
@@ -65,6 +67,7 @@ export default async function NewTourPage() {
         availableMaterials={availableMaterials}
         availableResources={availableResources}
         tourGroups={tourGroups}
+        tourCategories={tourCategories}
       />
     </div>
   );

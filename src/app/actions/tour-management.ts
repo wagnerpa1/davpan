@@ -60,6 +60,15 @@ type TourUpdatePayload = {
     | "min_age"]?: string | number | null;
 };
 
+export async function getTourCategories() {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("tour_categorys")
+    .select("id, category")
+    .order("category");
+  return data || [];
+}
+
 export async function getTourGroups() {
   const supabase = await createClient();
   const { data } = await supabase
@@ -126,7 +135,8 @@ export async function createTour(formData: FormData) {
 
   const title = formData.get("title")?.toString();
   const description = formData.get("description")?.toString();
-  const category = formData.get("category")?.toString();
+  const categoryRaw = formData.get("category")?.toString();
+  const category = categoryRaw ? categoryRaw : null;
   const group = formData.get("group")?.toString() || null;
   const target_area = formData.get("target_area")?.toString();
   const start_date = formData.get("start_date")?.toString();

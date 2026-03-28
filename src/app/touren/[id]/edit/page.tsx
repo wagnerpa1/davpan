@@ -4,6 +4,7 @@ import { getResources } from "@/app/actions/admin-resources";
 import {
   getAvailableGuides,
   getAvailableMaterials,
+  getTourCategories,
   getTourGroups,
   updateTour,
 } from "@/app/actions/tour-management";
@@ -34,6 +35,7 @@ export default async function EditTourPage({
     guides,
     availableMaterials,
     tourGroups,
+    tourCategories,
     availableResources,
   ] = await Promise.all([
     supabase
@@ -50,6 +52,7 @@ export default async function EditTourPage({
     getAvailableGuides(),
     getAvailableMaterials(),
     getTourGroups(),
+    getTourCategories(),
     getResources(),
   ]);
 
@@ -106,6 +109,7 @@ export default async function EditTourPage({
         availableMaterials={availableMaterials}
         availableResources={availableResources}
         tourGroups={tourGroups}
+        tourCategories={tourCategories}
       />
     </div>
   );

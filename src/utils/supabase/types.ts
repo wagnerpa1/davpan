@@ -310,6 +310,23 @@ export interface Database {
           created_at?: string | null;
         };
       };
+      tour_categorys: {
+        Row: {
+          id: string;
+          category: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          category?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          category?: string | null;
+          created_at?: string;
+        };
+      };
       tour_groups: {
         Row: {
           id: string;

@@ -23,7 +23,7 @@ interface TourFormMaterial {
 
 interface TourFormInitialData {
   title?: string;
-  category?: string;
+  category?: string | null;
   group?: string;
   difficulty?: string;
   target_area?: string;
@@ -54,6 +54,7 @@ interface TourFormProps {
   availableMaterials?: { id: string; name: string; size: string | null }[];
   availableResources?: { id: string; name: string }[];
   tourGroups?: { id: string; group_name: string }[];
+  tourCategories?: { id: string; category: string }[];
 }
 
 export function TourForm({
@@ -65,6 +66,7 @@ export function TourForm({
   availableMaterials = [],
   availableResources = [],
   tourGroups = [],
+  tourCategories = [],
 }: TourFormProps) {
   const router = useRouter();
 
@@ -167,17 +169,15 @@ export function TourForm({
               <select
                 id="category"
                 name="category"
-                defaultValue={initialData?.category || "wandern"}
+                defaultValue={initialData?.category || ""}
                 className="mt-1 flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-jdav-green"
               >
-                <option value="wandern">Wandern</option>
-                <option value="klettersteig">Klettersteig</option>
-                <option value="klettern">Klettern</option>
-                <option value="mehrseillaenge">Mehrseillänge</option>
-                <option value="kletterhalle">Kletterhalle</option>
-                <option value="kanu">Kanu</option>
-                <option value="mountainbike">Mountainbike</option>
-                <option value="camp">Camp</option>
+                <option value="">-- Kategorie wählen --</option>
+                {tourCategories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.category}
+                  </option>
+                ))}
               </select>
             </div>
             <div>

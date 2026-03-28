@@ -3,6 +3,7 @@
 
 /* noinspection CssUnknownAtRule */
 @plugin "tailwindcss-animate";
+@plugin "@tailwindcss/typography";
 
 /* noinspection CssUnknownAtRule */
 @custom-variant dark (&:is(.dark *));

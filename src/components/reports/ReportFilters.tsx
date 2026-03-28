@@ -5,30 +5,26 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
-interface TourFiltersProps {
+interface ReportFiltersProps {
   categories: { id: string; category: string }[];
-  difficulties: string[];
-  guides: { id: string; full_name: string }[];
-  tourGroups: { id: string; group_name: string }[];
+  groups: { id: string; group_name: string }[];
+  years: number[];
 }
 
-export function TourFilters({
+export function ReportFilters({
   categories,
-  difficulties,
-  guides,
-  tourGroups,
-}: TourFiltersProps) {
+  groups,
+  years,
+}: ReportFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isOpen, setIsOpen] = useState(false);
 
   // Current filter values from URL
   const currentCategory = searchParams.get("category") || "";
-  const currentDifficulty = searchParams.get("difficulty") || "";
-  const currentGuide = searchParams.get("guide") || "";
+  const currentYear = searchParams.get("year") || "";
   const currentGroup = searchParams.get("group") || "";
-  const currentAvailability = searchParams.get("available") || "";
-  const currentSort = searchParams.get("sort") || "date_asc";
+  const currentSort = searchParams.get("sort") || "newest";
 
   const updateFilters = (updates: Record<string, string | null>) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -41,19 +37,14 @@ export function TourFilters({
       }
     });
 
-    router.push(`/touren?${params.toString()}`, { scroll: false });
+    router.push(`/berichte?${params.toString()}`, { scroll: false });
   };
 
   const clearFilters = () => {
-    router.push("/touren", { scroll: false });
+    router.push("/berichte", { scroll: false });
   };
 
-  const hasActiveFilters =
-    currentCategory ||
-    currentDifficulty ||
-    currentGuide ||
-    currentGroup ||
-    currentAvailability;
+  const hasActiveFilters = currentCategory || currentYear || currentGroup;
 
   return (
     <div className="mb-6 space-y-4">
@@ -79,96 +70,71 @@ export function TourFilters({
 
         <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto overflow-hidden">
           <label
-            htmlFor="tour-sort"
+            htmlFor="report-sort"
             className="text-[10px] font-bold text-slate-600 uppercase tracking-wider whitespace-nowrap"
           >
             Sortierung:
           </label>
           <select
-            id="tour-sort"
+            id="report-sort"
             aria-label="Sortierung"
             value={currentSort}
             onChange={(e) => updateFilters({ sort: e.target.value })}
             className="flex-1 sm:flex-none max-w-50 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-jdav-green"
           >
-            <option value="date_asc">Datum (Anstehend)</option>
-            <option value="date_desc">Datum (Abstehend)</option>
-            <option value="capacity_low">Kapazität (Voll zuerst)</option>
-            <option value="capacity_high">Kapazität (Leer zuerst)</option>
+            <option value="newest">Neueste zuerst</option>
+            <option value="oldest">Älteste zuerst</option>
+            <option value="title_asc">Alphabetisch (A-Z)</option>
           </select>
         </div>
       </div>
 
       {isOpen && (
-        <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-xl animate-in fade-in slide-in-from-top-2 duration-300">
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-xl animate-in fade-in slide-in-from-top-2 duration-300 relative z-50">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+            {/* Year */}
+            <div className="space-y-2">
+              <label
+                htmlFor="filter-year"
+                className="text-xs font-black uppercase tracking-widest text-slate-600"
+              >
+                Jahr
+              </label>
+              <select
+                id="filter-year"
+                aria-label="Jahr"
+                value={currentYear}
+                onChange={(e) => updateFilters({ year: e.target.value })}
+                className="w-full rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-jdav-green"
+              >
+                <option value="">Alle Jahre</option>
+                {years.map((y) => (
+                  <option key={y} value={y.toString()}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {/* Category */}
             <div className="space-y-2">
               <label
                 htmlFor="filter-category"
                 className="text-xs font-black uppercase tracking-widest text-slate-600"
               >
-                Tour-Art
+                Kategorie
               </label>
               <select
                 id="filter-category"
-                aria-label="Tour-Art"
+                aria-label="Kategorie"
                 value={currentCategory}
                 onChange={(e) => updateFilters({ category: e.target.value })}
                 className="w-full rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-jdav-green"
               >
-                <option value="">Alle Arten</option>
+                <option value="">Alle Kategorien</option>
                 {categories.map((cat) => (
                   <option key={cat.id} value={cat.id} className="capitalize">
                     {cat.category}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Difficulty */}
-            <div className="space-y-2">
-              <label
-                htmlFor="filter-difficulty"
-                className="text-xs font-black uppercase tracking-widest text-slate-600"
-              >
-                Schwierigkeit
-              </label>
-              <select
-                id="filter-difficulty"
-                aria-label="Schwierigkeit"
-                value={currentDifficulty}
-                onChange={(e) => updateFilters({ difficulty: e.target.value })}
-                className="w-full rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-jdav-green"
-              >
-                <option value="">Alle Grade</option>
-                {difficulties.map((diff) => (
-                  <option key={diff} value={diff}>
-                    {diff}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Guide */}
-            <div className="space-y-2">
-              <label
-                htmlFor="filter-guide"
-                className="text-xs font-black uppercase tracking-widest text-slate-600"
-              >
-                Leitung
-              </label>
-              <select
-                id="filter-guide"
-                aria-label="Leitung"
-                value={currentGuide}
-                onChange={(e) => updateFilters({ guide: e.target.value })}
-                className="w-full rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-jdav-green"
-              >
-                <option value="">Alle Leiter</option>
-                {guides.map((guide) => (
-                  <option key={guide.id} value={guide.id}>
-                    {guide.full_name}
                   </option>
                 ))}
               </select>
@@ -190,34 +156,12 @@ export function TourFilters({
                 className="w-full rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-jdav-green"
               >
                 <option value="">Alle Gruppen</option>
-                {tourGroups.map((g) => (
+                {groups.map((g) => (
                   <option key={g.id} value={g.id}>
                     {g.group_name}
                   </option>
                 ))}
               </select>
-            </div>
-
-            {/* Availability */}
-            <div className="space-y-2">
-              <p className="text-xs font-black uppercase tracking-widest text-slate-600">
-                Verfügbarkeit
-              </p>
-              <div className="flex flex-col gap-2">
-                <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer hover:text-jdav-green">
-                  <input
-                    type="checkbox"
-                    checked={currentAvailability === "true"}
-                    onChange={(e) =>
-                      updateFilters({
-                        available: e.target.checked ? "true" : null,
-                      })
-                    }
-                    className="rounded text-jdav-green focus:ring-jdav-green h-4 w-4"
-                  />
-                  Nur freie Plätze
-                </label>
-              </div>
             </div>
           </div>
 

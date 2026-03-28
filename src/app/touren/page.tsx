@@ -10,6 +10,11 @@ import { createClient } from "@/utils/supabase/server";
 
 type TourCardItem = ComponentProps<typeof TourCard>["tour"];
 
+interface TourCategoryOption {
+  id: string;
+  category: string | null;
+}
+
 function toTimestamp(value: string | null | undefined) {
   if (!value) return 0;
   const ts = Date.parse(value);
@@ -42,14 +47,26 @@ export default async function TourenPage({
   const sortBy = (params.sort as string) || "date_asc";
 
   // Fetch unique data for filters (only for active tours)
+  const { data: categoryData } = await supabase
+    .from("tour_categorys")
+    .select("id, category")
+    .order("category");
+  const categories = ((categoryData || []) as TourCategoryOption[]).filter(
+    (c): c is { id: string; category: string } => Boolean(c.category),
+  );
+  const categoryByLabel = new Map(
+    categories.map((c) => [c.category.toLowerCase(), c.id]),
+  );
+  const normalizedCategoryFilter =
+    categoryFilter && categoryByLabel.has(categoryFilter.toLowerCase())
+      ? (categoryByLabel.get(categoryFilter.toLowerCase()) as string)
+      : categoryFilter;
+
   const { data: allToursData } = await supabase
     .from("tours")
-    .select("category, difficulty")
+    .select("difficulty")
     .neq("status", "completed");
 
-  const categories = Array.from(
-    new Set(allToursData?.map((t) => t.category).filter(Boolean)),
-  ) as string[];
   const difficulties = Array.from(
     new Set(allToursData?.map((t) => t.difficulty).filter(Boolean)),
   ) as string[];
@@ -82,11 +99,16 @@ export default async function TourenPage({
       ),
       tour_groups!tours_group_fkey (
         group_name
+      ),
+      tour_categorys!tours_category_fkey (
+        category
       )
     `)
     .neq("status", "completed"); // Only show active tours
 
-  if (categoryFilter) query = query.eq("category", categoryFilter);
+  if (normalizedCategoryFilter) {
+    query = query.eq("category", normalizedCategoryFilter);
+  }
   if (difficultyFilter) query = query.eq("difficulty", difficultyFilter);
   if (groupFilter) query = query.eq("group", groupFilter);
 

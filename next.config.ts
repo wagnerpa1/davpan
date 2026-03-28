@@ -58,6 +58,15 @@ const nextConfig: NextConfig = {
       allowedOrigins: getAllowedOrigins(),
     },
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "amjxgutnnnpjbjigzwpo.supabase.co",
+        pathname: "/storage/v1/object/public/**",
+      },
+    ],
+  },
   async headers() {
     return [
       {

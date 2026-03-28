@@ -120,6 +120,12 @@ interface TourGroupRelation {
   } | null;
 }
 
+interface TourCategoryRelation {
+  tour_categorys?: {
+    category?: string | null;
+  } | null;
+}
+
 const statusLabel = (status: string) => {
   switch (status) {
     case "planning":
@@ -180,6 +186,9 @@ export default async function TourDetailPage({
       ),
       tour_groups!tours_group_fkey (
         group_name
+      ),
+      tour_categorys!tours_category_fkey (
+        category
       )
     `)
     .eq("id", id)
@@ -298,6 +307,8 @@ export default async function TourDetailPage({
     confirmedParticipants.length >= (tourData.max_participants || 0);
 
   const gLabel = (tour as TourGroupRelation).tour_groups?.group_name || null;
+  const cLabel =
+    (tour as TourCategoryRelation).tour_categorys?.category || "n.A.";
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8">
@@ -392,7 +403,7 @@ export default async function TourDetailPage({
                 Kategorie
               </span>
               <span className="mt-1 font-medium text-sm capitalize">
-                {tour.category || "n.A."}
+                {cLabel}
               </span>
             </div>
             <div className="flex flex-col items-center justify-center rounded-2xl bg-slate-50 p-4 text-center">
@@ -473,9 +484,13 @@ export default async function TourDetailPage({
           <div className="space-y-8">
             {/* Description */}
             <section className="print:hidden">
-              <h3 className="mb-3 text-xl font-bold text-slate-900 border-b border-slate-100 pb-2">
+              <h3 className="mb-2 text-lg font-bold text-slate-900 group-hover:text-jdav-green leading-snug">
                 Beschreibung
               </h3>
+              <div className="mb-2 text-[10px] text-slate-400 font-medium">
+                {(tour as TourCategoryRelation).tour_categorys?.category ||
+                  "Tour"}
+              </div>
               <div className="prose prose-slate max-w-none text-slate-600 leading-relaxed whitespace-pre-wrap">
                 {tour.description || "Keine Beschreibung vorhanden."}
               </div>
