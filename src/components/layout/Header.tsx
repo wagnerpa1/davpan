@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { NotificationCenter } from "@/components/notifications/NotificationCenter";
 
 interface HeaderProps {
   userRole?: string | null;
@@ -11,6 +12,7 @@ export function Header({ userRole }: HeaderProps) {
   const canManageGuideArea = userRole === "guide" || userRole === "admin";
   const canManageMaterial = userRole === "materialwart" || userRole === "admin";
   const canAccessMaterialAdmin = canManageGuideArea || canManageMaterial;
+  const isParent = userRole === "parent";
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white shadow-sm">
       <div className="container mx-auto flex h-16 items-center px-4">
@@ -78,6 +80,14 @@ export function Header({ userRole }: HeaderProps) {
               Dokumente-Admin
             </Link>
           )}
+          {userRole === "admin" && (
+            <Link
+              href="/admin/news"
+              className="text-sm font-medium text-slate-700 hover:text-jdav-green transition-colors"
+            >
+              Vereinsnews
+            </Link>
+          )}
           {canManageGuideArea && (
             <Link
               href="/guide/dashboard"
@@ -88,6 +98,7 @@ export function Header({ userRole }: HeaderProps) {
           )}
         </nav>
         <div className="ml-auto flex items-center space-x-4">
+          <NotificationCenter isParent={isParent} />
           <Link
             href="/profile"
             className="hidden md:block text-sm font-medium text-slate-700 hover:text-jdav-green transition-colors"

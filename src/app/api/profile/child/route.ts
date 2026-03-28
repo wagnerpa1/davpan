@@ -4,6 +4,9 @@ import { createClient } from "@/utils/supabase/server";
 import { getServerURL } from "@/utils/url-helpers";
 
 export async function POST(req: NextRequest) {
+  const isAsyncRequest =
+    req.headers.get("x-requested-with") === "XMLHttpRequest";
+
   if (!isSameOriginRequest(req)) {
     return NextResponse.json(
       { error: "CSRF validation failed" },
@@ -36,7 +39,10 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  let savedAction: "child_updated" | "child_created" = "child_created";
+
   if (childId) {
+    savedAction = "child_updated";
     // Update existing child
     const { error } = await supabase
       .from("child_profiles")
@@ -76,7 +82,20 @@ export async function POST(req: NextRequest) {
   }
 
   // Redirect back to profile page
-  return NextResponse.redirect(new URL("/profile", await getServerURL()), {
+  const redirectPath =
+    savedAction === "child_updated" && childId
+      ? `/profile?saved=${savedAction}&child_id=${childId}`
+      : `/profile?saved=${savedAction}`;
+
+  if (isAsyncRequest) {
+    return NextResponse.json({
+      success: true,
+      saved: savedAction,
+      child_id: savedAction === "child_updated" ? childId : null,
+    });
+  }
+
+  return NextResponse.redirect(new URL(redirectPath, await getServerURL()), {
     status: 303, // See Other (forces GET request after POST)
   });
 }

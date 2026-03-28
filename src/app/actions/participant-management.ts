@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { dispatchNotification } from "@/lib/notifications/dispatcher";
+import { promoteWaitlistParticipants } from "@/lib/tours/waitlist";
 import { createClient } from "@/utils/supabase/server";
 
 export async function updateParticipantStatus(
@@ -32,6 +34,12 @@ export async function updateParticipantStatus(
   const participantUserId = regRes.data.user_id;
   const participantChildId = regRes.data.child_profile_id;
   const userRole = profileRes.data?.role;
+
+  const { data: tourInfo } = await supabase
+    .from("tours")
+    .select("group, title")
+    .eq("id", tourId)
+    .maybeSingle();
 
   // Permission check
   let canManage = userRole === "admin";
@@ -96,6 +104,45 @@ export async function updateParticipantStatus(
   if (error) {
     console.error("Supabase Error updating status:", error);
     throw new Error(`Failed to update status: ${error.message}`);
+  }
+
+  const notificationType =
+    newStatus === "waitlist" ? "waitlist" : ("registration" as const);
+
+  const statusText: Record<typeof newStatus, string> = {
+    confirmed: "bestaetigt",
+    cancelled: "abgelehnt bzw. storniert",
+    pending: "auf pending gesetzt",
+    waitlist: "auf die Warteliste gesetzt",
+  };
+
+  await dispatchNotification(supabase, {
+    type: notificationType,
+    title:
+      notificationType === "waitlist"
+        ? "Wartelisten-Update"
+        : "Anmeldestatus aktualisiert",
+    body: `Dein Status fuer "${tourInfo?.title || "diese Tour"}" wurde ${statusText[newStatus]}.`,
+    payload: {
+      registration_id: registrationId,
+      old_status: previousStatus,
+      new_status: newStatus,
+    },
+    recipientUserId: participantChildId ? null : participantUserId,
+    recipientChildId: participantChildId,
+    relatedTourId: tourId,
+    relatedGroupId: tourInfo?.group ?? null,
+  });
+
+  const freesCapacity =
+    newStatus === "cancelled" &&
+    (previousStatus === "confirmed" || previousStatus === "pending");
+
+  if (freesCapacity) {
+    await promoteWaitlistParticipants({
+      supabase,
+      tourId,
+    });
   }
 
   // Keep material reservations in sync with participant status.

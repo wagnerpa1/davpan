@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { canManageMaterial, isGuideRole } from "@/lib/auth";
+import { dispatchNotification } from "@/lib/notifications/dispatcher";
 import { createClient } from "@/utils/supabase/server";
 
 const ALLOWED_STATUS = new Set([
@@ -44,7 +45,9 @@ export async function updateReservationStatus(id: string, newStatus: string) {
 
   const { data: reservation, error: reservationError } = await supabase
     .from("material_reservations")
-    .select("id, status, tour_id, material_inventory_id")
+    .select(
+      "id, status, tour_id, material_inventory_id, user_id, child_profile_id",
+    )
     .eq("id", id)
     .single();
 
@@ -134,6 +137,40 @@ export async function updateReservationStatus(id: string, newStatus: string) {
   if (error) {
     console.error("Update reservation error: ", error);
     return { error: "Fehler beim Aktualisieren des Status." };
+  }
+
+  let relatedGroupId: string | null = null;
+  let relatedTourTitle: string | null = null;
+  if (reservation.tour_id) {
+    const { data: tourInfo } = await supabase
+      .from("tours")
+      .select("group, title")
+      .eq("id", reservation.tour_id)
+      .maybeSingle();
+
+    relatedGroupId = tourInfo?.group ?? null;
+    relatedTourTitle = tourInfo?.title ?? null;
+  }
+
+  if (reservation.user_id || reservation.child_profile_id) {
+    await dispatchNotification(supabase, {
+      type: "material",
+      title: "Materialstatus aktualisiert",
+      body: relatedTourTitle
+        ? `Deine Materialreservierung fuer "${relatedTourTitle}" ist jetzt "${newStatus}".`
+        : `Der Status deiner Materialreservierung ist jetzt "${newStatus}".`,
+      payload: {
+        reservation_id: id,
+        old_status: currentStatus,
+        new_status: newStatus,
+      },
+      recipientUserId: reservation.child_profile_id
+        ? null
+        : reservation.user_id,
+      recipientChildId: reservation.child_profile_id,
+      relatedTourId: reservation.tour_id,
+      relatedGroupId,
+    });
   }
 
   revalidatePath("/admin/material/reservations");

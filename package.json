@@ -29,13 +29,15 @@
     "react-dom": "19.2.3",
     "react-markdown": "^10.1.0",
     "tailwind-merge": "^3.5.0",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.0",
     "@serwist/turbopack": "^9.5.7",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/web-push": "^3.6.4",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",

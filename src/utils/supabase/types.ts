@@ -200,6 +200,167 @@ export interface Database {
           price_week?: number | null;
         };
       };
+      notification_preferences: {
+        Row: {
+          id: string;
+          user_id: string;
+          news_enabled: boolean;
+          system_enabled: boolean;
+          material_enabled: boolean;
+          comments_enabled: boolean;
+          group_notifications_enabled: boolean;
+          tour_group_ids: string[];
+          push_enabled: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          news_enabled?: boolean;
+          system_enabled?: boolean;
+          material_enabled?: boolean;
+          comments_enabled?: boolean;
+          group_notifications_enabled?: boolean;
+          tour_group_ids?: string[];
+          push_enabled?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          news_enabled?: boolean;
+          system_enabled?: boolean;
+          material_enabled?: boolean;
+          comments_enabled?: boolean;
+          group_notifications_enabled?: boolean;
+          tour_group_ids?: string[];
+          push_enabled?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      notifications: {
+        Row: {
+          id: string;
+          type: string;
+          title: string;
+          body: string;
+          payload: Json;
+          recipient_user_id: string | null;
+          recipient_child_id: string | null;
+          related_tour_id: string | null;
+          related_group_id: string | null;
+          news_post_id: string | null;
+          read_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          type: string;
+          title: string;
+          body: string;
+          payload?: Json;
+          recipient_user_id?: string | null;
+          recipient_child_id?: string | null;
+          related_tour_id?: string | null;
+          related_group_id?: string | null;
+          news_post_id?: string | null;
+          read_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          type?: string;
+          title?: string;
+          body?: string;
+          payload?: Json;
+          recipient_user_id?: string | null;
+          recipient_child_id?: string | null;
+          related_tour_id?: string | null;
+          related_group_id?: string | null;
+          news_post_id?: string | null;
+          read_at?: string | null;
+          created_at?: string;
+        };
+      };
+      child_notification_preferences: {
+        Row: {
+          id: string;
+          child_id: string;
+          parent_id: string;
+          news_enabled: boolean;
+          system_enabled: boolean;
+          material_enabled: boolean;
+          comments_enabled: boolean;
+          group_notifications_enabled: boolean;
+          tour_group_ids: string[];
+          push_enabled: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          child_id: string;
+          parent_id: string;
+          news_enabled?: boolean;
+          system_enabled?: boolean;
+          material_enabled?: boolean;
+          comments_enabled?: boolean;
+          group_notifications_enabled?: boolean;
+          tour_group_ids?: string[];
+          push_enabled?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          child_id?: string;
+          parent_id?: string;
+          news_enabled?: boolean;
+          system_enabled?: boolean;
+          material_enabled?: boolean;
+          comments_enabled?: boolean;
+          group_notifications_enabled?: boolean;
+          tour_group_ids?: string[];
+          push_enabled?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      news_posts: {
+        Row: {
+          id: string;
+          title: string;
+          content: string;
+          image_url: string | null;
+          published_by: string;
+          published_at: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          content: string;
+          image_url?: string | null;
+          published_by: string;
+          published_at?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          title?: string;
+          content?: string;
+          image_url?: string | null;
+          published_by?: string;
+          published_at?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
       profiles: {
         Row: {
           id: string;
@@ -245,6 +406,44 @@ export interface Database {
             | null;
           image_consent?: boolean | null;
           created_at?: string | null;
+        };
+      };
+      push_subscriptions: {
+        Row: {
+          id: string;
+          user_id: string;
+          endpoint: string;
+          p256dh: string;
+          auth: string;
+          user_agent: string | null;
+          created_at: string;
+          updated_at: string;
+          last_used_at: string | null;
+          disabled_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          endpoint: string;
+          p256dh: string;
+          auth: string;
+          user_agent?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          last_used_at?: string | null;
+          disabled_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          endpoint?: string;
+          p256dh?: string;
+          auth?: string;
+          user_agent?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          last_used_at?: string | null;
+          disabled_at?: string | null;
         };
       };
       report_images: {

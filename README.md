@@ -108,6 +108,46 @@ Wichtige Tabellen:
 - `tour_reports`
 - `report_images`
 - `documents`
+- `notification_preferences`
+- `child_notification_preferences`
+- `notifications`
+- `news_posts`
+- `push_subscriptions`
+
+---
+
+## Notifications & Vereinsnews (neu)
+
+- Notification Center als Popup in der Kopfzeile mit Tabs:
+  - `Ich`
+  - pro Kind (nur fuer Eltern)
+- Benachrichtigungseinstellungen im Profil:
+  - eigene Einstellungen (`/api/profile/notifications`)
+  - pro Kind (`/api/profile/child/notifications`)
+  - Kanäle: Vereinsnews, System, Material, Kommentare, Tour-Gruppen, Push
+- Admin-News-Dashboard:
+  - Seite: `/admin/news`
+  - API: `/api/admin/news`
+  - Beim Posten werden `notifications` fuer User/Kinder erzeugt (nach Opt-in)
+
+Migration:
+
+- `supabase/migrations/20260328_notifications_and_news.sql`
+
+Notification-Center APIs:
+
+- `GET /api/notifications/center`
+- `POST /api/notifications/mark-read`
+
+Push APIs:
+
+- `POST /api/push/subscription`
+- `DELETE /api/push/subscription`
+
+Serverseitiger Push-Versand:
+
+- zentral in `src/lib/notifications/push-dispatch.ts`
+- Versand wird beim Insert in `notifications` aus dem Dispatcher ausgelöst
 
 ---
 
@@ -214,6 +254,10 @@ Für stabile POST-/Server-Action-Requests im Deployment sollten diese Variablen 
 SITE_URL=https://deine-domain.tld
 NEXT_PUBLIC_SITE_URL=https://deine-domain.tld
 CSRF_TRUSTED_ORIGINS=https://deine-domain.tld,https://www.deine-domain.tld
+VAPID_PUBLIC_KEY=...
+VAPID_PRIVATE_KEY=...
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...
 ```
 
 Hinweis:

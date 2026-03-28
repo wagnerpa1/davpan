@@ -1,4 +1,11 @@
 import { redirect } from "next/navigation";
+import {
+  type NotificationPreference,
+  NotificationPreferencesPanel,
+  type TourGroupItem,
+} from "@/components/profile/NotificationPreferencesPanel";
+import { AnimatedSubmitButton } from "@/components/ui/AnimatedSubmitButton";
+import { AsyncForm } from "@/components/ui/AsyncForm";
 import { createClient } from "@/utils/supabase/server";
 
 interface ChildProfile {
@@ -37,6 +44,67 @@ export default async function ProfilePage() {
     children = fetchChildren || [];
   }
 
+  const defaultPreferences: NotificationPreference = {
+    news_enabled: true,
+    system_enabled: true,
+    material_enabled: true,
+    comments_enabled: true,
+    group_notifications_enabled: true,
+    push_enabled: false,
+    tour_group_ids: [],
+  };
+
+  const [{ data: userNotificationPreferences }, { data: tourGroups }] =
+    await Promise.all([
+      supabase
+        .from("notification_preferences")
+        .select(
+          "news_enabled, system_enabled, material_enabled, comments_enabled, group_notifications_enabled, push_enabled, tour_group_ids",
+        )
+        .eq("user_id", user.id)
+        .maybeSingle(),
+      supabase
+        .from("tour_groups")
+        .select("id, group_name")
+        .order("group_name", { ascending: true }),
+    ]);
+
+  const ownPreferences: NotificationPreference = {
+    ...defaultPreferences,
+    ...userNotificationPreferences,
+    tour_group_ids: userNotificationPreferences?.tour_group_ids ?? [],
+  };
+
+  const childPreferenceById = new Map<string, NotificationPreference>();
+
+  if (children.length > 0) {
+    const childIds = children.map((child) => child.id);
+    const { data: childPreferences } = await supabase
+      .from("child_notification_preferences")
+      .select(
+        "child_id, news_enabled, system_enabled, material_enabled, comments_enabled, group_notifications_enabled, push_enabled, tour_group_ids",
+      )
+      .in("child_id", childIds);
+
+    for (const row of childPreferences ?? []) {
+      childPreferenceById.set(row.child_id, {
+        news_enabled: row.news_enabled,
+        system_enabled: row.system_enabled,
+        material_enabled: row.material_enabled,
+        comments_enabled: row.comments_enabled,
+        group_notifications_enabled: row.group_notifications_enabled,
+        push_enabled: row.push_enabled,
+        tour_group_ids: row.tour_group_ids ?? [],
+      });
+    }
+  }
+
+  const childNotificationPreferences = children.map((child) => ({
+    id: child.id,
+    full_name: child.full_name,
+    preferences: childPreferenceById.get(child.id) ?? defaultPreferences,
+  }));
+
   return (
     <div className="container mx-auto max-w-2xl px-4 py-8">
       <h1 className="mb-6 text-3xl font-bold tracking-tight text-slate-900">
@@ -51,9 +119,14 @@ export default async function ProfilePage() {
           </p>
         </div>
 
-        <form action="/api/profile/update" method="POST" className="space-y-4">
+        <AsyncForm
+          action="/api/profile/update"
+          method="POST"
+          successKey="profile"
+          className="space-y-5"
+        >
           {/* In future steps: Add full edit form with emergency contact and medical info */}
-          <div>
+          <div className="space-y-1.5">
             <label
               htmlFor="profile-email"
               className="block text-sm font-medium text-slate-700"
@@ -69,7 +142,7 @@ export default async function ProfilePage() {
             />
           </div>
 
-          <div>
+          <div className="space-y-1.5">
             <label
               htmlFor="profile-full-name"
               className="block text-sm font-medium text-slate-700"
@@ -86,7 +159,7 @@ export default async function ProfilePage() {
             />
           </div>
 
-          <div>
+          <div className="space-y-1.5">
             <label
               htmlFor="profile-role-display"
               className="block text-sm font-medium text-slate-700"
@@ -113,7 +186,7 @@ export default async function ProfilePage() {
           </div>
 
           {profile?.role !== "parent" && (
-            <div>
+            <div className="space-y-1.5">
               <label
                 htmlFor="profile-birthdate"
                 className="block text-sm font-medium text-slate-700"
@@ -130,7 +203,7 @@ export default async function ProfilePage() {
             </div>
           )}
 
-          <div>
+          <div className="space-y-1.5">
             <label
               htmlFor="profile-phone"
               className="block text-sm font-medium text-slate-700"
@@ -147,7 +220,7 @@ export default async function ProfilePage() {
             />
           </div>
 
-          <div>
+          <div className="space-y-1.5">
             <label
               htmlFor="profile-emergency-phone"
               className="block text-sm font-medium text-slate-700"
@@ -164,7 +237,7 @@ export default async function ProfilePage() {
             />
           </div>
 
-          <div>
+          <div className="space-y-1.5">
             <label
               htmlFor="profile-medical-notes"
               className="block text-sm font-medium text-slate-700"
@@ -203,14 +276,21 @@ export default async function ProfilePage() {
             </label>
           </div>
 
-          <button
-            type="submit"
+          <AnimatedSubmitButton
+            successKey="profile"
+            successLabel="Gespeichert"
             className="inline-flex w-full items-center justify-center rounded-md bg-jdav-green px-4 py-2 font-medium text-white transition-colors hover:bg-jdav-green-dark"
           >
             Profil speichern
-          </button>
-        </form>
+          </AnimatedSubmitButton>
+        </AsyncForm>
       </div>
+
+      <NotificationPreferencesPanel
+        ownPreferences={ownPreferences}
+        tourGroups={(tourGroups as TourGroupItem[] | null) ?? []}
+        childPreferences={childNotificationPreferences}
+      />
 
       {profile?.role === "parent" && (
         <div className="mt-8 space-y-6 rounded-2xl bg-white p-6 shadow-sm border border-slate-200">
@@ -244,14 +324,16 @@ export default async function ProfilePage() {
                       </span>
                     </summary>
                     <div className="p-4 bg-white border-t border-slate-100">
-                      <form
+                      <AsyncForm
                         action="/api/profile/child"
                         method="POST"
-                        className="space-y-4"
+                        successKey="child_updated"
+                        successChildId={child.id}
+                        className="space-y-5"
                       >
                         <input type="hidden" name="child_id" value={child.id} />
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                          <div>
+                          <div className="space-y-1.5">
                             <label
                               htmlFor={`${child.id}-child-name`}
                               className="block text-xs font-medium text-slate-700 uppercase tracking-wider"
@@ -267,7 +349,7 @@ export default async function ProfilePage() {
                               className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
                             />
                           </div>
-                          <div>
+                          <div className="space-y-1.5">
                             <label
                               htmlFor={`${child.id}-child-birthdate`}
                               className="block text-xs font-medium text-slate-700 uppercase tracking-wider"
@@ -284,7 +366,7 @@ export default async function ProfilePage() {
                             />
                           </div>
                         </div>
-                        <div>
+                        <div className="space-y-1.5">
                           <label
                             htmlFor={`${child.id}-medical-notes`}
                             className="block text-xs font-medium text-slate-700 uppercase tracking-wider"
@@ -320,14 +402,16 @@ export default async function ProfilePage() {
                           </label>
                         </div>
                         <div className="flex justify-end">
-                          <button
-                            type="submit"
+                          <AnimatedSubmitButton
+                            successKey="child_updated"
+                            successChildId={child.id}
+                            successLabel="Gespeichert"
                             className="rounded-md bg-slate-800 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-slate-700"
                           >
                             Änderungen speichern
-                          </button>
+                          </AnimatedSubmitButton>
                         </div>
-                      </form>
+                      </AsyncForm>
                     </div>
                   </details>
                 </div>
@@ -343,13 +427,14 @@ export default async function ProfilePage() {
             <h3 className="mb-4 text-lg font-bold text-slate-900">
               Neues Kind hinzufügen
             </h3>
-            <form
+            <AsyncForm
               action="/api/profile/child"
               method="POST"
-              className="space-y-4 rounded-2xl bg-slate-50 p-6 border border-slate-100"
+              successKey="child_created"
+              className="space-y-5 rounded-2xl bg-slate-50 p-6 border border-slate-100"
             >
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
+                <div className="space-y-1.5">
                   <label
                     htmlFor="new-child-name"
                     className="block text-xs font-medium text-slate-700 uppercase tracking-wider"
@@ -365,7 +450,7 @@ export default async function ProfilePage() {
                     className="mt-1 block w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
                   />
                 </div>
-                <div>
+                <div className="space-y-1.5">
                   <label
                     htmlFor="new-child-birthdate"
                     className="block text-xs font-medium text-slate-700 uppercase tracking-wider"
@@ -381,7 +466,7 @@ export default async function ProfilePage() {
                   />
                 </div>
               </div>
-              <div>
+              <div className="space-y-1.5">
                 <label
                   htmlFor="new-child-medical-notes"
                   className="block text-xs font-medium text-slate-700 uppercase tracking-wider"
@@ -414,13 +499,14 @@ export default async function ProfilePage() {
                   </div>
                 </label>
               </div>
-              <button
-                type="submit"
+              <AnimatedSubmitButton
+                successKey="child_created"
+                successLabel="Kind hinzugefuegt"
                 className="inline-flex w-full items-center justify-center rounded-xl bg-jdav-green px-4 py-2.5 text-sm font-black text-white shadow-md transition-all hover:bg-jdav-green-dark hover:shadow-lg"
               >
                 Kind hinzufügen
-              </button>
-            </form>
+              </AnimatedSubmitButton>
+            </AsyncForm>
           </div>
         </div>
       )}

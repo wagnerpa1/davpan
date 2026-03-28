@@ -13,6 +13,9 @@ type ProfileUpdatePayload = Partial<{
 }>;
 
 export async function POST(req: NextRequest) {
+  const isAsyncRequest =
+    req.headers.get("x-requested-with") === "XMLHttpRequest";
+
   if (!isSameOriginRequest(req)) {
     return NextResponse.json(
       { error: "CSRF validation failed" },
@@ -61,7 +64,14 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  return NextResponse.redirect(new URL("/profile", await getServerURL()), {
-    status: 303,
-  });
+  if (isAsyncRequest) {
+    return NextResponse.json({ success: true, saved: "profile" });
+  }
+
+  return NextResponse.redirect(
+    new URL("/profile?saved=profile", await getServerURL()),
+    {
+      status: 303,
+    },
+  );
 }

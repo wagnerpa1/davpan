@@ -18,6 +18,13 @@ interface ReportImage {
   order_index: number | null;
 }
 
+interface NewsPost {
+  id: string;
+  title: string;
+  content: string;
+  published_at: string;
+}
+
 export default async function Home() {
   const [{ fullName, user }, supabase] = await Promise.all([
     getCurrentUserProfile(),
@@ -72,6 +79,12 @@ export default async function Home() {
     .order("created_at", { ascending: false })
     .limit(5);
 
+  const { data: recentNews } = await supabase
+    .from("news_posts")
+    .select("id, title, content, published_at")
+    .order("published_at", { ascending: false })
+    .limit(4);
+
   return (
     <div className="container mx-auto max-w-2xl px-4 py-8">
       <div className="mb-10 lg:mb-12">
@@ -117,6 +130,26 @@ export default async function Home() {
           </div>
 
           <div className="space-y-4">
+            {(recentNews as NewsPost[] | null)?.map((news) => (
+              <article
+                key={news.id}
+                className="rounded-2xl border border-green-200 bg-green-50 p-5"
+              >
+                <div className="mb-2 text-[10px] font-bold uppercase tracking-wider text-jdav-green">
+                  Vereinsnews
+                </div>
+                <h3 className="text-base font-bold text-slate-900">
+                  {news.title}
+                </h3>
+                <p className="mt-2 text-sm text-slate-700 line-clamp-3">
+                  {news.content}
+                </p>
+                <p className="mt-2 text-[10px] text-slate-500">
+                  {new Date(news.published_at).toLocaleString("de-DE")}
+                </p>
+              </article>
+            ))}
+
             {recentReports && recentReports.length > 0 ? (
               recentReports.map((report) => {
                 const previewImage = (

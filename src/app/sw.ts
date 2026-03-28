@@ -97,3 +97,54 @@ const serwist = new Serwist({
 });
 
 serwist.addEventListeners();
+
+self.addEventListener("push", (event) => {
+  if (!event.data) {
+    return;
+  }
+
+  const data = event.data.json() as {
+    title?: string;
+    body?: string;
+    payload?: {
+      url?: string;
+    };
+  };
+
+  const title = data.title || "JDAV Pfarrkirchen";
+  const body = data.body || "Neue Benachrichtigung";
+  const url = data.payload?.url || "/";
+
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body,
+      icon: "/android-chrome-192x192.png",
+      badge: "/favicon-32x32.png",
+      data: { url },
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url =
+    (event.notification.data as { url?: string } | undefined)?.url || "/";
+
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((clientList) => {
+        for (const client of clientList) {
+          if ("focus" in client) {
+            return client.focus();
+          }
+        }
+
+        if (self.clients.openWindow) {
+          return self.clients.openWindow(url);
+        }
+
+        return undefined;
+      }),
+  );
+});

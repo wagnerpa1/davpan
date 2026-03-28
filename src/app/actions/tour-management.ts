@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { cache } from "react";
+import { dispatchNotification } from "@/lib/notifications/dispatcher";
 import { createClient } from "@/utils/supabase/server";
 import { checkAndBookResource } from "./admin-resources";
 
@@ -36,6 +37,45 @@ interface MaterialTypeWithInventory {
   id: string;
   name: string;
   material_inventory: Array<{ size: string | null }> | null;
+}
+
+interface TourAudienceTarget {
+  user_id: string | null;
+  child_profile_id: string | null;
+}
+
+async function getTourAudienceTargets(
+  tourId: string,
+  supabase: Awaited<ReturnType<typeof createClient>>,
+) {
+  const { data } = await supabase
+    .from("tour_participants")
+    .select("user_id, child_profile_id")
+    .eq("tour_id", tourId)
+    .in("status", ["pending", "confirmed", "waitlist"]);
+
+  return (data ?? []) as TourAudienceTarget[];
+}
+
+async function notifyTourAudience(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  audience: TourAudienceTarget[],
+  input: {
+    type: "tour_update";
+    title: string;
+    body: string;
+    payload: Record<string, unknown>;
+    relatedTourId: string;
+    relatedGroupId: string | null;
+  },
+) {
+  for (const target of audience) {
+    await dispatchNotification(supabase, {
+      ...input,
+      recipientUserId: target.child_profile_id ? null : target.user_id,
+      recipientChildId: target.child_profile_id,
+    });
+  }
 }
 
 type TourUpdatePayload = {
@@ -246,6 +286,13 @@ export async function updateTour(tourId: string, formData: FormData) {
   if (userError || !user) throw new Error("Unauthorized");
 
   const payload: TourUpdatePayload = {};
+  const { data: previousTour } = await supabase
+    .from("tours")
+    .select("title, group, start_date, end_date, status")
+    .eq("id", tourId)
+    .maybeSingle();
+
+  const audienceTargets = await getTourAudienceTargets(tourId, supabase);
   const fields = [
     "title",
     "description",
@@ -339,6 +386,22 @@ export async function updateTour(tourId: string, formData: FormData) {
     }
   }
 
+  await notifyTourAudience(supabase, audienceTargets, {
+    type: "tour_update",
+    title: "Tour aktualisiert",
+    body: `Die Tour "${payload.title || previousTour?.title || "Tour"}" wurde aktualisiert. Bitte Details pruefen.`,
+    payload: {
+      tour_id: tourId,
+      previous_status: previousTour?.status ?? null,
+      next_status: payload.status ?? previousTour?.status ?? null,
+    },
+    relatedTourId: tourId,
+    relatedGroupId:
+      (typeof payload.group === "string" ? payload.group : null) ??
+      previousTour?.group ??
+      null,
+  });
+
   revalidatePath("/touren");
   revalidatePath(`/touren/${tourId}`);
   redirect(`/touren/${tourId}`);
@@ -368,6 +431,29 @@ export async function deleteTour(tourId: string) {
     if (tour?.created_by !== user.id) {
       throw new Error("Forbidden");
     }
+  }
+
+  const [{ data: tourData }, audienceTargets] = await Promise.all([
+    supabase
+      .from("tours")
+      .select("title, group")
+      .eq("id", tourId)
+      .maybeSingle(),
+    getTourAudienceTargets(tourId, supabase),
+  ]);
+
+  if (tourData) {
+    await notifyTourAudience(supabase, audienceTargets, {
+      type: "tour_update",
+      title: "Tour abgesagt",
+      body: `Die Tour "${tourData.title}" wurde abgesagt.`,
+      payload: {
+        tour_id: tourId,
+        cancelled: true,
+      },
+      relatedTourId: tourId,
+      relatedGroupId: tourData.group,
+    });
   }
 
   const { error } = await supabase.from("tours").delete().eq("id", tourId);

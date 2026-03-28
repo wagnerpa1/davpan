@@ -1,6 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import {
+  dispatchNotification,
+  dispatchToUsers,
+} from "@/lib/notifications/dispatcher";
+import { promoteWaitlistParticipants } from "@/lib/tours/waitlist";
 import { createClient } from "@/utils/supabase/server";
 
 export async function registerForTour(formData: FormData) {
@@ -31,7 +36,9 @@ export async function registerForTour(formData: FormData) {
   // 1.5 Fetch Tour data for capacity and age checks
   const { data: tour, error: tError } = await supabase
     .from("tours")
-    .select("max_participants, status, start_date, end_date, min_age")
+    .select(
+      "max_participants, status, start_date, end_date, min_age, group, title, created_by",
+    )
     .eq("id", tourId)
     .single();
 
@@ -143,6 +150,8 @@ export async function registerForTour(formData: FormData) {
 
     if (pError) return { error: "Fehler beim Erstellen der Anmeldung." };
 
+    const actorName = childId && childId !== "self" ? "dein Kind" : "du";
+
     // 4.5 Auto-update tour status if full
     const newCount = currentCount + 1;
     if (
@@ -228,6 +237,59 @@ export async function registerForTour(formData: FormData) {
       }
     }
 
+    // 6. Phase-1 Notifications: Teilnehmer + Tour-Verantwortliche benachrichtigen.
+    await dispatchNotification(supabase, {
+      type: isWaitlist ? "waitlist" : "registration",
+      title: isWaitlist ? "Warteliste" : "Anmeldung eingegangen",
+      body: isWaitlist
+        ? `${actorName} steht jetzt auf der Warteliste.`
+        : `${actorName} ist jetzt mit Status "pending" angemeldet.`,
+      payload: {
+        tour_id: tourId,
+        status,
+      },
+      recipientUserId: childId && childId !== "self" ? null : user.id,
+      recipientChildId: childId && childId !== "self" ? childId : null,
+      relatedTourId: tourId,
+      relatedGroupId: tour.group,
+    });
+
+    const [{ data: guides }, { data: tourOwnerProfile }] = await Promise.all([
+      supabase.from("tour_guides").select("user_id").eq("tour_id", tourId),
+      tour.created_by
+        ? supabase
+            .from("profiles")
+            .select("id, role")
+            .eq("id", tour.created_by)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+    ]);
+
+    const managerIds = new Set<string>();
+    for (const guide of guides ?? []) {
+      if (guide.user_id) {
+        managerIds.add(guide.user_id);
+      }
+    }
+
+    if (tourOwnerProfile?.id && tourOwnerProfile.role === "admin") {
+      managerIds.add(tourOwnerProfile.id);
+    }
+
+    await dispatchToUsers(supabase, [...managerIds], {
+      type: isWaitlist ? "waitlist" : "registration",
+      title: isWaitlist ? "Neue Wartelisten-Anmeldung" : "Neue Tour-Anmeldung",
+      body: isWaitlist
+        ? `Eine Anmeldung ist auf der Warteliste fuer "${tour.title}" gelandet.`
+        : `Eine neue Anmeldung fuer "${tour.title}" wartet auf Bestaetigung.`,
+      payload: {
+        tour_id: tourId,
+        status,
+      },
+      relatedTourId: tourId,
+      relatedGroupId: tour.group,
+    });
+
     revalidatePath(`/touren/${tourId}`);
     return {
       success: true,
@@ -265,6 +327,28 @@ export async function cancelRegistration(participantId: string) {
     .eq("id", participantId);
 
   if (error) return { error: "Absage fehlgeschlagen." };
+
+  await dispatchNotification(supabase, {
+    type: "registration",
+    title: "Anmeldung storniert",
+    body: "Deine Anmeldung wurde storniert.",
+    payload: {
+      participant_id: participantId,
+      status: "cancelled",
+    },
+    recipientUserId: reg.child_profile_id ? null : user.id,
+    recipientChildId: reg.child_profile_id ?? null,
+    relatedTourId: reg.tour_id,
+    relatedGroupId: null,
+  });
+
+  const freesCapacity = reg.status === "confirmed" || reg.status === "pending";
+  if (freesCapacity) {
+    await promoteWaitlistParticipants({
+      supabase,
+      tourId: reg.tour_id,
+    });
+  }
 
   // Cancel associated material reservations & restore inventory
   const childProfileMatch = reg.child_profile_id
