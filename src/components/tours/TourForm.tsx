@@ -537,9 +537,6 @@ export function TourForm({
           <div>
             <div className="flex justify-between items-center mb-1">
               <Label htmlFor="max_participants">Max. Teilnehmer</Label>
-              <span className="text-[10px] text-slate-400">
-                Leer lassen für unbegrenzt
-              </span>
             </div>
             <Input
               id="max_participants"
@@ -553,9 +550,6 @@ export function TourForm({
           <div>
             <div className="flex justify-between items-center mb-1">
               <Label htmlFor="min_age">Mindestalter</Label>
-              <span className="text-[10px] text-slate-400">
-                Leer lassen für kein Limit
-              </span>
             </div>
             <Input
               id="min_age"
@@ -572,7 +566,7 @@ export function TourForm({
               id="status"
               name="status"
               defaultValue={initialData?.status || "planning"}
-              className="mt-1 flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-jdav-green"
+              className=" flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-jdav-green"
             >
               <option value="planning">Planung</option>
               <option value="open">Anmeldung offen</option>

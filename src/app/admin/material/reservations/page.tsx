@@ -22,18 +22,23 @@ interface ReservationRow {
   child_profiles?: { full_name?: string | null } | null;
   material_inventory?: {
     size?: string | null;
+    quantity_available?: number | null;
     material_types?: { name?: string | null } | null;
   } | null;
 }
 
 const statusLabel = (status: string | null) => {
   switch (status) {
+    case "requested":
+      return "Angefragt";
     case "reserved":
       return "Reserviert";
     case "on loan":
       return "Ausgeliehen";
     case "returned":
       return "Zurückgegeben";
+    case "cancelled":
+      return "Storniert";
     default:
       return status || "Unbekannt";
   }
@@ -41,18 +46,28 @@ const statusLabel = (status: string | null) => {
 
 const statusColor = (status: string | null) => {
   switch (status) {
+    case "requested":
+      return "bg-slate-100 text-slate-700";
     case "reserved":
       return "bg-amber-100 text-amber-700";
     case "on loan":
       return "bg-blue-100 text-blue-700";
     case "returned":
       return "bg-green-100 text-green-700";
+    case "cancelled":
+      return "bg-red-100 text-red-700";
     default:
       return "bg-slate-100 text-slate-700";
   }
 };
 
-export default async function AdminMaterialReservationsPage() {
+export default async function AdminMaterialReservationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const activeView = params.view === "problematic" ? "problematic" : "all";
   const supabase = await createClient();
   const authContext = await getCurrentUserProfile();
 
@@ -72,6 +87,7 @@ export default async function AdminMaterialReservationsPage() {
       tour_id,
       tours:tour_id (title),
       material_inventory:material_inventory_id(
+        quantity_available,
         size,
         material_types(name)
       ),
@@ -87,6 +103,36 @@ export default async function AdminMaterialReservationsPage() {
       </div>
     );
   }
+
+  const unavailableRequested =
+    (reservations as ReservationRow[] | null)?.filter(
+      (res) =>
+        res.status === "requested" &&
+        (res.material_inventory?.quantity_available ?? 0) <= 0,
+    ) || [];
+
+  const isProblematicRequest = (res: ReservationRow) =>
+    res.status === "requested" &&
+    (res.material_inventory?.quantity_available ?? 0) <= 0;
+
+  const sortedReservations = ((reservations as ReservationRow[] | null) || [])
+    .slice()
+    .sort((a, b) => {
+      const aProblematic = isProblematicRequest(a) ? 1 : 0;
+      const bProblematic = isProblematicRequest(b) ? 1 : 0;
+      if (aProblematic !== bProblematic) {
+        return bProblematic - aProblematic;
+      }
+
+      const aTs = a.loan_date ? Date.parse(a.loan_date) : 0;
+      const bTs = b.loan_date ? Date.parse(b.loan_date) : 0;
+      return bTs - aTs;
+    });
+
+  const visibleReservations =
+    activeView === "problematic"
+      ? sortedReservations.filter(isProblematicRequest)
+      : sortedReservations;
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto px-4 py-8 pb-32">
@@ -109,6 +155,41 @@ export default async function AdminMaterialReservationsPage() {
         </p>
       </div>
 
+      <div className="flex items-center gap-2 rounded-xl bg-slate-100 p-1 w-fit">
+        <Link
+          href="/admin/material/reservations"
+          className={cn(
+            "rounded-lg px-3 py-1.5 text-xs font-bold transition-colors",
+            activeView === "all"
+              ? "bg-white text-slate-900 shadow-sm"
+              : "text-slate-500 hover:text-slate-800",
+          )}
+        >
+          Alle
+        </Link>
+        <Link
+          href="/admin/material/reservations?view=problematic"
+          className={cn(
+            "rounded-lg px-3 py-1.5 text-xs font-bold transition-colors",
+            activeView === "problematic"
+              ? "bg-white text-red-700 shadow-sm"
+              : "text-slate-500 hover:text-red-700",
+          )}
+        >
+          Nur problematische Anfragen ({unavailableRequested.length})
+        </Link>
+      </div>
+
+      {unavailableRequested.length > 0 && (
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+          <p className="font-bold">Achtung: Material nicht verfuegbar</p>
+          <p className="mt-1">
+            {unavailableRequested.length} Anfrage(n) koennen aktuell nicht auf
+            "Reserviert" gesetzt werden, weil kein Bestand verfuegbar ist.
+          </p>
+        </div>
+      )}
+
       <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
         <table className="w-full text-left text-sm">
           <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200 uppercase tracking-tighter text-xs">
@@ -122,11 +203,16 @@ export default async function AdminMaterialReservationsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 text-slate-700">
-            {(reservations as ReservationRow[] | null)?.length ? (
-              (reservations as ReservationRow[]).map((res) => (
+            {visibleReservations.length ? (
+              visibleReservations.map((res) => (
                 <tr
                   key={res.id}
-                  className="hover:bg-slate-50 transition-colors"
+                  className={cn(
+                    "transition-colors",
+                    isProblematicRequest(res)
+                      ? "bg-red-50/50 hover:bg-red-50"
+                      : "hover:bg-slate-50",
+                  )}
                 >
                   <td className="px-6 py-4">
                     <div className="font-bold text-slate-900">

@@ -10,6 +10,27 @@ import { createClient } from "@/utils/supabase/server";
 
 type TourCardItem = ComponentProps<typeof TourCard>["tour"];
 
+type RawTourCardItem = Omit<
+  TourCardItem,
+  "tour_groups" | "tour_categorys" | "tour_guides"
+> & {
+  tour_groups?:
+    | { group_name: string | null }
+    | { group_name: string | null }[]
+    | null;
+  tour_categorys?:
+    | { category: string | null }
+    | { category: string | null }[]
+    | null;
+  tour_guides?: Array<{
+    user_id: string;
+    profiles?:
+      | { full_name?: string | null }
+      | { full_name?: string | null }[]
+      | null;
+  }>;
+};
+
 interface TourCategoryOption {
   id: string;
   category: string | null;
@@ -19,6 +40,24 @@ function toTimestamp(value: string | null | undefined) {
   if (!value) return 0;
   const ts = Date.parse(value);
   return Number.isNaN(ts) ? 0 : ts;
+}
+
+function normalizeTourRows(rows: RawTourCardItem[] | null): TourCardItem[] {
+  return (rows || []).map((tour) => ({
+    ...tour,
+    tour_groups: Array.isArray(tour.tour_groups)
+      ? (tour.tour_groups[0] ?? null)
+      : tour.tour_groups,
+    tour_categorys: Array.isArray(tour.tour_categorys)
+      ? (tour.tour_categorys[0] ?? null)
+      : tour.tour_categorys,
+    tour_guides: tour.tour_guides?.map((guide) => ({
+      ...guide,
+      profiles: Array.isArray(guide.profiles)
+        ? (guide.profiles[0] ?? null)
+        : guide.profiles,
+    })),
+  }));
 }
 
 export default async function TourenPage({
@@ -86,7 +125,16 @@ export default async function TourenPage({
   let query = supabase
     .from("tours")
     .select(`
-      *,
+      id,
+      title,
+      category,
+      status,
+      start_date,
+      end_date,
+      target_area,
+      max_participants,
+      difficulty,
+      group,
       tour_guides (
         user_id,
         profiles (
@@ -125,7 +173,9 @@ export default async function TourenPage({
   const canCreate = userRole === "guide" || userRole === "admin";
 
   // Apply in-memory filters (Guide & Availability) and Sorting (Capacity)
-  let filteredTours: TourCardItem[] = (tours as TourCardItem[]) || [];
+  let filteredTours: TourCardItem[] = normalizeTourRows(
+    tours as RawTourCardItem[] | null,
+  );
 
   if (guideFilter) {
     filteredTours = filteredTours.filter((tour) =>

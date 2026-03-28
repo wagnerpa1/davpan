@@ -129,13 +129,17 @@ export async function registerForTour(formData: FormData) {
     }
 
     // 4. Create participant record
-    const { error: pError } = await supabase.from("tour_participants").insert({
-      tour_id: tourId,
-      user_id: user.id,
-      child_profile_id: childId && childId !== "self" ? childId : null,
-      status: status,
-      waitlist_position: waitlistPosition,
-    });
+    const { data: createdParticipant, error: pError } = await supabase
+      .from("tour_participants")
+      .insert({
+        tour_id: tourId,
+        user_id: user.id,
+        child_profile_id: childId && childId !== "self" ? childId : null,
+        status: status,
+        waitlist_position: waitlistPosition,
+      })
+      .select("id")
+      .single();
 
     if (pError) return { error: "Fehler beim Erstellen der Anmeldung." };
 
@@ -166,6 +170,12 @@ export async function registerForTour(formData: FormData) {
           .single();
 
         if (invError || !invItem) {
+          if (createdParticipant?.id) {
+            await supabase
+              .from("tour_participants")
+              .delete()
+              .eq("id", createdParticipant.id);
+          }
           // If a requested material is not available, we fail the WHOLE reservation
           // (or at least inform the user). The user said "materialreservierung funktioniert nicht".
           // We'll return an error here to prevent partial success confusion.
@@ -198,11 +208,17 @@ export async function registerForTour(formData: FormData) {
           .insert(reservationData);
 
         if (mError) {
+          if (createdParticipant?.id) {
+            await supabase
+              .from("tour_participants")
+              .delete()
+              .eq("id", createdParticipant.id);
+          }
           console.error("Material reservation failed:", mError);
           return { error: "Fehler beim Reservieren der Materialien." };
         }
 
-        // 5.3 Decrement inventory
+        // 5.3 Decrement inventory for confirmed reservation records
         for (const update of inventoryUpdates) {
           await supabase
             .from("material_inventory")
@@ -257,25 +273,27 @@ export async function cancelRegistration(participantId: string) {
 
   const { data: resItems } = await supabase
     .from("material_reservations")
-    .select("id, material_inventory_id")
+    .select("id, material_inventory_id, status")
     .match({ tour_id: reg.tour_id, user_id: user.id })
     .or(childProfileMatch)
     .neq("status", "cancelled");
 
   if (resItems && resItems.length > 0) {
     for (const resItem of resItems) {
-      // Restore inventory
-      const { data: inv } = await supabase
-        .from("material_inventory")
-        .select("quantity_available")
-        .eq("id", resItem.material_inventory_id)
-        .single();
-
-      if (inv) {
-        await supabase
+      // Bestand nur zurückgeben, wenn die Anfrage bereits reserviert/ausgegeben wurde.
+      if (resItem.status === "reserved" || resItem.status === "on loan") {
+        const { data: inv } = await supabase
           .from("material_inventory")
-          .update({ quantity_available: inv.quantity_available + 1 })
-          .eq("id", resItem.material_inventory_id);
+          .select("quantity_available")
+          .eq("id", resItem.material_inventory_id)
+          .single();
+
+        if (inv) {
+          await supabase
+            .from("material_inventory")
+            .update({ quantity_available: inv.quantity_available + 1 })
+            .eq("id", resItem.material_inventory_id);
+        }
       }
 
       // Update reservation status

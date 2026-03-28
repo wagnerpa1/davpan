@@ -200,7 +200,7 @@ export function ParticipantManagement({
             alt="JDAV Logo"
             width={240}
             height={64}
-            className="h-16 w-auto"
+            className="h-auto w-60"
           />
         </div>
       </div>

@@ -20,7 +20,7 @@ export async function updateParticipantStatus(
     supabase.from("profiles").select("role").eq("id", user.id).single(),
     supabase
       .from("tour_participants")
-      .select("tour_id")
+      .select("tour_id, user_id, child_profile_id, status")
       .eq("id", registrationId)
       .single(),
   ]);
@@ -28,6 +28,9 @@ export async function updateParticipantStatus(
   if (!regRes.data) throw new Error("Registration not found");
 
   const tourId = regRes.data.tour_id;
+  const previousStatus = regRes.data.status;
+  const participantUserId = regRes.data.user_id;
+  const participantChildId = regRes.data.child_profile_id;
   const userRole = profileRes.data?.role;
 
   // Permission check
@@ -47,6 +50,44 @@ export async function updateParticipantStatus(
 
   if (!canManage) throw new Error("Forbidden");
 
+  const childProfileFilter = participantChildId
+    ? `child_profile_id.eq.${participantChildId}`
+    : "child_profile_id.is.null";
+
+  const { data: materialReservations } = await supabase
+    .from("material_reservations")
+    .select("id, status, material_inventory_id")
+    .match({
+      tour_id: tourId,
+      user_id: participantUserId,
+    })
+    .or(childProfileFilter);
+
+  // Pre-flight check before restoring a participant.
+  if (
+    materialReservations &&
+    previousStatus === "cancelled" &&
+    newStatus !== "cancelled"
+  ) {
+    for (const reservation of materialReservations) {
+      if (reservation.status !== "cancelled") {
+        continue;
+      }
+
+      const { data: inventory } = await supabase
+        .from("material_inventory")
+        .select("quantity_available")
+        .eq("id", reservation.material_inventory_id)
+        .single();
+
+      if (!inventory || inventory.quantity_available <= 0) {
+        throw new Error(
+          "Wiederherstellung nicht möglich: reserviertes Material ist aktuell nicht verfügbar.",
+        );
+      }
+    }
+  }
+
   const { error } = await supabase
     .from("tour_participants")
     .update({ status: newStatus })
@@ -55,6 +96,69 @@ export async function updateParticipantStatus(
   if (error) {
     console.error("Supabase Error updating status:", error);
     throw new Error(`Failed to update status: ${error.message}`);
+  }
+
+  // Keep material reservations in sync with participant status.
+  if (materialReservations && materialReservations.length > 0) {
+    if (newStatus === "cancelled") {
+      for (const reservation of materialReservations) {
+        if (reservation.status === "cancelled") {
+          continue;
+        }
+
+        if (
+          reservation.status === "reserved" ||
+          reservation.status === "on loan"
+        ) {
+          const { data: inventory } = await supabase
+            .from("material_inventory")
+            .select("quantity_available")
+            .eq("id", reservation.material_inventory_id)
+            .single();
+
+          if (inventory) {
+            await supabase
+              .from("material_inventory")
+              .update({ quantity_available: inventory.quantity_available + 1 })
+              .eq("id", reservation.material_inventory_id);
+          }
+        }
+
+        await supabase
+          .from("material_reservations")
+          .update({ status: "cancelled" })
+          .eq("id", reservation.id);
+      }
+    }
+
+    // If a previously cancelled participant is restored, reactivate reservation.
+    if (previousStatus === "cancelled" && newStatus !== "cancelled") {
+      for (const reservation of materialReservations) {
+        if (reservation.status !== "cancelled") {
+          continue;
+        }
+
+        const { data: inventory } = await supabase
+          .from("material_inventory")
+          .select("quantity_available")
+          .eq("id", reservation.material_inventory_id)
+          .single();
+
+        if (!inventory || inventory.quantity_available <= 0) {
+          continue;
+        }
+
+        await supabase
+          .from("material_inventory")
+          .update({ quantity_available: inventory.quantity_available - 1 })
+          .eq("id", reservation.material_inventory_id);
+
+        await supabase
+          .from("material_reservations")
+          .update({ status: "reserved" })
+          .eq("id", reservation.id);
+      }
+    }
   }
 
   // Sync tour status
@@ -88,5 +192,6 @@ export async function updateParticipantStatus(
   }
 
   revalidatePath(`/touren/${tourId}`);
+  revalidatePath("/admin/material/reservations");
   return { success: true };
 }

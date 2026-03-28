@@ -17,7 +17,6 @@ import { notFound } from "next/navigation";
 import { DeleteTourButton } from "@/components/tours/DeleteTourButton";
 import { ParticipantManagement } from "@/components/tours/ParticipantManagement";
 import { TourRegistrationSection } from "@/components/tours/TourRegistrationSection";
-import { PrintButton } from "@/components/ui/PrintButton";
 import { getCurrentUserProfile } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/server";
@@ -318,7 +317,6 @@ export default async function TourDetailPage({
         </Link>
         {tourData.canManage && (
           <div className="flex gap-2">
-            <PrintButton />
             <Link href={`/touren/${id}/edit`}>
               <button
                 type="button"

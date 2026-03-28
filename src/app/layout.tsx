@@ -287,7 +287,7 @@ export default async function RootLayout({
   const { role: userRole, user } = await getCurrentUserProfile();
 
   return (
-    <html lang="de">
+    <html lang="de" data-scroll-behavior="smooth">
       <body
         className={`${GeistSans.variable} ${GeistMono.variable} flex min-h-screen flex-col antialiased`}
       >

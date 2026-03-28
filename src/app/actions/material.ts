@@ -46,7 +46,7 @@ export async function createIndependentMaterialReservation(formData: FormData) {
         quantity: 1, // Standard für Einzelbuchungen
         loan_date: loanDate,
         return_date: returnDate,
-        status: "reserved",
+        status: "requested",
       });
 
     if (mError) {
@@ -54,20 +54,73 @@ export async function createIndependentMaterialReservation(formData: FormData) {
       return { error: "Fehler beim Erstellen der Reservierung." };
     }
 
-    // 3. Decrement inventory
-    await supabase
-      .from("material_inventory")
-      .update({ quantity_available: invItem.quantity_available - 1 })
-      .eq("id", inventoryId);
-
     revalidatePath("/material");
     return {
       success: true,
       message:
-        "Material erfolgreich angefragt. Ein Admin wird die Rückmeldung überprüfen.",
+        "Material erfolgreich angefragt. Ein Admin bestätigt die Reservierung.",
     };
   } catch (err: unknown) {
     console.error("Registration error:", err);
     return { error: "Bei der Buchung ist ein Fehler aufgetreten." };
   }
+}
+
+export async function cancelOwnPrivateMaterialReservation(
+  reservationId: string,
+): Promise<void> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("Nicht eingeloggt.");
+  }
+
+  const { data: reservation, error: reservationError } = await supabase
+    .from("material_reservations")
+    .select("id, user_id, tour_id, status, material_inventory_id")
+    .eq("id", reservationId)
+    .single();
+
+  if (reservationError || !reservation) {
+    throw new Error("Reservierung nicht gefunden.");
+  }
+
+  if (reservation.user_id !== user.id || reservation.tour_id !== null) {
+    throw new Error("Keine Berechtigung fuer diese Reservierung.");
+  }
+
+  if (reservation.status === "cancelled" || reservation.status === "returned") {
+    throw new Error("Diese Reservierung kann nicht mehr storniert werden.");
+  }
+
+  if (reservation.status === "reserved" || reservation.status === "on loan") {
+    const { data: inventory } = await supabase
+      .from("material_inventory")
+      .select("quantity_available")
+      .eq("id", reservation.material_inventory_id)
+      .single();
+
+    if (inventory) {
+      await supabase
+        .from("material_inventory")
+        .update({ quantity_available: inventory.quantity_available + 1 })
+        .eq("id", reservation.material_inventory_id);
+    }
+  }
+
+  const { error: updateError } = await supabase
+    .from("material_reservations")
+    .update({ status: "cancelled" })
+    .eq("id", reservationId);
+
+  if (updateError) {
+    throw new Error("Stornierung fehlgeschlagen.");
+  }
+
+  revalidatePath("/material");
+  revalidatePath("/admin/material/reservations");
 }

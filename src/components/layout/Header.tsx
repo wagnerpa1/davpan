@@ -18,7 +18,7 @@ export function Header({ userRole }: HeaderProps) {
             alt="JDAV Pfarrkirchen Logo"
             width={180}
             height={48}
-            className="h-10 w-auto sm:h-12"
+            className="h-auto w-[88px] sm:w-[104px] md:w-[120px]"
           />
         </Link>
         <nav className="ml-8 hidden md:flex items-center space-x-6">

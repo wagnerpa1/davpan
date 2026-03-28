@@ -1,5 +1,7 @@
+import { format } from "date-fns";
 import { Euro, Package, Ruler, Settings } from "lucide-react";
 import Link from "next/link";
+import { cancelOwnPrivateMaterialReservation } from "@/app/actions/material";
 import { MaterialBookingForm } from "@/components/material/MaterialBookingForm";
 import { getCurrentUserProfile } from "@/lib/auth";
 import { createClient } from "@/utils/supabase/server";
@@ -41,12 +43,79 @@ interface MaterialTypeRow {
   pricing: MaterialPricingItem[] | null;
 }
 
+interface PrivateReservationRow {
+  id: string;
+  status: string | null;
+  loan_date: string | null;
+  return_date: string | null;
+  material_inventory?: {
+    size?: string | null;
+    material_types?: {
+      name?: string | null;
+    } | null;
+  } | null;
+}
+
+function reservationStatusLabel(status: string | null) {
+  switch (status) {
+    case "requested":
+      return "Angefragt";
+    case "reserved":
+      return "Reserviert";
+    case "on loan":
+      return "Ausgeliehen";
+    case "returned":
+      return "Zurueckgegeben";
+    case "cancelled":
+      return "Storniert";
+    default:
+      return status || "Unbekannt";
+  }
+}
+
+function reservationStatusClasses(status: string | null) {
+  switch (status) {
+    case "requested":
+      return "bg-slate-100 text-slate-700";
+    case "reserved":
+      return "bg-amber-100 text-amber-700";
+    case "on loan":
+      return "bg-blue-100 text-blue-700";
+    case "returned":
+      return "bg-green-100 text-green-700";
+    case "cancelled":
+      return "bg-red-100 text-red-700";
+    default:
+      return "bg-slate-100 text-slate-700";
+  }
+}
+
 export default async function MaterialPage() {
   const supabase = await createClient();
   const authContext = await getCurrentUserProfile();
 
   const isAdminOrGuide =
     authContext.role === "admin" || authContext.role === "guide";
+
+  const privateReservations = authContext.user
+    ? (
+        await supabase
+          .from("material_reservations")
+          .select(`
+              id,
+              status,
+              loan_date,
+              return_date,
+              material_inventory:material_inventory_id(
+                size,
+                material_types(name)
+              )
+            `)
+          .eq("user_id", authContext.user.id)
+          .is("tour_id", null)
+          .order("loan_date", { ascending: false })
+      ).data || []
+    : [];
 
   // Hole das gesamte Material
   const { data: materials, error } = await supabase
@@ -143,6 +212,84 @@ export default async function MaterialPage() {
           >
             Zum Login
           </Link>
+        </div>
+      )}
+
+      {authContext.user && (
+        <div className="mb-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-bold text-slate-900">
+            Meine privaten Ausleihen
+          </h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Hier siehst du den Status deiner privaten Reservierungen.
+          </p>
+
+          <div className="mt-4 space-y-3">
+            {(privateReservations as PrivateReservationRow[]).length > 0 ? (
+              (privateReservations as PrivateReservationRow[]).map(
+                (reservation) => (
+                  <div
+                    key={reservation.id}
+                    className="rounded-xl border border-slate-100 bg-slate-50 p-4"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="font-semibold text-slate-900">
+                        {reservation.material_inventory?.material_types?.name ||
+                          "Unbekanntes Material"}
+                        {reservation.material_inventory?.size && (
+                          <span className="ml-2 text-xs text-slate-500">
+                            ({reservation.material_inventory.size})
+                          </span>
+                        )}
+                      </div>
+                      <span
+                        className={`inline-flex rounded-full px-2 py-0.5 text-xs font-bold uppercase ${reservationStatusClasses(
+                          reservation.status,
+                        )}`}
+                      >
+                        {reservationStatusLabel(reservation.status)}
+                      </span>
+                    </div>
+                    <div className="mt-2 text-xs text-slate-600">
+                      Von{" "}
+                      {reservation.loan_date
+                        ? format(new Date(reservation.loan_date), "dd.MM.yyyy")
+                        : "-"}{" "}
+                      bis{" "}
+                      {reservation.return_date
+                        ? format(
+                            new Date(reservation.return_date),
+                            "dd.MM.yyyy",
+                          )
+                        : "-"}
+                    </div>
+
+                    {(reservation.status === "requested" ||
+                      reservation.status === "reserved") && (
+                      <form
+                        action={cancelOwnPrivateMaterialReservation.bind(
+                          null,
+                          reservation.id,
+                        )}
+                        className="mt-3"
+                      >
+                        <button
+                          type="submit"
+                          className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-50"
+                        >
+                          Reservierung stornieren
+                        </button>
+                      </form>
+                    )}
+                  </div>
+                ),
+              )
+            ) : (
+              <p className="text-sm text-slate-500 italic">
+                Du hast aktuell keine privaten Reservierungen.
+              </p>
+            )}
+          </div>
         </div>
       )}
 

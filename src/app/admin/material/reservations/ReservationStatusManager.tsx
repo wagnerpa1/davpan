@@ -32,13 +32,15 @@ export function ReservationStatusManager({
   return (
     <select
       disabled={isPending}
-      value={currentStatus || "reserved"}
+      value={currentStatus || "requested"}
       onChange={handleStatusChange}
       className={`text-xs font-bold rounded-lg border-slate-200 py-1.5 pl-2 pr-6 cursor-pointer focus:ring-1 focus:ring-jdav-green ${isPending ? "opacity-50" : ""}`}
     >
+      <option value="requested">Angefragt</option>
       <option value="reserved">Reservieren</option>
       <option value="on loan">Ausgeben</option>
       <option value="returned">Zurücknehmen</option>
+      <option value="cancelled">Stornieren</option>
     </select>
   );
 }

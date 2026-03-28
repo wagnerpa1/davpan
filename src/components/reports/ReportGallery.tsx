@@ -17,7 +17,6 @@ interface ReportGalleryProps {
 
 export function ReportGallery({ images }: ReportGalleryProps) {
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
 
   // Keyboard navigation for lightbox
   useEffect(() => {
@@ -89,10 +88,7 @@ export function ReportGallery({ images }: ReportGalleryProps) {
       </div>
 
       {/* Carousel */}
-      <div
-        ref={scrollRef}
-        className="flex overflow-x-auto scrollbar-hide snap-x snap-mandatory gap-3 pb-4 -mx-4 px-4 sm:mx-0 sm:px-0"
-      >
+      <div className="flex overflow-x-auto scrollbar-hide snap-x snap-mandatory gap-3 pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
         {images.map((img, idx) => (
           <button
             key={img.id}

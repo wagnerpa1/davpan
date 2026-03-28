@@ -25,6 +25,24 @@ interface GuideDashboardTour {
   tour_categorys?: { category: string | null } | null;
 }
 
+type RawGuideDashboardTour = Omit<GuideDashboardTour, "tour_categorys"> & {
+  tour_categorys?:
+    | { category: string | null }
+    | { category: string | null }[]
+    | null;
+};
+
+function normalizeTours(
+  data: RawGuideDashboardTour[] | null,
+): GuideDashboardTour[] {
+  return (data || []).map((tour) => ({
+    ...tour,
+    tour_categorys: Array.isArray(tour.tour_categorys)
+      ? (tour.tour_categorys[0] ?? null)
+      : tour.tour_categorys,
+  }));
+}
+
 export default async function GuideDashboardPage() {
   const supabase = await createClient();
 
@@ -52,21 +70,21 @@ export default async function GuideDashboardPage() {
   // Fetch tours
   let tours: GuideDashboardTour[];
   const selectQuery =
-    "*, tour_participants(count), tour_reports(id), tour_categorys!tours_category_fkey(category)";
+    "id, status, title, start_date, max_participants, category, tour_participants(count), tour_reports(id), tour_categorys!tours_category_fkey(category)";
 
   if (isAdmin) {
     const { data } = await supabase
       .from("tours")
       .select(selectQuery)
       .order("start_date", { ascending: true });
-    tours = data || [];
+    tours = normalizeTours(data as RawGuideDashboardTour[] | null);
   } else {
     const { data } = await supabase
       .from("tours")
       .select(`${selectQuery}, tour_guides!inner(user_id)`)
       .eq("tour_guides.user_id", user.id)
       .order("start_date", { ascending: true });
-    tours = data || [];
+    tours = normalizeTours(data as RawGuideDashboardTour[] | null);
   }
 
   const statusMap: Record<string, { label: string; classes: string }> = {
