@@ -58,7 +58,7 @@ export async function createIndependentMaterialReservation(formData: FormData) {
     return {
       success: true,
       message:
-        "Material erfolgreich angefragt. Ein Admin bestätigt die Reservierung.",
+        "Material erfolgreich angefragt. Das Material-Team bestaetigt die Reservierung.",
     };
   } catch (err: unknown) {
     console.error("Registration error:", err);

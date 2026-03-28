@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { canManageMaterial, isGuideRole } from "@/lib/auth";
 import { createClient } from "@/utils/supabase/server";
 
 const ALLOWED_STATUS = new Set([
@@ -37,7 +38,7 @@ export async function updateReservationStatus(id: string, newStatus: string) {
     return { error: "Ungültiger Status." };
   }
 
-  if (profile?.role !== "admin" && profile?.role !== "guide") {
+  if (!canManageMaterial(profile?.role) && !isGuideRole(profile?.role)) {
     return { error: "Keine Berechtigung." };
   }
 
@@ -62,7 +63,7 @@ export async function updateReservationStatus(id: string, newStatus: string) {
     };
   }
 
-  if (profile?.role === "guide") {
+  if (isGuideRole(profile?.role)) {
     if (!reservation.tour_id) {
       return { error: "Guides dürfen private Ausleihen nicht verwalten." };
     }

@@ -1,7 +1,11 @@
 import { Package, Plus } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getCurrentUserProfile } from "@/lib/auth";
+import {
+  canAccessMaterialAdmin,
+  canManageMaterial,
+  getCurrentUserProfile,
+} from "@/lib/auth";
 import { createClient } from "@/utils/supabase/server";
 import { DeleteMaterialButton } from "./DeleteMaterialButton";
 
@@ -28,8 +32,9 @@ export const metadata = {
 export default async function AdminMaterialPage() {
   const supabase = await createClient();
   const authContext = await getCurrentUserProfile();
+  const canEditInventory = canManageMaterial(authContext.role);
 
-  if (authContext.role !== "admin" && authContext.role !== "guide") {
+  if (!canAccessMaterialAdmin(authContext.role)) {
     redirect("/");
   }
 
@@ -66,7 +71,7 @@ export default async function AdminMaterialPage() {
           >
             Zu den Reservierungen
           </Link>
-          {authContext.role === "admin" && (
+          {canEditInventory && (
             <Link
               href="/admin/material/create"
               className="bg-jdav-green hover:bg-jdav-green-dark text-white font-bold px-4 py-2 rounded-xl flex items-center gap-2 transition shadow-sm"
@@ -85,7 +90,7 @@ export default async function AdminMaterialPage() {
               <th className="px-6 py-4">Größen / Varianten</th>
               <th className="px-6 py-4">Gesamtbestand</th>
               <th className="px-6 py-4">Tagespreis</th>
-              {authContext.role === "admin" && (
+              {canEditInventory && (
                 <th className="px-6 py-4 text-right">Aktionen</th>
               )}
             </tr>
@@ -132,7 +137,7 @@ export default async function AdminMaterialPage() {
                       ? `${mat.pricing[0].price_day} €`
                       : "Kostenlos"}
                   </td>
-                  {authContext.role === "admin" && (
+                  {canEditInventory && (
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">
                         <Link

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { canManageMaterial } from "@/lib/auth";
 import { createClient } from "@/utils/supabase/server";
 
 interface MaterialInventoryRow {
@@ -36,8 +37,8 @@ export async function createOrUpdateMaterialGroup(
     .select("role")
     .eq("id", user.id)
     .single();
-  if (profile?.role !== "admin") {
-    return { error: "Keine Berechtigung (nur Admin)." };
+  if (!canManageMaterial(profile?.role)) {
+    return { error: "Keine Berechtigung (nur Materialwart/Admin)." };
   }
 
   if (!typeData.name) {
@@ -174,8 +175,8 @@ export async function deleteMaterialType(typeId: string) {
     .select("role")
     .eq("id", user.id)
     .single();
-  if (profile?.role !== "admin") {
-    return { error: "Keine Berechtigung (nur Admin)." };
+  if (!canManageMaterial(profile?.role)) {
+    return { error: "Keine Berechtigung (nur Materialwart/Admin)." };
   }
 
   // Deleting a material type needs to delete pricing and inventory first (or CASCADE)

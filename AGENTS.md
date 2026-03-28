@@ -80,6 +80,12 @@ Eigenschaften:
 * verwalten Material
 * erstellen Tourberichte
 
+## Materialwart
+
+* verwaltet Materialstammdaten und Bestand
+* verwaltet Materialreservierungen (tourgebunden und privat)
+* hat sonst nur Mitgliedsrechte
+
 ## Admin
 
 * vollständige Systemverwaltung
@@ -125,6 +131,22 @@ Rechte:
 * Beiträge moderieren
 
 Guides dürfen **nur Touren bearbeiten, bei denen sie als Guide eingetragen sind**.
+
+---
+
+## Materialwart
+
+Rechte:
+
+* Materialbestand einsehen und bearbeiten
+* Materialreservierungen einsehen und verwalten
+
+Abgrenzung:
+
+* keine Benutzerverwaltung
+* keine Dokumente-Adminrechte
+* keine Ressourcen-Adminrechte
+* keine Tour-Adminrechte außerhalb normaler Mitgliedsfunktionen
 
 ---
 
@@ -828,8 +850,9 @@ The project is a Progressive Web App (PWA) built with Next.js (App Router), Tail
 
 # Functional Core Logic (Strict Adherence)
 1. **Roles & Permissions**:
-   - Roles: `Member`, `Parent`, `Guide`, `Admin`.
+   - Roles: `Member`, `Parent`, `Guide`, `Materialwart`, `Admin`.
    - Guides can only edit tours where they are assigned as `TourGuide`.
+   - `Materialwart` can manage `material_types`, `material_inventory`, `material_pricing` and `material_reservations`, but has otherwise only `Member` rights.
    - `Parent` can manage `ChildProfiles` and register them for tours.
    - Private data (phone numbers, medical notes, emergency contacts) is ONLY visible to Guides/Admins.
 

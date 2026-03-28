@@ -33,7 +33,9 @@ export function BottomNavigation({ userRole }: BottomNavigationProps) {
   const pathname = usePathname();
   const [isMoreOpen, setIsMoreOpen] = useState(false);
 
-  const canManage = userRole === "guide" || userRole === "admin";
+  const canManageGuideArea = userRole === "guide" || userRole === "admin";
+  const canManageMaterial = userRole === "materialwart" || userRole === "admin";
+  const canAccessMaterialAdmin = canManageGuideArea || canManageMaterial;
 
   const moreMenuItems = [
     {
@@ -54,21 +56,21 @@ export function BottomNavigation({ userRole }: BottomNavigationProps) {
       href: "/guide/dashboard",
       icon: MountainSnow,
       desc: "Tourenverwaltung für Leiter",
-      disabled: !canManage,
+      disabled: !canManageGuideArea,
     },
     {
       name: "Ressourcen",
       href: "/admin/resources",
       icon: Compass, // Using Compass instead of MountainSnow if it's about overall scheduling
       desc: "Vereinsbus & Kalender",
-      disabled: !canManage,
+      disabled: !canManageGuideArea,
     },
     {
       name: "Admin Material",
       href: "/admin/material",
       icon: ShieldCheck,
       desc: "Systemverwaltung für Material",
-      disabled: !canManage,
+      disabled: !canAccessMaterialAdmin,
     },
   ];
 

@@ -102,9 +102,11 @@ export default async function ProfilePage() {
                   ? "Elternkonto"
                   : profile?.role === "guide"
                     ? "Tourenleiter (Guide)"
-                    : profile?.role === "admin"
-                      ? "Administrator"
-                      : "Mitglied"
+                    : profile?.role === "materialwart"
+                      ? "Materialwart"
+                      : profile?.role === "admin"
+                        ? "Administrator"
+                        : "Mitglied"
               }
               className="mt-1 block w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-500 capitalize"
             />

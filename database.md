@@ -226,7 +226,7 @@ CONSTRAINT tours_category_fkey FOREIGN KEY (category) REFERENCES public.tour_cat
 
 Enum TYPES:
 
-user_role	member, guide, admin, parent
+user_role	member, guide, materialwart, admin, parent
 
 tour_status	planning, open, full, completed
 

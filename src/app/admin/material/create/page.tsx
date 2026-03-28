@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { MaterialForm } from "@/app/admin/material/MaterialForm";
-import { getCurrentUserProfile } from "@/lib/auth";
+import { canManageMaterial, getCurrentUserProfile } from "@/lib/auth";
 
 export const metadata = {
   title: "Neues Material - Admin | JDAV Pfarrkirchen",
@@ -9,7 +9,7 @@ export const metadata = {
 
 export default async function CreateMaterialPage() {
   const authContext = await getCurrentUserProfile();
-  if (authContext.role !== "admin") {
+  if (!canManageMaterial(authContext.role)) {
     redirect("/admin/material");
   }
   return (

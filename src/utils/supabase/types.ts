@@ -208,7 +208,7 @@ export interface Database {
           birthdate: string | null;
           medical_notes: string | null;
           emergency_phone: string | null;
-          role: "member" | "guide" | "admin" | "parent" | null;
+          role: "member" | "guide" | "admin" | "parent" | "materialwart" | null;
           image_consent: boolean | null;
           created_at: string | null;
         };
@@ -219,7 +219,13 @@ export interface Database {
           birthdate?: string | null;
           medical_notes?: string | null;
           emergency_phone?: string | null;
-          role?: "member" | "guide" | "admin" | "parent" | null;
+          role?:
+            | "member"
+            | "guide"
+            | "admin"
+            | "parent"
+            | "materialwart"
+            | null;
           image_consent?: boolean | null;
           created_at?: string | null;
         };
@@ -230,7 +236,13 @@ export interface Database {
           birthdate?: string | null;
           medical_notes?: string | null;
           emergency_phone?: string | null;
-          role?: "member" | "guide" | "admin" | "parent" | null;
+          role?:
+            | "member"
+            | "guide"
+            | "admin"
+            | "parent"
+            | "materialwart"
+            | null;
           image_consent?: boolean | null;
           created_at?: string | null;
         };

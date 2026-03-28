@@ -3,7 +3,7 @@ import { Euro, Package, Ruler, Settings } from "lucide-react";
 import Link from "next/link";
 import { cancelOwnPrivateMaterialReservation } from "@/app/actions/material";
 import { MaterialBookingForm } from "@/components/material/MaterialBookingForm";
-import { getCurrentUserProfile } from "@/lib/auth";
+import { canAccessMaterialAdmin, getCurrentUserProfile } from "@/lib/auth";
 import { createClient } from "@/utils/supabase/server";
 
 export const metadata = {
@@ -94,8 +94,7 @@ export default async function MaterialPage() {
   const supabase = await createClient();
   const authContext = await getCurrentUserProfile();
 
-  const isAdminOrGuide =
-    authContext.role === "admin" || authContext.role === "guide";
+  const canOpenMaterialAdmin = canAccessMaterialAdmin(authContext.role);
 
   const privateReservations = authContext.user
     ? (
@@ -190,7 +189,7 @@ export default async function MaterialPage() {
             Touren wird Material direkt in der Anmeldung gebucht.
           </p>
         </div>
-        {isAdminOrGuide && (
+        {canOpenMaterialAdmin && (
           <Link
             href="/admin/material"
             className="flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 font-bold text-white shadow hover:bg-slate-700 transition"

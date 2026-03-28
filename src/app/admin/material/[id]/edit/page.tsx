@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { MaterialForm } from "@/app/admin/material/MaterialForm";
-import { getCurrentUserProfile } from "@/lib/auth";
+import { canManageMaterial, getCurrentUserProfile } from "@/lib/auth";
 import { createClient } from "@/utils/supabase/server";
 
 export const metadata = {
@@ -15,7 +15,7 @@ export default async function EditMaterialPage({
 }) {
   const { id } = await params;
   const authContext = await getCurrentUserProfile();
-  if (authContext.role !== "admin") {
+  if (!canManageMaterial(authContext.role)) {
     redirect("/admin/material");
   }
   const supabase = await createClient();

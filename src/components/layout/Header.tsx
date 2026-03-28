@@ -8,7 +8,9 @@ interface HeaderProps {
 }
 
 export function Header({ userRole }: HeaderProps) {
-  const canManage = userRole === "guide" || userRole === "admin";
+  const canManageGuideArea = userRole === "guide" || userRole === "admin";
+  const canManageMaterial = userRole === "materialwart" || userRole === "admin";
+  const canAccessMaterialAdmin = canManageGuideArea || canManageMaterial;
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white shadow-sm">
       <div className="container mx-auto flex h-16 items-center px-4">
@@ -52,7 +54,7 @@ export function Header({ userRole }: HeaderProps) {
           >
             Material
           </Link>
-          {canManage && (
+          {canManageGuideArea && (
             <Link
               href="/admin/resources"
               className="text-sm font-medium text-slate-700 hover:text-jdav-green transition-colors"
@@ -60,7 +62,7 @@ export function Header({ userRole }: HeaderProps) {
               Ressourcen
             </Link>
           )}
-          {canManage && (
+          {canAccessMaterialAdmin && (
             <Link
               href="/admin/material"
               className="text-sm font-medium text-slate-700 hover:text-jdav-green transition-colors"
@@ -76,7 +78,7 @@ export function Header({ userRole }: HeaderProps) {
               Dokumente-Admin
             </Link>
           )}
-          {canManage && (
+          {canManageGuideArea && (
             <Link
               href="/guide/dashboard"
               className="text-sm font-bold text-jdav-green-dark hover:text-jdav-green transition-colors"

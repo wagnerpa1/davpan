@@ -57,11 +57,22 @@ Webanwendung zur Verwaltung von Touren, Teilnehmern, Eltern-/Kind-Profilen, Doku
 ## Funktionsumfang
 
 - Tourenplanung und Verwaltung (Guide/Admin)
+- Materialverwaltung und Reservierungssteuerung (Materialwart/Admin)
 - Anmeldung inkl. Wartelistenlogik
 - Teilnehmer-Statusverwaltung durch berechtigte Nutzer
 - Eltern-/Kind-Profile mit separaten Anmeldungen
 - Dokumentbereich
 - PWA-Grundfunktionen inkl. Offline-Fallbackseite
+
+## Rollenlogik (aktuell)
+
+- `member`: Basisrechte (Touren, Anmeldung, Material anfragen, Berichte lesen)
+- `parent`: wie `member` + Kinderprofile verwalten/anmelden
+- `guide`: Tourenrechte fuer eigene/zugewiesene Touren
+- `materialwart`: wie `member` + Material-Inventar und Material-Reservierungen verwalten
+- `admin`: Vollzugriff (inkl. Benutzer-/Dokumenten-/Ressourcenverwaltung)
+
+Wichtig: `materialwart` hat **keine** Guide- oder Admin-Rechte ausserhalb des Materialbereichs.
 
 ---
 

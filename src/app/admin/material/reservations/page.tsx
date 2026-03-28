@@ -1,7 +1,7 @@
 import { format } from "date-fns";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getCurrentUserProfile } from "@/lib/auth";
+import { canAccessMaterialAdmin, getCurrentUserProfile } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/server";
 import { ReservationStatusManager } from "./ReservationStatusManager";
@@ -71,7 +71,7 @@ export default async function AdminMaterialReservationsPage({
   const supabase = await createClient();
   const authContext = await getCurrentUserProfile();
 
-  if (authContext.role !== "admin" && authContext.role !== "guide") {
+  if (!canAccessMaterialAdmin(authContext.role)) {
     redirect("/");
   }
 

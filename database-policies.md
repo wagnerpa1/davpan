@@ -3,7 +3,7 @@
 Diese Datei enthält ein vollständiges SQL-Playbook zum Härten der Datenbank.
 
 - Aktiviert RLS auf allen `public`-Tabellen.
-- Definiert Rollen-/Berechtigungslogik für `member`, `parent`, `guide`, `admin`.
+- Definiert Rollen-/Berechtigungslogik für `member`, `parent`, `guide`, `materialwart`, `admin`.
 - Schließt offensichtliche IDOR-Pfade bei Kind-Anmeldungen.
 - Härtet betroffene DB-Funktionen (`search_path`).
 
@@ -160,8 +160,16 @@ using (
   or exists (
     select 1
     from public.tour_participants tp
+    join public.tour_guides viewer_tg on viewer_tg.tour_id = tp.tour_id
     where tp.user_id = public.profiles.id
-      and public.can_manage_tour(tp.tour_id)
+      and viewer_tg.user_id = auth.uid()
+  )
+  or exists (
+    select 1
+    from public.tour_participants tp
+    join public.tours t on t.id = tp.tour_id
+    where tp.user_id = public.profiles.id
+      and t.created_by = auth.uid()
   )
 );
 
@@ -667,6 +675,32 @@ commit;
 ```
 
 ## Nach dem Ausführen prüfen
+
+## Update 2026-03-28: Rolle `materialwart`
+
+Die Rolle `materialwart` wurde als dedizierte Material-Adminrolle eingefuehrt.
+
+- Darf `material_types`, `material_inventory`, `material_pricing` schreiben.
+- Darf `material_reservations` global verwalten (inkl. private Ausleihen).
+- Erhaelt **keine** User-/Dokument-/Ressourcen-Adminrechte.
+
+Ausfuehrbare Migration: `supabase/migrations/20260328133000_add_materialwart_role.sql`
+
+Wichtige DB-Aenderungen:
+
+```sql
+alter type public.user_role add value if not exists 'materialwart';
+
+create or replace function public.is_materialwart_or_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+  select public.current_user_role() in ('materialwart'::public.user_role, 'admin'::public.user_role)
+$$;
+```
 
 ```sql
 -- RLS-Status
