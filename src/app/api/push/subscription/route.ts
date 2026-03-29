@@ -98,19 +98,19 @@ export async function POST(req: NextRequest) {
     const { error: adminError } = await adminUpsertClient
       .from("push_subscriptions")
       .upsert(
-        {
-          user_id: user.id,
-          endpoint,
-          p256dh,
-          auth,
-          user_agent: req.headers.get("user-agent"),
-          disabled_at: null,
-          last_used_at: null,
-        },
-        {
-          onConflict: "endpoint",
-        },
-      );
+      {
+        user_id: user.id,
+        endpoint,
+        p256dh,
+        auth,
+        user_agent: req.headers.get("user-agent"),
+        disabled_at: null,
+        last_used_at: null,
+      },
+      {
+        onConflict: "endpoint",
+      },
+    );
 
     if (adminError) {
       return NextResponse.json(

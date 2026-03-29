@@ -4,8 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { getServerURL } from "@/utils/url-helpers";
 
 export async function POST(req: NextRequest) {
-  const isAsyncRequest =
-    req.headers.get("x-requested-with") === "XMLHttpRequest";
+  const isAsyncRequest = req.headers.get("x-requested-with") === "XMLHttpRequest";
 
   if (!isSameOriginRequest(req)) {
     return NextResponse.json(
@@ -55,10 +54,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, saved: "notifications_self" });
   }
 
-  return NextResponse.redirect(
-    new URL("/profile?saved=notifications_self", await getServerURL()),
-    {
-      status: 303,
-    },
-  );
+  return NextResponse.redirect(new URL("/profile?saved=notifications_self", await getServerURL()), {
+    status: 303,
+  });
 }

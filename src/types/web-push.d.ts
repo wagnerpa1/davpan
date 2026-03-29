@@ -7,18 +7,8 @@ declare module "web-push" {
     };
   }
 
-  interface VapidDetails {
-    subject: string;
-    publicKey: string;
-    privateKey: string;
-  }
-
   interface WebPush {
-    setVapidDetails(
-      subject: string,
-      publicKey: string,
-      privateKey: string,
-    ): void;
+    setVapidDetails(subject: string, publicKey: string, privateKey: string): void;
     sendNotification(
       subscription: PushSubscription,
       payload?: string,
@@ -29,3 +19,4 @@ declare module "web-push" {
   const webpush: WebPush;
   export default webpush;
 }
+

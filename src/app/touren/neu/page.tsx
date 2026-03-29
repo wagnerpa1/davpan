@@ -56,14 +56,11 @@ export default async function NewTourPage({
 
   const errorTextMap: Record<string, string> = {
     missing_required: "Bitte fülle mindestens Titel und Startdatum aus.",
-    create_failed:
-      "Die Tour konnte nicht gespeichert werden. Bitte prüfe die Eingaben.",
+    create_failed: "Die Tour konnte nicht gespeichert werden. Bitte prüfe die Eingaben.",
     forbidden: "Du hast keine Berechtigung, Touren zu erstellen.",
   };
 
-  const errorMessage = error
-    ? (errorTextMap[error] ?? "Unbekannter Fehler.")
-    : null;
+  const errorMessage = error ? errorTextMap[error] ?? "Unbekannter Fehler." : null;
 
   return (
     <div className="container mx-auto max-w-2xl px-4 py-8">

@@ -339,8 +339,8 @@ export function NotificationCenter({ isParent }: NotificationCenterProps) {
       </button>
 
       {isOpen && (
-        <div className="fixed inset-x-2 top-[calc(env(safe-area-inset-top)+4.25rem)] bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] z-50 flex items-center md:absolute md:inset-x-auto md:top-full md:bottom-auto md:mt-2 md:block">
-          <div className="mx-auto flex max-h-full w-full max-w-md flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl md:max-h-none md:w-[min(92vw,26rem)]">
+        <div className="fixed inset-x-2 top-[calc(env(safe-area-inset-top)+4.25rem)] bottom-[calc(env(safe-area-inset-bottom)+5.25rem)] z-50 flex items-center md:absolute md:right-0 md:left-auto md:top-full md:bottom-auto md:mt-3 md:block">
+          <div className="mx-auto flex max-h-full w-full max-w-md flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl md:mx-0 md:max-h-none md:w-[min(92vw,26rem)]">
             <div className="border-b border-slate-100 px-4 py-3">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-bold text-slate-900">

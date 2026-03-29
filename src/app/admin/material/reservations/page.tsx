@@ -17,6 +17,7 @@ interface ReservationRow {
   quantity: number | null;
   loan_date: string | null;
   return_date: string | null;
+  created_at: string | null;
   tour_id: string | null;
   tours?: { title?: string | null } | null;
   profiles?: { full_name?: string | null } | null;
@@ -84,6 +85,7 @@ export default async function AdminMaterialReservationsPage({
       quantity,
       loan_date,
       return_date,
+      created_at,
       status,
       tour_id,
       tours:tour_id (title),
@@ -95,7 +97,7 @@ export default async function AdminMaterialReservationsPage({
       profiles:user_id (full_name),
       child_profiles:child_profile_id (full_name)
     `)
-    .order("loan_date", { ascending: false });
+    .order("created_at", { ascending: false });
 
   if (error) {
     return (
@@ -125,8 +127,16 @@ export default async function AdminMaterialReservationsPage({
         return bProblematic - aProblematic;
       }
 
-      const aTs = a.loan_date ? Date.parse(a.loan_date) : 0;
-      const bTs = b.loan_date ? Date.parse(b.loan_date) : 0;
+      const aTs = a.created_at
+        ? Date.parse(a.created_at)
+        : a.loan_date
+          ? Date.parse(a.loan_date)
+          : 0;
+      const bTs = b.created_at
+        ? Date.parse(b.created_at)
+        : b.loan_date
+          ? Date.parse(b.loan_date)
+          : 0;
       return bTs - aTs;
     });
 

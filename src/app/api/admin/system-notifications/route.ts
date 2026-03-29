@@ -73,10 +73,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (!(SYSTEM_TARGET_MODES as readonly string[]).includes(targetModeRaw)) {
-    return NextResponse.json(
-      { error: "Ungültiger Target-Modus." },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "Ungültiger Target-Modus." }, { status: 400 });
   }
 
   const targetMode = targetModeRaw as SystemTargetMode;

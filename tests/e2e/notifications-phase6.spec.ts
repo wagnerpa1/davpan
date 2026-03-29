@@ -6,10 +6,7 @@ const adminState = process.env.E2E_ADMIN_STORAGE_STATE;
 const testTourPath = process.env.E2E_TOUR_PATH || "/touren";
 
 test.describe("Notifications Phase 6", () => {
-  test("Parent mit mehreren Kindern sieht mehrere Tabs", async ({
-    browser,
-    baseURL,
-  }) => {
+  test("Parent mit mehreren Kindern sieht mehrere Tabs", async ({ browser, baseURL }) => {
     test.skip(!parentState, "E2E_PARENT_STORAGE_STATE nicht gesetzt");
 
     const context = await browser.newContext({ storageState: parentState });
@@ -25,10 +22,7 @@ test.describe("Notifications Phase 6", () => {
     await context.close();
   });
 
-  test("Nicht-Parent sieht keine Kinder-Tab-Hinweise", async ({
-    browser,
-    baseURL,
-  }) => {
+  test("Nicht-Parent sieht keine Kinder-Tab-Hinweise", async ({ browser, baseURL }) => {
     test.skip(!memberState, "E2E_MEMBER_STORAGE_STATE nicht gesetzt");
 
     const context = await browser.newContext({ storageState: memberState });
@@ -59,15 +53,11 @@ test.describe("Notifications Phase 6", () => {
     await adminPage.goto(`${baseURL || ""}/admin/news`);
     await adminPage.getByLabel("Titel").first().fill(title);
     await adminPage.getByLabel("Inhalt").fill(content);
-    await adminPage
-      .getByRole("button", { name: "News veroeffentlichen" })
-      .click();
+    await adminPage.getByRole("button", { name: "News veroeffentlichen" }).click();
 
     await adminContext.close();
 
-    const memberContext = await browser.newContext({
-      storageState: memberState,
-    });
+    const memberContext = await browser.newContext({ storageState: memberState });
     const memberPage = await memberContext.newPage();
     await memberPage.goto(baseURL || "/");
     await memberPage.getByLabel("Benachrichtigungen öffnen").click();
@@ -76,10 +66,7 @@ test.describe("Notifications Phase 6", () => {
     await memberContext.close();
   });
 
-  test("Erfolgsanimation der Submit-Buttons (~2s)", async ({
-    browser,
-    baseURL,
-  }) => {
+  test("Erfolgsanimation der Submit-Buttons (~2s)", async ({ browser, baseURL }) => {
     test.skip(!parentState, "E2E_PARENT_STORAGE_STATE nicht gesetzt");
 
     const context = await browser.newContext({ storageState: parentState });

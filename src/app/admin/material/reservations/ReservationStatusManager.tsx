@@ -1,5 +1,6 @@
 "use client";
 
+import { Check, RotateCcw, Send, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { updateReservationStatus } from "@/app/actions/admin-reservation";
@@ -14,8 +15,7 @@ export function ReservationStatusManager({
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
 
-  async function handleStatusChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    const newStatus = e.target.value;
+  async function handleStatusChange(newStatus: string) {
     if (newStatus === currentStatus) return;
 
     setIsPending(true);
@@ -30,17 +30,57 @@ export function ReservationStatusManager({
   }
 
   return (
-    <select
-      disabled={isPending}
-      value={currentStatus || "requested"}
-      onChange={handleStatusChange}
-      className={`text-xs font-bold rounded-lg border-slate-200 py-1.5 pl-2 pr-6 cursor-pointer focus:ring-1 focus:ring-jdav-green ${isPending ? "opacity-50" : ""}`}
-    >
-      <option value="requested">Angefragt</option>
-      <option value="reserved">Reservieren</option>
-      <option value="on loan">Ausgeben</option>
-      <option value="returned">Zurücknehmen</option>
-      <option value="cancelled">Stornieren</option>
-    </select>
+    <div className="flex flex-wrap justify-end gap-2">
+      {currentStatus === "requested" && (
+        <>
+          <button
+            type="button"
+            disabled={isPending}
+            onClick={() => void handleStatusChange("reserved")}
+            className="inline-flex items-center gap-1 rounded-md bg-jdav-green/10 px-2.5 py-1.5 text-[11px] font-bold uppercase text-jdav-green transition-colors hover:bg-jdav-green hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Check className="h-3.5 w-3.5" />
+            Annehmen
+          </button>
+          <button
+            type="button"
+            disabled={isPending}
+            onClick={() => void handleStatusChange("cancelled")}
+            className="inline-flex items-center gap-1 rounded-md bg-red-100 px-2.5 py-1.5 text-[11px] font-bold uppercase text-red-700 transition-colors hover:bg-red-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <X className="h-3.5 w-3.5" />
+            Ablehnen
+          </button>
+        </>
+      )}
+
+      {currentStatus === "reserved" && (
+        <button
+          type="button"
+          disabled={isPending}
+          onClick={() => void handleStatusChange("on loan")}
+          className="inline-flex items-center gap-1 rounded-md bg-blue-100 px-2.5 py-1.5 text-[11px] font-bold uppercase text-blue-700 transition-colors hover:bg-blue-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Send className="h-3.5 w-3.5" />
+          Ausgeben
+        </button>
+      )}
+
+      {currentStatus === "on loan" && (
+        <button
+          type="button"
+          disabled={isPending}
+          onClick={() => void handleStatusChange("returned")}
+          className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2.5 py-1.5 text-[11px] font-bold uppercase text-slate-700 transition-colors hover:bg-slate-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <RotateCcw className="h-3.5 w-3.5" />
+          Ruecknahme
+        </button>
+      )}
+
+      {(currentStatus === "returned" || currentStatus === "cancelled") && (
+        <span className="text-[11px] font-semibold text-slate-400">-</span>
+      )}
+    </div>
   );
 }

@@ -58,7 +58,7 @@ export function PushSubscriptionControl({
     const publicVapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
     if (!publicVapidKey) {
       console.error(
-        "[Push] NEXT_PUBLIC_VAPID_PUBLIC_KEY not configured in environment",
+        "[Push] NEXT_PUBLIC_VAPID_PUBLIC_KEY not configured in environment"
       );
       return;
     }
@@ -192,3 +192,4 @@ export function PushSubscriptionControl({
     </div>
   );
 }
+

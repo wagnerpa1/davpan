@@ -285,6 +285,44 @@ export interface Database {
           created_at?: string;
         };
       };
+      admin_system_notification_audit: {
+        Row: {
+          id: string;
+          sent_by: string;
+          title: string;
+          message: string;
+          target_mode: string;
+          target_roles: string[];
+          target_group_ids: string[];
+          user_target_count: number;
+          child_target_count: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          sent_by: string;
+          title: string;
+          message: string;
+          target_mode: string;
+          target_roles?: string[];
+          target_group_ids?: string[];
+          user_target_count?: number;
+          child_target_count?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          sent_by?: string;
+          title?: string;
+          message?: string;
+          target_mode?: string;
+          target_roles?: string[];
+          target_group_ids?: string[];
+          user_target_count?: number;
+          child_target_count?: number;
+          created_at?: string;
+        };
+      };
       child_notification_preferences: {
         Row: {
           id: string;
