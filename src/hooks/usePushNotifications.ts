@@ -14,45 +14,22 @@ export function usePushNotifications() {
       // Register service worker if not already registered
       const registration = await navigator.serviceWorker.ready;
 
-      // Get public VAPID key
-      const publicKeyResponse = await fetch("/api/notifications/vapid-public-key");
-      if (!publicKeyResponse.ok) {
-        console.error("[Push] Failed to fetch VAPID public key");
-        return;
-      }
-
-      const { publicKey } = (await publicKeyResponse.json()) as { publicKey: string };
-
       // Check if already subscribed
       const existingSubscription = await registration.pushManager.getSubscription();
 
-      if (existingSubscription) {
-        console.log("[Push] Already subscribed to push notifications");
+      if (!existingSubscription) {
+        // Kein Auto-Subscribe ohne User-Geste: nur vorhandene Abos mit Backend synchronisieren.
         return;
       }
 
-      // Subscribe to push notifications
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: publicKey,
-      });
-
-      console.log("[Push] Successfully subscribed to push notifications");
-
       // Send subscription to backend
-      const response = await fetch("/api/notifications/subscribe", {
+      const response = await fetch("/api/push/subscription", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          endpoint: subscription.endpoint,
-          p256dh: btoa(
-            String.fromCharCode.apply(null, Array.from(new Uint8Array(subscription.getKey("p256dh") || [])))
-          ),
-          auth: btoa(
-            String.fromCharCode.apply(null, Array.from(new Uint8Array(subscription.getKey("auth") || [])))
-          ),
+          subscription: existingSubscription.toJSON(),
         }),
         credentials: "same-origin",
       });

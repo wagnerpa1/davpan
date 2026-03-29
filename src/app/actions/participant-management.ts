@@ -124,9 +124,10 @@ export async function updateParticipantStatus(
         : "Anmeldestatus aktualisiert",
     body: `Dein Status fuer "${tourInfo?.title || "diese Tour"}" wurde ${statusText[newStatus]}.`,
     payload: {
-      registration_id: registrationId,
+      participant_id: registrationId,
       old_status: previousStatus,
       new_status: newStatus,
+      url: `/touren/${tourId}`,
     },
     recipientUserId: participantChildId ? null : participantUserId,
     recipientChildId: participantChildId,

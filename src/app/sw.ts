@@ -103,13 +103,27 @@ self.addEventListener("push", (event) => {
     return;
   }
 
-  const data = event.data.json() as {
+  let data: {
     title?: string;
     body?: string;
     payload?: {
       url?: string;
     };
-  };
+  } = {};
+
+  try {
+    data = event.data.json() as {
+      title?: string;
+      body?: string;
+      payload?: {
+        url?: string;
+      };
+    };
+  } catch {
+    data = {
+      body: event.data.text(),
+    };
+  }
 
   const title = data.title || "JDAV Pfarrkirchen";
   const body = data.body || "Neue Benachrichtigung";

@@ -1,6 +1,7 @@
 "use client";
 
-import { Bell } from "lucide-react";
+import { Bell, Check } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient as createBrowserClient } from "@/utils/supabase/client";
 
@@ -9,6 +10,10 @@ interface NotificationItem {
   type: string;
   title: string;
   body: string;
+  payload: {
+    url?: string;
+    [key: string]: unknown;
+  } | null;
   created_at: string;
   read_at: string | null;
 }
@@ -49,8 +54,36 @@ function formatRelative(dateIso: string): string {
   });
 }
 
+function sanitizeClientPath(path: string | undefined): string | null {
+  if (!path) {
+    return null;
+  }
+
+  const candidate = path.trim();
+  if (!candidate.startsWith("/") || candidate.startsWith("//")) {
+    return null;
+  }
+
+  if (candidate.includes("\\")) {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(candidate, "http://local");
+    if (parsed.origin !== "http://local") {
+      return null;
+    }
+
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return null;
+  }
+}
+
 export function NotificationCenter({ isParent }: NotificationCenterProps) {
+  const router = useRouter();
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const supabase = useMemo(() => createBrowserClient(), []);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -69,6 +102,18 @@ export function NotificationCenter({ isParent }: NotificationCenterProps) {
   );
 
   const hasTabNavigation = tabs.length > 1;
+
+  const realtimeFilters = useMemo(() => {
+    return tabs
+      .map((tab) => {
+        if (tab.targetType === "self") {
+          return `recipient_user_id=eq.${tab.targetId}`;
+        }
+
+        return `recipient_child_id=eq.${tab.targetId}`;
+      })
+      .filter(Boolean);
+  }, [tabs]);
 
   const loadNotifications = useCallback(async () => {
     setIsLoading(true);
@@ -101,6 +146,89 @@ export function NotificationCenter({ isParent }: NotificationCenterProps) {
     }
   }, [activeTabId]);
 
+  const scheduleNotificationsRefresh = useCallback(() => {
+    if (refreshTimerRef.current) {
+      clearTimeout(refreshTimerRef.current);
+    }
+
+    refreshTimerRef.current = setTimeout(() => {
+      void loadNotifications();
+    }, 180);
+  }, [loadNotifications]);
+
+  const markSingleAsReadLocally = useCallback((notificationId: string) => {
+    setTabs((currentTabs) =>
+      currentTabs.map((tab) => {
+        let tabChanged = false;
+
+        const nextItems = tab.items.map((item) => {
+          if (item.id !== notificationId || item.read_at) {
+            return item;
+          }
+
+          tabChanged = true;
+          return { ...item, read_at: new Date().toISOString() };
+        });
+
+        if (!tabChanged) {
+          return tab;
+        }
+
+        return {
+          ...tab,
+          unreadCount: Math.max(0, tab.unreadCount - 1),
+          items: nextItems,
+        };
+      }),
+    );
+  }, []);
+
+  const markSingleAsRead = useCallback(
+    async (notificationId: string) => {
+      markSingleAsReadLocally(notificationId);
+
+      const response = await fetch("/api/notifications/mark-read", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          scope: "single",
+          notificationId,
+        }),
+      });
+
+      if (!response.ok) {
+        scheduleNotificationsRefresh();
+      }
+    },
+    [markSingleAsReadLocally, scheduleNotificationsRefresh],
+  );
+
+  const openNotification = useCallback(
+    async (item: NotificationItem) => {
+      if (!item.read_at) {
+        await markSingleAsRead(item.id);
+      }
+
+      const targetPath = sanitizeClientPath(item.payload?.url);
+      if (targetPath) {
+        setIsOpen(false);
+        router.push(targetPath);
+      }
+    },
+    [markSingleAsRead, router],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (refreshTimerRef.current) {
+        clearTimeout(refreshTimerRef.current);
+      }
+    };
+  }, []);
+
   useEffect(() => {
     loadNotifications();
   }, [loadNotifications]);
@@ -112,25 +240,36 @@ export function NotificationCenter({ isParent }: NotificationCenterProps) {
   }, [isOpen, loadNotifications]);
 
   useEffect(() => {
-    const channel = supabase
-      .channel("notification-center-realtime")
-      .on(
+    if (realtimeFilters.length === 0) {
+      return;
+    }
+
+    const channel = supabase.channel("notification-center-realtime");
+
+    for (const filter of realtimeFilters) {
+      channel.on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
           table: "notifications",
+          filter,
         },
         () => {
-          loadNotifications();
+          scheduleNotificationsRefresh();
         },
-      )
-      .subscribe();
+      );
+    }
+
+    channel.subscribe();
 
     return () => {
+      if (refreshTimerRef.current) {
+        clearTimeout(refreshTimerRef.current);
+      }
       supabase.removeChannel(channel);
     };
-  }, [loadNotifications, supabase]);
+  }, [realtimeFilters, scheduleNotificationsRefresh, supabase]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -177,6 +316,7 @@ export function NotificationCenter({ isParent }: NotificationCenterProps) {
       },
       credentials: "same-origin",
       body: JSON.stringify({
+        scope: "all",
         targetType: activeTab.targetType,
         targetId: activeTab.targetId,
       }),
@@ -232,9 +372,7 @@ export function NotificationCenter({ isParent }: NotificationCenterProps) {
                 onClick={markActiveTabAsRead}
                 className="text-xs font-semibold text-jdav-green hover:underline"
               >
-                {hasTabNavigation
-                  ? "Tab als gelesen markieren"
-                  : "Als gelesen markieren"}
+                Alle gelesen
               </button>
             </div>
             <p className="mt-0.5 text-xs text-slate-500">
@@ -307,16 +445,47 @@ export function NotificationCenter({ isParent }: NotificationCenterProps) {
                       }`}
                     >
                       <div className="mb-1 flex items-start justify-between gap-3">
-                        <h3 className="text-sm font-semibold text-slate-900">
-                          {item.title}
-                        </h3>
-                        <span className="shrink-0 text-[10px] text-slate-500">
-                          {formatRelative(item.created_at)}
-                        </span>
+                        <button
+                          type="button"
+                          onClick={() => void openNotification(item)}
+                          className="min-w-0 text-left"
+                        >
+                          <h3 className="text-sm font-semibold text-slate-900 hover:text-jdav-green transition-colors">
+                            {item.title}
+                          </h3>
+                        </button>
+                        <div className="flex items-center gap-2">
+                          {!item.read_at && (
+                            <button
+                              type="button"
+                              onClick={() => void markSingleAsRead(item.id)}
+                              className="inline-flex items-center gap-1 rounded-full border border-jdav-green/30 bg-white px-2 py-1 text-[10px] font-semibold text-jdav-green hover:bg-jdav-green/5"
+                              aria-label="Als gelesen markieren"
+                            >
+                              <Check className="h-3 w-3" />
+                              Gelesen
+                            </button>
+                          )}
+                          <span className="shrink-0 text-[10px] text-slate-500">
+                            {formatRelative(item.created_at)}
+                          </span>
+                        </div>
                       </div>
-                      <p className="text-xs leading-relaxed text-slate-600">
+                      <p
+                        className="cursor-pointer text-xs leading-relaxed text-slate-600"
+                        onClick={() => void openNotification(item)}
+                      >
                         {item.body}
                       </p>
+                      {sanitizeClientPath(item.payload?.url) && (
+                        <button
+                          type="button"
+                          onClick={() => void openNotification(item)}
+                          className="mt-2 text-[11px] font-semibold text-jdav-green hover:underline"
+                        >
+                          Zum Beitrag
+                        </button>
+                      )}
                     </li>
                   ))}
                 </ul>

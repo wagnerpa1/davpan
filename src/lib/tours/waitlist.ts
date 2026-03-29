@@ -155,6 +155,7 @@ export async function promoteWaitlistParticipants({
         tour_id: tourId,
         participant_id: (firstWaitlist as any).id,
         status: "confirmed",
+        url: `/touren/${tourId}`,
       },
       recipientUserId: (firstWaitlist as any).child_profile_id
         ? null
@@ -173,6 +174,7 @@ export async function promoteWaitlistParticipants({
           tour_id: tourId,
           participant_id: (firstWaitlist as any).id,
           status: "confirmed",
+          url: `/touren/${tourId}`,
         },
         relatedTourId: tourId,
         relatedGroupId: (tour as any).group,

@@ -65,6 +65,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  const { error: prefError } = await supabase
+    .from("notification_preferences")
+    .upsert(
+      {
+        user_id: user.id,
+        push_enabled: true,
+      },
+      {
+        onConflict: "user_id",
+      },
+    );
+
+  if (prefError) {
+    return NextResponse.json({ error: prefError.message }, { status: 500 });
+  }
+
   return NextResponse.json({ success: true });
 }
 
@@ -101,6 +117,27 @@ export async function DELETE(req: NextRequest) {
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  const { data: remainingSubs } = await supabase
+    .from("push_subscriptions")
+    .select("id")
+    .eq("user_id", user.id)
+    .is("disabled_at", null)
+    .limit(1);
+
+  if (!remainingSubs || remainingSubs.length === 0) {
+    await supabase
+      .from("notification_preferences")
+      .upsert(
+        {
+          user_id: user.id,
+          push_enabled: false,
+        },
+        {
+          onConflict: "user_id",
+        },
+      );
   }
 
   return NextResponse.json({ success: true });

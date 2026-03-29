@@ -247,6 +247,7 @@ export async function registerForTour(formData: FormData) {
       payload: {
         tour_id: tourId,
         status,
+        url: `/touren/${tourId}`,
       },
       recipientUserId: childId && childId !== "self" ? null : user.id,
       recipientChildId: childId && childId !== "self" ? childId : null,
@@ -285,6 +286,7 @@ export async function registerForTour(formData: FormData) {
       payload: {
         tour_id: tourId,
         status,
+        url: `/touren/${tourId}`,
       },
       relatedTourId: tourId,
       relatedGroupId: tour.group,
@@ -335,6 +337,7 @@ export async function cancelRegistration(participantId: string) {
     payload: {
       participant_id: participantId,
       status: "cancelled",
+      url: `/touren/${reg.tour_id}`,
     },
     recipientUserId: reg.child_profile_id ? null : user.id,
     recipientChildId: reg.child_profile_id ?? null,

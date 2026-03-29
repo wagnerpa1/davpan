@@ -18,13 +18,14 @@ function configureWebPush() {
     return;
   }
 
-  const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  const publicKey =
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || process.env.VAPID_PUBLIC_KEY;
   const privateKey = process.env.VAPID_PRIVATE_KEY;
   const subject = process.env.VAPID_SUBJECT || "mailto:admin@example.com";
 
   if (!publicKey || !privateKey) {
     console.warn(
-      "[Push] VAPID keys not configured (NEXT_PUBLIC_VAPID_PUBLIC_KEY or VAPID_PRIVATE_KEY missing). Push notifications disabled."
+      "[Push] VAPID keys not configured (NEXT_PUBLIC_VAPID_PUBLIC_KEY/VAPID_PUBLIC_KEY or VAPID_PRIVATE_KEY missing). Push notifications disabled."
     );
     pushDisabled = true;
     return;
@@ -61,7 +62,8 @@ async function resolvePushTargetUserIds(args: {
       "user_id" | "push_enabled"
     > | null;
 
-    if (!preference?.push_enabled) {
+    // Default allow for users with active browser subscriptions when no pref row exists yet.
+    if (preference && !preference.push_enabled) {
       return [];
     }
 
@@ -80,11 +82,31 @@ async function resolvePushTargetUserIds(args: {
       "parent_id" | "push_enabled"
     > | null;
 
-    if (!childPrefs?.push_enabled) {
+    if (childPrefs) {
+      if (!childPrefs.push_enabled) {
+        return [];
+      }
+
+      return [childPrefs.parent_id];
+    }
+
+    // Fallback: no explicit child preferences row yet -> notify parent by child profile relation.
+    const { data: childProfileData } = await admin
+      .from("child_profiles")
+      .select("parent_id")
+      .eq("id", args.recipientChildId)
+      .maybeSingle();
+
+    const childProfile = childProfileData as Pick<
+      Tables<"child_profiles">,
+      "parent_id"
+    > | null;
+
+    if (!childProfile?.parent_id) {
       return [];
     }
 
-    return [childPrefs.parent_id];
+    return [childProfile.parent_id];
   }
 
   return [];
