@@ -154,6 +154,11 @@ export async function getAvailableGuides() {
 export async function createTour(formData: FormData) {
   const supabase = await createClient();
 
+  const normalizeOptional = (value: FormDataEntryValue | null) => {
+    const raw = value?.toString().trim();
+    return raw ? raw : null;
+  };
+
   const {
     data: { user },
     error: userError,
@@ -171,20 +176,19 @@ export async function createTour(formData: FormData) {
     .single();
 
   if (!profile || (profile.role !== "guide" && profile.role !== "admin")) {
-    throw new Error("Forbidden: Only guides and admins can create tours");
+    redirect("/touren?error=forbidden");
   }
 
-  const title = formData.get("title")?.toString();
-  const description = formData.get("description")?.toString();
-  const categoryRaw = formData.get("category")?.toString();
-  const category = categoryRaw ? categoryRaw : null;
-  const group = formData.get("group")?.toString() || null;
-  const target_area = formData.get("target_area")?.toString();
-  const start_date = formData.get("start_date")?.toString();
-  const end_date = formData.get("end_date")?.toString() || start_date;
-  const meeting_point = formData.get("meeting_point")?.toString();
-  const meeting_time = formData.get("meeting_time")?.toString();
-  const difficulty = formData.get("difficulty")?.toString() || null;
+  const title = normalizeOptional(formData.get("title"));
+  const description = normalizeOptional(formData.get("description"));
+  const category = normalizeOptional(formData.get("category"));
+  const group = normalizeOptional(formData.get("group"));
+  const target_area = normalizeOptional(formData.get("target_area"));
+  const start_date = normalizeOptional(formData.get("start_date"));
+  const end_date = normalizeOptional(formData.get("end_date")) || start_date;
+  const meeting_point = normalizeOptional(formData.get("meeting_point"));
+  const meeting_time = normalizeOptional(formData.get("meeting_time"));
+  const difficulty = normalizeOptional(formData.get("difficulty"));
   const elevation = parseInt(formData.get("elevation")?.toString() || "0", 10);
   const distance = parseFloat(formData.get("distance")?.toString() || "0");
   const duration_hours = parseFloat(
@@ -196,9 +200,21 @@ export async function createTour(formData: FormData) {
     : null;
   const min_age_raw = formData.get("min_age")?.toString();
   const min_age = min_age_raw ? parseInt(min_age_raw, 10) || null : null;
-  const cost_info = formData.get("cost_info")?.toString();
-  const requirements = formData.get("requirements")?.toString();
-  const status = formData.get("status")?.toString() || "planning";
+  const cost_info = normalizeOptional(formData.get("cost_info"));
+  const requirements = normalizeOptional(formData.get("requirements"));
+  const statusRaw = normalizeOptional(formData.get("status"));
+  const status: "planning" | "open" | "full" | "completed" = [
+    "planning",
+    "open",
+    "full",
+    "completed",
+  ].includes(statusRaw || "")
+    ? (statusRaw as "planning" | "open" | "full" | "completed")
+    : "planning";
+
+  if (!title || !start_date) {
+    redirect("/touren/neu?error=missing_required");
+  }
 
   // Get all selected guides & materials
   const guideIds = formData.getAll("guide_ids") as string[];
@@ -233,7 +249,11 @@ export async function createTour(formData: FormData) {
 
   if (error) {
     console.error("Error creating tour:", error);
-    throw new Error("Failed to create tour");
+    // TEMP DEBUG: keep encoded DB detail in query for faster production diagnosis.
+    const debugValue = encodeURIComponent(
+      `${error.code || "unknown"}:${error.message}`.slice(0, 220),
+    );
+    redirect(`/touren/neu?error=create_failed&debug=${debugValue}`);
   }
 
   // Insert guides
