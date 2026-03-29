@@ -225,7 +225,7 @@ export function NotificationPreferencesPanel({
             successLabel="Gespeichert"
             className="inline-flex items-center justify-center rounded-md bg-jdav-green px-4 py-2 font-medium text-white transition-colors hover:bg-jdav-green-dark"
           >
-            Einstellungen fuer {activeChild.full_name} speichern
+            Einstellungen für {activeChild.full_name} speichern
           </AnimatedSubmitButton>
         </AsyncForm>
       )}

@@ -48,7 +48,7 @@ function createSupabaseTargetingMock() {
 }
 
 describe("resolveAdminSystemTargets", () => {
-  it("liefert rollenziele fuer roles-modus", async () => {
+  it("liefert rollenziele für roles-modus", async () => {
     const supabase = createSupabaseTargetingMock();
 
     const result = await resolveAdminSystemTargets(
@@ -62,7 +62,7 @@ describe("resolveAdminSystemTargets", () => {
     expect(result.childIds).toEqual([]);
   });
 
-  it("liefert gruppenziele fuer tour_groups-modus", async () => {
+  it("liefert gruppenziele für tour_groups-modus", async () => {
     const supabase = createSupabaseTargetingMock();
 
     const result = await resolveAdminSystemTargets(

@@ -111,7 +111,7 @@ export async function updateParticipantStatus(
     newStatus === "waitlist" ? "waitlist" : ("registration" as const);
 
   const statusText: Record<typeof newStatus, string> = {
-    confirmed: "bestaetigt",
+    confirmed: "bestätigt",
     cancelled: "abgelehnt",
     pending: "auf pending gesetzt",
     waitlist: "auf die Warteliste gesetzt",
@@ -122,9 +122,9 @@ export async function updateParticipantStatus(
       type: notificationType,
       title:
         newStatus === "confirmed"
-          ? "Anmeldung bestaetigt"
+          ? "Anmeldung bestätigt"
           : "Anmeldung abgelehnt",
-      body: `Deine Anmeldung fuer "${tourInfo?.title || "diese Tour"}" wurde ${statusText[newStatus]}.`,
+      body: `Deine Anmeldung für "${tourInfo?.title || "diese Tour"}" wurde ${statusText[newStatus]}.`,
       payload: {
         participant_id: registrationId,
         old_status: previousStatus,

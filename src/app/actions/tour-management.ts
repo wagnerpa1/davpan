@@ -418,7 +418,7 @@ export async function updateTour(tourId: string, formData: FormData) {
   await notifyTourAudience(supabase, audienceTargets, {
     type: "tour_update",
     title: "Tour aktualisiert",
-    body: `Die Tour "${payload.title || previousTour?.title || "Tour"}" wurde aktualisiert. Bitte Details pruefen.`,
+    body: `Die Tour "${payload.title || previousTour?.title || "Tour"}" wurde aktualisiert. Bitte Details prüfen.`,
     payload: {
       tour_id: tourId,
       previous_status: previousTour?.status ?? null,

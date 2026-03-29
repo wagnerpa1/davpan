@@ -119,7 +119,7 @@ export async function updateReservationStatus(id: string, newStatus: string) {
         await dispatchNotification(supabase, {
           type: "material",
           title: "Materialreservierung nicht möglich",
-          body: "Die Reservierung konnte nicht bestaetigt werden, weil aktuell kein Bestand verfuegbar ist.",
+          body: "Die Reservierung konnte nicht bestätigt werden, weil aktuell kein Bestand verfügbar ist.",
           payload: {
             reservation_id: id,
             old_status: currentStatus,
@@ -177,15 +177,15 @@ export async function updateReservationStatus(id: string, newStatus: string) {
   ) {
     const title =
       newStatus === "reserved"
-        ? "Materialreservierung bestaetigt"
+        ? "Materialreservierung bestätigt"
         : "Materialreservierung abgelehnt";
 
     await dispatchNotification(supabase, {
       type: "material",
       title,
       body: relatedTourTitle
-        ? `Deine Materialreservierung fuer "${relatedTourTitle}" wurde ${newStatus === "reserved" ? "bestaetigt" : "abgelehnt"}.`
-        : `Deine Materialreservierung wurde ${newStatus === "reserved" ? "bestaetigt" : "abgelehnt"}.`,
+        ? `Deine Materialreservierung für "${relatedTourTitle}" wurde ${newStatus === "reserved" ? "bestätigt" : "abgelehnt"}.`
+        : `Deine Materialreservierung wurde ${newStatus === "reserved" ? "bestätigt" : "abgelehnt"}.`,
       payload: {
         reservation_id: id,
         old_status: currentStatus,

@@ -1,6 +1,6 @@
 import { format } from "date-fns";
 import { Euro, Package, Ruler, Settings } from "lucide-react";
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { cancelOwnPrivateMaterialReservation } from "@/app/actions/material";
 import { MaterialBookingForm } from "@/components/material/MaterialBookingForm";
@@ -66,7 +66,7 @@ function reservationStatusLabel(status: string | null) {
     case "on loan":
       return "Ausgeliehen";
     case "returned":
-      return "Zurueckgegeben";
+      return "Zurückgegeben";
     case "cancelled":
       return "Storniert";
     default:
@@ -193,9 +193,9 @@ export default async function MaterialPage() {
         {canOpenMaterialAdmin && (
           <Link
             href="/admin/material"
-            className="flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 font-bold text-white shadow hover:bg-slate-700 transition"
+            className="flex items-center gap-1.5 rounded-xl bg-jdav-green-dark px-4 py-2 text-sm font-bold text-white shadow-sm transition-all hover:bg-jdav-green"
           >
-            <Settings className="h-4 w-4" /> Admin-Dashboard
+            <Settings className="h-4 w-4" /> Materialverwaltung
           </Link>
         )}
       </div>

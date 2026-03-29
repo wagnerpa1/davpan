@@ -1,31 +1,15 @@
 import type { User } from "@supabase/supabase-js";
 import { cache } from "react";
+import {
+  type AppUserRole,
+  canAccessMaterialAdmin,
+  canManageMaterial,
+  isAdminRole,
+  isGuideRole,
+} from "@/lib/permissions";
 import { createClient } from "@/utils/supabase/server";
 
-export type AppUserRole =
-  | "member"
-  | "parent"
-  | "guide"
-  | "materialwart"
-  | "admin";
-
-type RoleLike = AppUserRole | string | null | undefined;
-
-export function isAdminRole(role: RoleLike): boolean {
-  return role === "admin";
-}
-
-export function isGuideRole(role: RoleLike): boolean {
-  return role === "guide";
-}
-
-export function canManageMaterial(role: RoleLike): boolean {
-  return role === "materialwart" || isAdminRole(role);
-}
-
-export function canAccessMaterialAdmin(role: RoleLike): boolean {
-  return canManageMaterial(role) || isGuideRole(role);
-}
+export { canAccessMaterialAdmin, canManageMaterial, isAdminRole, isGuideRole };
 
 interface CurrentUserProfile {
   birthdate: string | null;

@@ -61,7 +61,7 @@ export function ResourceForm({
         >
           <option value="fahrzeug">Fahrzeug</option>
           <option value="raum">Raum</option>
-          <option value="ausruestung">Ausrüstung (Beamer etc.)</option>
+          <option value="ausrüstung">Ausrüstung (Beamer etc.)</option>
         </select>
       </div>
 

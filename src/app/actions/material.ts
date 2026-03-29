@@ -40,7 +40,7 @@ export async function createIndependentMaterialReservation(formData: FormData) {
       await dispatchNotification(supabase, {
         type: "material",
         title: "Materialreservierung nicht möglich",
-        body: "Die Reservierung konnte nicht erstellt werden, weil im gewaehlten Zeitraum kein Bestand verfuegbar ist.",
+        body: "Die Reservierung konnte nicht erstellt werden, weil im gewählten Zeitraum kein Bestand verfügbar ist.",
         payload: {
           status: "failed",
           url: "/material",
@@ -88,7 +88,7 @@ export async function createIndependentMaterialReservation(formData: FormData) {
     return {
       success: true,
       message:
-        "Material erfolgreich angefragt. Das Material-Team bestaetigt die Reservierung.",
+        "Material erfolgreich angefragt. Das Material-Team bestätigt die Reservierung.",
     };
   } catch (err: unknown) {
     console.error("Registration error:", err);
@@ -120,7 +120,7 @@ export async function cancelOwnPrivateMaterialReservation(
   }
 
   if (reservation.user_id !== user.id || reservation.tour_id !== null) {
-    throw new Error("Keine Berechtigung fuer diese Reservierung.");
+    throw new Error("Keine Berechtigung für diese Reservierung.");
   }
 
   if (reservation.status === "cancelled" || reservation.status === "returned") {

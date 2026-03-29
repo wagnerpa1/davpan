@@ -12,7 +12,8 @@ export default function GlobalErrorPage() {
             Anwendung konnte nicht geladen werden
           </h1>
           <p className="mt-2 text-sm text-slate-600">
-            Bitte lade die Seite neu. Wenn das Problem bleibt, versuche es spaeter erneut.
+            Bitte lade die Seite neu. Wenn das Problem bleibt, versuche es
+            später erneut.
           </p>
           <a
             href="/"

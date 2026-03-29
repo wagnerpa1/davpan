@@ -194,7 +194,7 @@ export async function registerForTour(formData: FormData) {
           await dispatchNotification(supabase, {
             type: "material",
             title: "Materialreservierung nicht möglich",
-            body: `Die Materialreservierung fuer "${tour.title}" konnte nicht abgeschlossen werden, weil Groesse "${mReq.size}" nicht verfuegbar ist.`,
+            body: `Die Materialreservierung für "${tour.title}" konnte nicht abgeschlossen werden, weil Grösse "${mReq.size}" nicht verfügbar ist.`,
             payload: {
               tour_id: tourId,
               status: "failed",
@@ -242,7 +242,7 @@ export async function registerForTour(formData: FormData) {
           await dispatchNotification(supabase, {
             type: "material",
             title: "Materialreservierung fehlgeschlagen",
-            body: `Die Materialreservierung fuer "${tour.title}" konnte nicht gespeichert werden.`,
+            body: `Die Materialreservierung für "${tour.title}" konnte nicht gespeichert werden.`,
             payload: {
               tour_id: tourId,
               status: "failed",
@@ -277,8 +277,8 @@ export async function registerForTour(formData: FormData) {
       type: isWaitlist ? "waitlist" : "registration",
       title: isWaitlist ? "Neue Wartelisten-Anmeldung" : "Neue Tour-Anmeldung",
       body: isWaitlist
-        ? `${actorDisplayName} steht jetzt auf der Warteliste fuer "${tour.title}".`
-        : `${actorDisplayName} hat sich fuer "${tour.title}" angemeldet (pending).`,
+        ? `${actorDisplayName} steht jetzt auf der Warteliste für "${tour.title}".`
+        : `${actorDisplayName} hat sich für "${tour.title}" angemeldet (pending).`,
       payload: {
         tour_id: tourId,
         status,
@@ -293,7 +293,7 @@ export async function registerForTour(formData: FormData) {
       await dispatchToUsers(supabase, materialManagerIds, {
         type: "material",
         title: "Neue Materialreservierung",
-        body: `${actorDisplayName} hat Material fuer "${tour.title}" angefragt.`,
+        body: `${actorDisplayName} hat Material für "${tour.title}" angefragt.`,
         payload: {
           tour_id: tourId,
           status,

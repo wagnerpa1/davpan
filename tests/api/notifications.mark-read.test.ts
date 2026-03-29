@@ -25,7 +25,7 @@ function createRequest(body: unknown): Request {
 }
 
 describe("POST /api/notifications/mark-read (RLS-nahe Szenarien)", () => {
-  it("gibt 403 zurueck, wenn single-read nicht dem User/Kind gehoert", async () => {
+  it("gibt 403 zurück, wenn single-read nicht dem User/Kind gehoert", async () => {
     const supabaseMock = {
       auth: {
         getUser: vi.fn().mockResolvedValue({
@@ -80,7 +80,7 @@ describe("POST /api/notifications/mark-read (RLS-nahe Szenarien)", () => {
     });
   });
 
-  it("markiert single-read erfolgreich fuer parent->child ownership", async () => {
+  it("markiert single-read erfolgreich für parent->child ownership", async () => {
     const updateCall = vi.fn(() => ({
       eq: vi.fn(() => ({
         is: vi.fn().mockResolvedValue({ error: null }),

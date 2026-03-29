@@ -224,7 +224,7 @@ export default async function GuideDashboardPage() {
         <Link href="/touren/neu">
           <button
             type="button"
-            className="flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white shadow-sm transition-all hover:bg-slate-800"
+            className="flex items-center gap-1.5 rounded-xl bg-jdav-green-dark px-4 py-2 text-sm font-bold text-white shadow-sm transition-all hover:bg-jdav-green"
           >
             <PlusCircle className="h-4 w-4" /> Tour planen
           </button>

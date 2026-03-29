@@ -678,15 +678,15 @@ commit;
 
 ## Update 2026-03-28: Rolle `materialwart`
 
-Die Rolle `materialwart` wurde als dedizierte Material-Adminrolle eingefuehrt.
+Die Rolle `materialwart` wurde als dedizierte Material-Adminrolle eingeführt.
 
 - Darf `material_types`, `material_inventory`, `material_pricing` schreiben.
 - Darf `material_reservations` global verwalten (inkl. private Ausleihen).
-- Erhaelt **keine** User-/Dokument-/Ressourcen-Adminrechte.
+- Erhält **keine** User-/Dokument-/Ressourcen-Adminrechte.
 
-Ausfuehrbare Migration: `supabase/migrations/20260328133000_add_materialwart_role.sql`
+Ausführbare Migration: `supabase/migrations/20260328133000_add_materialwart_role.sql`
 
-Wichtige DB-Aenderungen:
+Wichtige DB-Änderungen:
 
 ```sql
 alter type public.user_role add value if not exists 'materialwart';

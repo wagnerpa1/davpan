@@ -68,7 +68,7 @@ Webanwendung zur Verwaltung von Touren, Teilnehmern, Eltern-/Kind-Profilen, Doku
 
 - `member`: Basisrechte (Touren, Anmeldung, Material anfragen, Berichte lesen)
 - `parent`: wie `member` + Kinderprofile verwalten/anmelden
-- `guide`: Tourenrechte fuer eigene/zugewiesene Touren
+- `guide`: Tourenrechte für eigene/zugewiesene Touren
 - `materialwart`: wie `member` + Material-Inventar und Material-Reservierungen verwalten
 - `admin`: Vollzugriff (inkl. Benutzer-/Dokumenten-/Ressourcenverwaltung)
 
@@ -120,7 +120,7 @@ Wichtige Tabellen:
 
 - Notification Center als Popup in der Kopfzeile mit Tabs:
   - `Ich`
-  - pro Kind (nur fuer Eltern)
+  - pro Kind (nur für Eltern)
 - Benachrichtigungseinstellungen im Profil:
   - eigene Einstellungen (`/api/profile/notifications`)
   - pro Kind (`/api/profile/child/notifications`)
@@ -128,7 +128,7 @@ Wichtige Tabellen:
 - Admin-News-Dashboard:
   - Seite: `/admin/news`
   - API: `/api/admin/news`
-  - Beim Posten werden `notifications` fuer User/Kinder erzeugt (nach Opt-in)
+  - Beim Posten werden `notifications` für User/Kinder erzeugt (nach Opt-in)
 
 Migration:
 

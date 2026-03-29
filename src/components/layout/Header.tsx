@@ -1,18 +1,22 @@
 "use client";
 
+import { ChevronDown } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
+import { buildNavigation } from "@/lib/navigation/nav-config";
 
 interface HeaderProps {
   userRole?: string | null;
 }
 
 export function Header({ userRole }: HeaderProps) {
-  const canManageGuideArea = userRole === "guide" || userRole === "admin";
-  const canManageMaterial = userRole === "materialwart" || userRole === "admin";
-  const canAccessMaterialAdmin = canManageGuideArea || canManageMaterial;
   const isParent = userRole === "parent";
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
+
+  const navigation = buildNavigation(userRole);
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white shadow-sm">
       <div className="container mx-auto flex h-16 items-center px-4">
@@ -25,86 +29,61 @@ export function Header({ userRole }: HeaderProps) {
             className="h-auto w-[88px] sm:w-[104px] md:w-[120px]"
           />
         </Link>
-        <nav className="ml-8 hidden md:flex items-center space-x-6">
-          <Link
-            href="/"
-            className="text-sm font-medium text-slate-700 hover:text-jdav-green transition-colors"
-          >
-            Startseite
-          </Link>
-          <Link
-            href="/touren"
-            className="text-sm font-medium text-slate-700 hover:text-jdav-green transition-colors"
-          >
-            Touren
-          </Link>
-          <Link
-            href="/berichte"
-            className="text-sm font-medium text-slate-700 hover:text-jdav-green transition-colors"
-          >
-            Berichte
-          </Link>
-          <Link
-            href="/dokumente"
-            className="text-sm font-medium text-slate-700 hover:text-jdav-green transition-colors"
-          >
-            Dokumente
-          </Link>
-          <Link
-            href="/material"
-            className="text-sm font-medium text-slate-700 hover:text-jdav-green transition-colors"
-          >
-            Material
-          </Link>
-          {canManageGuideArea && (
+        <nav className="ml-8 hidden items-center gap-6 md:flex">
+          {navigation.primary.map((item) => (
             <Link
-              href="/admin/resources"
-              className="text-sm font-medium text-slate-700 hover:text-jdav-green transition-colors"
+              key={item.href}
+              href={item.href}
+              className="text-sm font-medium text-slate-700 transition-colors hover:text-jdav-green"
             >
-              Ressourcen
+              {item.label}
             </Link>
-          )}
-          {canAccessMaterialAdmin && (
-            <Link
-              href="/admin/material"
-              className="text-sm font-medium text-slate-700 hover:text-jdav-green transition-colors"
+          ))}
+
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsMoreOpen((prev) => !prev)}
+              className="inline-flex items-center gap-1 text-sm font-medium text-slate-700 transition-colors hover:text-jdav-green"
             >
-              Inventar
-            </Link>
-          )}
-          {userRole === "admin" && (
-            <Link
-              href="/admin/dokumente"
-              className="text-sm font-medium text-slate-700 hover:text-jdav-green transition-colors"
-            >
-              Dokumente-Admin
-            </Link>
-          )}
-          {userRole === "admin" && (
-            <Link
-              href="/admin/news"
-              className="text-sm font-medium text-slate-700 hover:text-jdav-green transition-colors"
-            >
-              Vereinsnews
-            </Link>
-          )}
-          {canManageGuideArea && (
-            <Link
-              href="/guide/dashboard"
-              className="text-sm font-bold text-jdav-green-dark hover:text-jdav-green transition-colors"
-            >
-              Guide-Bereich
-            </Link>
-          )}
+              Mehr
+              <ChevronDown
+                className={`h-4 w-4 transition-transform ${isMoreOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+
+            {isMoreOpen && (
+              <div className="absolute left-0 top-9 w-80 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl">
+                <div className="space-y-3">
+                  {navigation.groups.map((group) => (
+                    <section key={group.label} className="space-y-1.5">
+                      <h3 className="px-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                        {group.label}
+                      </h3>
+                      {group.items.map((item) => (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => setIsMoreOpen(false)}
+                          className="block rounded-xl px-2 py-2 text-sm text-slate-700 transition hover:bg-green-50 hover:text-jdav-green"
+                        >
+                          <p className="font-semibold">{item.label}</p>
+                          {item.description && (
+                            <p className="text-xs text-slate-500">
+                              {item.description}
+                            </p>
+                          )}
+                        </Link>
+                      ))}
+                    </section>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </nav>
         <div className="ml-auto flex items-center space-x-4">
           <NotificationCenter isParent={isParent} />
-          <Link
-            href="/profile"
-            className="hidden md:block text-sm font-medium text-slate-700 hover:text-jdav-green transition-colors"
-          >
-            Profil
-          </Link>
           <form
             action="/auth/signout"
             method="POST"

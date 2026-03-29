@@ -110,7 +110,7 @@ describe("dispatchNotification opt-in filtering", () => {
     await dispatchNotification(supabase as never, {
       type: "registration",
       title: "Status",
-      body: "Aenderung",
+      body: "Änderung",
       recipientUserId: "user-2",
       relatedTourId: "tour-1",
       payload: {

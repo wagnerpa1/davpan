@@ -4,7 +4,8 @@ import { createClient } from "@/utils/supabase/server";
 import { getServerURL } from "@/utils/url-helpers";
 
 export async function POST(req: NextRequest) {
-  const isAsyncRequest = req.headers.get("x-requested-with") === "XMLHttpRequest";
+  const isAsyncRequest =
+    req.headers.get("x-requested-with") === "XMLHttpRequest";
 
   if (!isSameOriginRequest(req)) {
     return NextResponse.json(

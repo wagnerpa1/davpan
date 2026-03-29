@@ -6,7 +6,7 @@ export default function OfflinePage() {
       <h1 className="text-3xl font-bold text-slate-900">Offline-Modus</h1>
       <p className="mt-3 max-w-xl text-slate-600">
         Du bist aktuell offline. Die Start- und Tourenansicht sind als
-        Offline-Ansicht verfuegbar, bis wieder eine Internetverbindung besteht.
+        Offline-Ansicht verfügbar, bis wieder eine Internetverbindung besteht.
       </p>
 
       <div className="mt-8 grid w-full gap-3 sm:grid-cols-2">

@@ -339,144 +339,298 @@ export function NotificationCenter({ isParent }: NotificationCenterProps) {
       </button>
 
       {isOpen && (
-        <div className="fixed inset-x-2 top-[calc(env(safe-area-inset-top)+4.25rem)] bottom-[calc(env(safe-area-inset-bottom)+5.25rem)] z-50 flex items-center md:absolute md:right-0 md:left-auto md:top-full md:bottom-auto md:mt-3 md:block">
-          <div className="mx-auto flex max-h-full w-full max-w-md flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl md:mx-0 md:max-h-none md:w-[min(92vw,26rem)]">
-            <div className="border-b border-slate-100 px-4 py-3">
-              <div className="flex items-center justify-between">
-                <h2 className="text-sm font-bold text-slate-900">
-                  Benachrichtigungen
-                </h2>
-                <button
-                  type="button"
-                  onClick={markActiveTabAsRead}
-                  className="text-xs font-semibold text-jdav-green hover:underline"
-                >
-                  {hasTabNavigation
-                    ? "Tab als gelesen markieren"
-                    : "Alle gelesen"}
-                </button>
-              </div>
+        <>
+          <div className="fixed inset-0 z-60 md:hidden transition-opacity duration-200 opacity-100">
+            <button
+              type="button"
+              aria-label="Benachrichtigungen schließen"
+              onClick={() => setIsOpen(false)}
+              className="absolute inset-0 bg-slate-900/20 backdrop-blur-[2px]"
+            />
 
-              {hasTabNavigation && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {tabs.map((tab) => (
+            <div className="absolute bottom-24 left-4 right-4 mx-auto max-h-[calc(100vh-12rem)] max-w-md translate-y-0 scale-100 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl transition-all duration-200">
+              <div className="flex max-h-[calc(100vh-12rem)] min-h-0 flex-col">
+                <div className="border-b border-slate-100 px-4 py-3">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-sm font-bold text-slate-900">
+                      Benachrichtigungen
+                    </h2>
                     <button
-                      key={tab.id}
                       type="button"
-                      onClick={() => setActiveTabId(tab.id)}
-                      className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-                        tab.id === activeTabId
-                          ? "bg-jdav-green text-white"
-                          : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                      }`}
+                      onClick={markActiveTabAsRead}
+                      className="text-xs font-semibold text-jdav-green hover:underline"
                     >
-                      {tab.label}
-                      {tab.unreadCount > 0 && (
-                        <span
-                          className={`rounded-full px-1.5 py-0.5 text-[10px] ${
+                      {hasTabNavigation
+                        ? "Tab als gelesen markieren"
+                        : "Alle gelesen"}
+                    </button>
+                  </div>
+
+                  {hasTabNavigation && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {tabs.map((tab) => (
+                        <button
+                          key={tab.id}
+                          type="button"
+                          onClick={() => setActiveTabId(tab.id)}
+                          className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
                             tab.id === activeTabId
-                              ? "bg-white/20 text-white"
-                              : "bg-slate-200 text-slate-700"
+                              ? "bg-jdav-green text-white"
+                              : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                           }`}
                         >
-                          {tab.unreadCount}
-                        </span>
-                      )}
-                    </button>
-                  ))}
+                          {tab.label}
+                          {tab.unreadCount > 0 && (
+                            <span
+                              className={`rounded-full px-1.5 py-0.5 text-[10px] ${
+                                tab.id === activeTabId
+                                  ? "bg-white/20 text-white"
+                                  : "bg-slate-200 text-slate-700"
+                              }`}
+                            >
+                              {tab.unreadCount}
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
+
+                <div className="min-h-0 flex-1 overflow-y-auto p-3">
+                  {isLoading && (
+                    <p className="py-8 text-center text-sm text-slate-500">
+                      Lade...
+                    </p>
+                  )}
+
+                  {!isLoading && error && (
+                    <p className="py-8 text-center text-sm text-red-600">
+                      {error}
+                    </p>
+                  )}
+
+                  {!isLoading &&
+                    !error &&
+                    activeTab &&
+                    activeTab.items.length === 0 && (
+                      <p className="py-8 text-center text-sm text-slate-500">
+                        Keine Benachrichtigungen.
+                      </p>
+                    )}
+
+                  {!isLoading &&
+                    !error &&
+                    activeTab &&
+                    activeTab.items.length > 0 && (
+                      <ul className="space-y-2">
+                        {activeTab.items.map((item) => (
+                          <li
+                            key={item.id}
+                            className={`rounded-xl border p-3 ${
+                              item.read_at
+                                ? "border-slate-100 bg-slate-50"
+                                : "border-jdav-green/30 bg-green-50"
+                            }`}
+                          >
+                            <div className="mb-1 flex items-start justify-between gap-3">
+                              <button
+                                type="button"
+                                onClick={() => void openNotification(item)}
+                                className="min-w-0 text-left"
+                              >
+                                <h3 className="text-sm font-semibold text-slate-900 transition-colors hover:text-jdav-green">
+                                  {item.title}
+                                </h3>
+                              </button>
+                              <span className="shrink-0 text-[10px] text-slate-500">
+                                {formatRelative(item.created_at)}
+                              </span>
+                            </div>
+
+                            <button
+                              type="button"
+                              className="cursor-pointer text-left text-xs leading-relaxed text-slate-600"
+                              onClick={() => void openNotification(item)}
+                            >
+                              {item.body}
+                            </button>
+
+                            <div className="mt-2 flex items-center justify-between gap-2">
+                              {!item.read_at ? (
+                                <button
+                                  type="button"
+                                  onClick={() => void markSingleAsRead(item.id)}
+                                  className="inline-flex items-center gap-1 rounded-full border border-jdav-green/30 bg-white px-2 py-1 text-[10px] font-semibold text-jdav-green hover:bg-jdav-green/5"
+                                  aria-label="Als gelesen markieren"
+                                >
+                                  <Check className="h-3 w-3" />
+                                  Gelesen
+                                </button>
+                              ) : (
+                                <span />
+                              )}
+
+                              {sanitizeClientPath(item.payload?.url) && (
+                                <button
+                                  type="button"
+                                  onClick={() => void openNotification(item)}
+                                  className="text-[11px] font-semibold text-jdav-green hover:underline"
+                                >
+                                  Zum Beitrag
+                                </button>
+                              )}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                </div>
+              </div>
             </div>
+          </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto p-3 md:max-h-[60vh]">
-              {isLoading && (
-                <p className="py-8 text-center text-sm text-slate-500">
-                  Lade...
-                </p>
-              )}
+          <div className="absolute right-0 top-full mt-3 hidden md:block">
+            <div className="mx-auto flex max-h-full w-full max-w-md flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl md:mx-0 md:max-h-none md:w-[min(92vw,26rem)]">
+              <div className="border-b border-slate-100 px-4 py-3">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-bold text-slate-900">
+                    Benachrichtigungen
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={markActiveTabAsRead}
+                    className="text-xs font-semibold text-jdav-green hover:underline"
+                  >
+                    {hasTabNavigation
+                      ? "Tab als gelesen markieren"
+                      : "Alle gelesen"}
+                  </button>
+                </div>
 
-              {!isLoading && error && (
-                <p className="py-8 text-center text-sm text-red-600">{error}</p>
-              )}
+                {hasTabNavigation && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {tabs.map((tab) => (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setActiveTabId(tab.id)}
+                        className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+                          tab.id === activeTabId
+                            ? "bg-jdav-green text-white"
+                            : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                        }`}
+                      >
+                        {tab.label}
+                        {tab.unreadCount > 0 && (
+                          <span
+                            className={`rounded-full px-1.5 py-0.5 text-[10px] ${
+                              tab.id === activeTabId
+                                ? "bg-white/20 text-white"
+                                : "bg-slate-200 text-slate-700"
+                            }`}
+                          >
+                            {tab.unreadCount}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-              {!isLoading &&
-                !error &&
-                activeTab &&
-                activeTab.items.length === 0 && (
+              <div className="min-h-0 flex-1 overflow-y-auto p-3 md:max-h-[60vh]">
+                {isLoading && (
                   <p className="py-8 text-center text-sm text-slate-500">
-                    Keine Benachrichtigungen.
+                    Lade...
                   </p>
                 )}
 
-              {!isLoading &&
-                !error &&
-                activeTab &&
-                activeTab.items.length > 0 && (
-                  <ul className="space-y-2">
-                    {activeTab.items.map((item) => (
-                      <li
-                        key={item.id}
-                        className={`rounded-xl border p-3 ${
-                          item.read_at
-                            ? "border-slate-100 bg-slate-50"
-                            : "border-jdav-green/30 bg-green-50"
-                        }`}
-                      >
-                        <div className="mb-1 flex items-start justify-between gap-3">
-                          <button
-                            type="button"
-                            onClick={() => void openNotification(item)}
-                            className="min-w-0 text-left"
-                          >
-                            <h3 className="text-sm font-semibold text-slate-900 transition-colors hover:text-jdav-green">
-                              {item.title}
-                            </h3>
-                          </button>
-                          <span className="shrink-0 text-[10px] text-slate-500">
-                            {formatRelative(item.created_at)}
-                          </span>
-                        </div>
+                {!isLoading && error && (
+                  <p className="py-8 text-center text-sm text-red-600">
+                    {error}
+                  </p>
+                )}
 
-                        <button
-                          type="button"
-                          className="cursor-pointer text-left text-xs leading-relaxed text-slate-600"
-                          onClick={() => void openNotification(item)}
+                {!isLoading &&
+                  !error &&
+                  activeTab &&
+                  activeTab.items.length === 0 && (
+                    <p className="py-8 text-center text-sm text-slate-500">
+                      Keine Benachrichtigungen.
+                    </p>
+                  )}
+
+                {!isLoading &&
+                  !error &&
+                  activeTab &&
+                  activeTab.items.length > 0 && (
+                    <ul className="space-y-2">
+                      {activeTab.items.map((item) => (
+                        <li
+                          key={item.id}
+                          className={`rounded-xl border p-3 ${
+                            item.read_at
+                              ? "border-slate-100 bg-slate-50"
+                              : "border-jdav-green/30 bg-green-50"
+                          }`}
                         >
-                          {item.body}
-                        </button>
-
-                        <div className="mt-2 flex items-center justify-between gap-2">
-                          {!item.read_at ? (
-                            <button
-                              type="button"
-                              onClick={() => void markSingleAsRead(item.id)}
-                              className="inline-flex items-center gap-1 rounded-full border border-jdav-green/30 bg-white px-2 py-1 text-[10px] font-semibold text-jdav-green hover:bg-jdav-green/5"
-                              aria-label="Als gelesen markieren"
-                            >
-                              <Check className="h-3 w-3" />
-                              Gelesen
-                            </button>
-                          ) : (
-                            <span />
-                          )}
-
-                          {sanitizeClientPath(item.payload?.url) && (
+                          <div className="mb-1 flex items-start justify-between gap-3">
                             <button
                               type="button"
                               onClick={() => void openNotification(item)}
-                              className="text-[11px] font-semibold text-jdav-green hover:underline"
+                              className="min-w-0 text-left"
                             >
-                              Zum Beitrag
+                              <h3 className="text-sm font-semibold text-slate-900 transition-colors hover:text-jdav-green">
+                                {item.title}
+                              </h3>
                             </button>
-                          )}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                            <span className="shrink-0 text-[10px] text-slate-500">
+                              {formatRelative(item.created_at)}
+                            </span>
+                          </div>
+
+                          <button
+                            type="button"
+                            className="cursor-pointer text-left text-xs leading-relaxed text-slate-600"
+                            onClick={() => void openNotification(item)}
+                          >
+                            {item.body}
+                          </button>
+
+                          <div className="mt-2 flex items-center justify-between gap-2">
+                            {!item.read_at ? (
+                              <button
+                                type="button"
+                                onClick={() => void markSingleAsRead(item.id)}
+                                className="inline-flex items-center gap-1 rounded-full border border-jdav-green/30 bg-white px-2 py-1 text-[10px] font-semibold text-jdav-green hover:bg-jdav-green/5"
+                                aria-label="Als gelesen markieren"
+                              >
+                                <Check className="h-3 w-3" />
+                                Gelesen
+                              </button>
+                            ) : (
+                              <span />
+                            )}
+
+                            {sanitizeClientPath(item.payload?.url) && (
+                              <button
+                                type="button"
+                                onClick={() => void openNotification(item)}
+                                className="text-[11px] font-semibold text-jdav-green hover:underline"
+                              >
+                                Zum Beitrag
+                              </button>
+                            )}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+              </div>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

@@ -501,7 +501,7 @@ export default async function ProfilePage() {
               </div>
               <AnimatedSubmitButton
                 successKey="child_created"
-                successLabel="Kind hinzugefuegt"
+                successLabel="Kind hinzugefügt"
                 className="inline-flex w-full items-center justify-center rounded-xl bg-jdav-green px-4 py-2.5 text-sm font-black text-white shadow-md transition-all hover:bg-jdav-green-dark hover:shadow-lg"
               >
                 Kind hinzufügen

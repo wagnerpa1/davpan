@@ -58,7 +58,7 @@ export function PushSubscriptionControl({
     const publicVapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
     if (!publicVapidKey) {
       console.error(
-        "[Push] NEXT_PUBLIC_VAPID_PUBLIC_KEY not configured in environment"
+        "[Push] NEXT_PUBLIC_VAPID_PUBLIC_KEY not configured in environment",
       );
       return;
     }
@@ -164,7 +164,7 @@ export function PushSubscriptionControl({
       className={`rounded-xl border border-slate-200 bg-slate-50 p-3 ${className}`}
     >
       <p className="mb-2 text-xs font-semibold text-slate-700">
-        Browser Push (dieses Geraet)
+        Browser Push (dieses Gerät)
       </p>
       <div className="flex flex-wrap items-center gap-2">
         <button
@@ -192,4 +192,3 @@ export function PushSubscriptionControl({
     </div>
   );
 }
-

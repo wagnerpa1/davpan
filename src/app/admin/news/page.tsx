@@ -92,7 +92,7 @@ export default async function AdminNewsPage() {
           Vereinsnews verwalten
         </h1>
         <p className="mt-1 text-slate-600">
-          Admins koennen Vereinsnews posten. Beim Veroeffentlichen wird eine
+          Admins können Vereinsnews posten. Beim Veröffentlichen wird eine
           Benachrichtigung an alle passenden Opt-ins erstellt.
         </p>
       </div>
@@ -147,7 +147,7 @@ export default async function AdminNewsPage() {
             type="submit"
             className="inline-flex items-center rounded-md bg-jdav-green px-4 py-2 font-medium text-white transition-colors hover:bg-jdav-green-dark"
           >
-            News veroeffentlichen
+            News veröffentlichen
           </button>
         </form>
       </div>
@@ -353,7 +353,7 @@ export default async function AdminNewsPage() {
                   rel="noreferrer"
                   className="mt-3 inline-block text-xs font-semibold text-jdav-green hover:underline"
                 >
-                  Bild oeffnen
+                  Bild öffnen
                 </a>
               ) : null}
               <p className="mt-3 text-xs text-slate-500">
@@ -370,4 +370,3 @@ export default async function AdminNewsPage() {
     </div>
   );
 }
-

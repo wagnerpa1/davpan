@@ -133,8 +133,8 @@ export async function promoteWaitlistParticipants({
 
     await dispatchNotification(supabase, {
       type: "waitlist",
-      title: "Du bist nachgerueckt",
-      body: `Fuer "${tour.title}" ist ein Platz frei geworden. Du bist jetzt bestaetigt.`,
+      title: "Du bist nachgerückt",
+      body: `Für "${tour.title}" ist ein Platz frei geworden. Du bist jetzt bestätigt.`,
       payload: {
         tour_id: tourId,
         participant_id: firstWaitlist.id,
@@ -152,8 +152,8 @@ export async function promoteWaitlistParticipants({
     if (managerIds.length > 0) {
       await dispatchToUsers(supabase, managerIds, {
         type: "waitlist",
-        title: "Warteliste nachgerueckt",
-        body: `Bei "${tour.title}" ist ein Wartelistenplatz automatisch nachgerueckt.`,
+        title: "Warteliste nachgerückt",
+        body: `Bei "${tour.title}" ist ein Wartelistenplatz automatisch nachgerückt.`,
         payload: {
           tour_id: tourId,
           participant_id: firstWaitlist.id,

@@ -2,7 +2,7 @@
 
 ## API-Tests (Vitest)
 
-Diese Tests laufen ohne Browser und decken Notification-Logik inkl. Opt-in-Filterung und RLS-nahe API-Faelle ab.
+Diese Tests laufen ohne Browser und decken Notification-Logik inkl. Opt-in-Filterung und RLS-nahe API-Fälle ab.
 
 ```bash
 npm run test:api

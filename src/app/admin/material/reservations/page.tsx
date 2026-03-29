@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { canAccessMaterialAdmin, getCurrentUserProfile } from "@/lib/auth";
@@ -193,10 +193,10 @@ export default async function AdminMaterialReservationsPage({
 
       {unavailableRequested.length > 0 && (
         <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-          <p className="font-bold">Achtung: Material nicht verfuegbar</p>
+          <p className="font-bold">Achtung: Material nicht verfügbar</p>
           <p className="mt-1">
-            {unavailableRequested.length} Anfrage(n) koennen aktuell nicht auf
-            "Reserviert" gesetzt werden, weil kein Bestand verfuegbar ist.
+            {unavailableRequested.length} Anfrage(n) können aktuell nicht auf
+            "Reserviert" gesetzt werden, weil kein Bestand verfügbar ist.
           </p>
         </div>
       )}

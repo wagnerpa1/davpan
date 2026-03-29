@@ -74,7 +74,7 @@ export function ReservationStatusManager({
           className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2.5 py-1.5 text-[11px] font-bold uppercase text-slate-700 transition-colors hover:bg-slate-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
         >
           <RotateCcw className="h-3.5 w-3.5" />
-          Ruecknahme
+          Rücknahme
         </button>
       )}
 

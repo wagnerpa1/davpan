@@ -1,5 +1,5 @@
 import { File } from "lucide-react";
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getCurrentUserProfile } from "@/lib/auth";
 import { createClient } from "@/utils/supabase/server";
