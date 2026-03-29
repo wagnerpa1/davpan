@@ -73,7 +73,10 @@ export async function POST(req: NextRequest) {
   }
 
   if (!(SYSTEM_TARGET_MODES as readonly string[]).includes(targetModeRaw)) {
-    return NextResponse.json({ error: "Ungültiger Target-Modus." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Ungültiger Target-Modus." },
+      { status: 400 },
+    );
   }
 
   const targetMode = targetModeRaw as SystemTargetMode;
@@ -129,7 +132,7 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  await (supabase as any).from("admin_system_notification_audit").insert({
+  await supabase.from("admin_system_notification_audit").insert({
     sent_by: user.id,
     title,
     message,

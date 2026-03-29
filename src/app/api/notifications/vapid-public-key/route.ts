@@ -6,10 +6,9 @@ export async function GET() {
   if (!publicKey) {
     return NextResponse.json(
       { error: "VAPID public key not configured" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 
   return NextResponse.json({ publicKey });
 }
-

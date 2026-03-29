@@ -6,4 +6,3 @@ export function PushNotificationInit() {
   usePushNotifications();
   return null;
 }
-

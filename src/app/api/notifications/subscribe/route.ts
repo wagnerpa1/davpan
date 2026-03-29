@@ -1,5 +1,5 @@
+import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
-import { NextRequest, NextResponse } from "next/server";
 
 interface SubscriptionBody {
   endpoint: string;
@@ -16,10 +16,7 @@ export async function POST(req: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = (await req.json()) as SubscriptionBody;
@@ -27,7 +24,7 @@ export async function POST(req: NextRequest) {
     if (!body.endpoint || !body.p256dh || !body.auth) {
       return NextResponse.json(
         { error: "Missing subscription details" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -43,9 +40,9 @@ export async function POST(req: NextRequest) {
       // Update last used timestamp
       await supabase
         .from("push_subscriptions")
-        .update({ 
+        .update({
           disabled_at: null,
-          last_used_at: new Date().toISOString()
+          last_used_at: new Date().toISOString(),
         })
         .eq("id", existingSubscription.id);
 
@@ -53,22 +50,20 @@ export async function POST(req: NextRequest) {
     }
 
     // Insert new subscription
-    const { error } = await supabase
-      .from("push_subscriptions")
-      .insert({
-        user_id: user.id,
-        endpoint: body.endpoint,
-        p256dh: body.p256dh,
-        auth: body.auth,
-        created_at: new Date().toISOString(),
-        last_used_at: new Date().toISOString(),
-      });
+    const { error } = await supabase.from("push_subscriptions").insert({
+      user_id: user.id,
+      endpoint: body.endpoint,
+      p256dh: body.p256dh,
+      auth: body.auth,
+      created_at: new Date().toISOString(),
+      last_used_at: new Date().toISOString(),
+    });
 
     if (error) {
       console.error("[Push] Error saving subscription:", error);
       return NextResponse.json(
         { error: "Failed to save subscription" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -78,8 +73,7 @@ export async function POST(req: NextRequest) {
     console.error("[Push] Error in subscribe endpoint:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-

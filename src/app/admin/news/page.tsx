@@ -52,7 +52,7 @@ export default async function AdminNewsPage() {
         .select("id, title, content, image_url, published_at")
         .order("published_at", { ascending: false }),
       supabase.from("tour_groups").select("id, group_name").order("group_name"),
-      (supabase as any)
+      supabase
         .from("admin_system_notification_audit")
         .select(
           "id, sent_by, title, message, target_mode, target_roles, target_group_ids, user_target_count, child_target_count, created_at",
@@ -62,7 +62,9 @@ export default async function AdminNewsPage() {
     ]);
 
   const audits = (systemAuditRows ?? []) as SystemAuditEntry[];
-  const senderIds = [...new Set(audits.map((entry) => entry.sent_by).filter(Boolean))];
+  const senderIds = [
+    ...new Set(audits.map((entry) => entry.sent_by).filter(Boolean)),
+  ];
   const { data: senderProfiles } = senderIds.length
     ? await supabase
         .from("profiles")
@@ -71,14 +73,16 @@ export default async function AdminNewsPage() {
     : { data: [] as { id: string; full_name: string }[] };
 
   const senderMap = new Map(
-    ((senderProfiles ?? []) as { id: string; full_name: string }[]).map((row) => [
-      row.id,
-      row.full_name,
-    ]),
+    ((senderProfiles ?? []) as { id: string; full_name: string }[]).map(
+      (row) => [row.id, row.full_name],
+    ),
   );
 
   const groupMap = new Map(
-    ((tourGroups ?? []) as TourGroup[]).map((group) => [group.id, group.group_name]),
+    ((tourGroups ?? []) as TourGroup[]).map((group) => [
+      group.id,
+      group.group_name,
+    ]),
   );
 
   return (
@@ -217,7 +221,10 @@ export default async function AdminNewsPage() {
             <div className="mt-2 grid grid-cols-2 gap-2 text-sm text-slate-700">
               {((tourGroups ?? []) as TourGroup[]).length > 0 ? (
                 ((tourGroups ?? []) as TourGroup[]).map((group) => (
-                  <label key={group.id} className="inline-flex items-center gap-2">
+                  <label
+                    key={group.id}
+                    className="inline-flex items-center gap-2"
+                  >
                     <input type="checkbox" name="group_ids" value={group.id} />
                     <span>{group.group_name}</span>
                   </label>
@@ -259,9 +266,14 @@ export default async function AdminNewsPage() {
             Temporärer Push-Debug
           </p>
           <p className="mt-1 text-xs text-amber-800">
-            Sendet eine Test-Benachrichtigung direkt an deinen aktuellen Admin-Account.
+            Sendet eine Test-Benachrichtigung direkt an deinen aktuellen
+            Admin-Account.
           </p>
-          <form action="/api/admin/test-push-self" method="POST" className="mt-3">
+          <form
+            action="/api/admin/test-push-self"
+            method="POST"
+            className="mt-3"
+          >
             <button
               type="submit"
               className="inline-flex items-center rounded-md bg-amber-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-amber-700"
@@ -286,8 +298,12 @@ export default async function AdminNewsPage() {
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h3 className="text-sm font-bold text-slate-900">{entry.title}</h3>
-                    <p className="mt-1 text-xs text-slate-600">{entry.message}</p>
+                    <h3 className="text-sm font-bold text-slate-900">
+                      {entry.title}
+                    </h3>
+                    <p className="mt-1 text-xs text-slate-600">
+                      {entry.message}
+                    </p>
                   </div>
                   <p className="shrink-0 text-[11px] text-slate-500">
                     {new Date(entry.created_at).toLocaleString("de-DE")}
@@ -314,7 +330,8 @@ export default async function AdminNewsPage() {
                 )}
                 {entry.target_group_ids?.length > 0 && (
                   <p className="mt-1 text-xs text-slate-600">
-                    Gruppen: {entry.target_group_ids
+                    Gruppen:{" "}
+                    {entry.target_group_ids
                       .map((id) => groupMap.get(id) ?? id)
                       .join(", ")}
                   </p>

@@ -10,6 +10,21 @@ interface PushDispatchInput {
   payload: Record<string, unknown>;
 }
 
+type PushSubscriptionUpdate = Partial<
+  Pick<Tables<"push_subscriptions">, "last_used_at" | "disabled_at">
+>;
+
+interface PushSubscriptionsUpdateClient {
+  from(table: "push_subscriptions"): {
+    update(values: PushSubscriptionUpdate): {
+      eq(
+        column: "id",
+        value: string,
+      ): Promise<{ error: { message: string } | null }>;
+    };
+  };
+}
+
 let pushConfigured = false;
 let pushDisabled = false;
 
@@ -25,7 +40,7 @@ function configureWebPush() {
 
   if (!publicKey || !privateKey) {
     console.warn(
-      "[Push] VAPID keys not configured (NEXT_PUBLIC_VAPID_PUBLIC_KEY/VAPID_PUBLIC_KEY or VAPID_PRIVATE_KEY missing). Push notifications disabled."
+      "[Push] VAPID keys not configured (NEXT_PUBLIC_VAPID_PUBLIC_KEY/VAPID_PUBLIC_KEY or VAPID_PRIVATE_KEY missing). Push notifications disabled.",
     );
     pushDisabled = true;
     return;
@@ -116,7 +131,7 @@ export async function dispatchPushForNotification(input: PushDispatchInput) {
   configureWebPush();
   if (!pushConfigured) {
     console.debug(
-      "[Push] Push not configured or disabled, skipping push notification"
+      "[Push] Push not configured or disabled, skipping push notification",
     );
     return;
   }
@@ -127,6 +142,8 @@ export async function dispatchPushForNotification(input: PushDispatchInput) {
     return;
   }
 
+  const pushUpdateClient = admin as unknown as PushSubscriptionsUpdateClient;
+
   const targetUserIds = await resolvePushTargetUserIds({
     recipientUserId: input.recipientUserId,
     recipientChildId: input.recipientChildId,
@@ -134,7 +151,7 @@ export async function dispatchPushForNotification(input: PushDispatchInput) {
 
   if (targetUserIds.length === 0) {
     console.debug(
-      "[Push] No target users for push (permissions disabled or user not found)"
+      "[Push] No target users for push (permissions disabled or user not found)",
     );
     return;
   }
@@ -150,9 +167,7 @@ export async function dispatchPushForNotification(input: PushDispatchInput) {
   >;
 
   if (subscriptions.length === 0) {
-    console.debug(
-      "[Push] No active push subscriptions found for target users"
-    );
+    console.debug("[Push] No active push subscriptions found for target users");
     return;
   }
 
@@ -163,7 +178,7 @@ export async function dispatchPushForNotification(input: PushDispatchInput) {
   });
 
   console.log(
-    `[Push] Sending push notification to ${subscriptions.length} subscription(s): "${input.title}"`
+    `[Push] Sending push notification to ${subscriptions.length} subscription(s): "${input.title}"`,
   );
 
   for (const sub of subscriptions) {
@@ -181,9 +196,13 @@ export async function dispatchPushForNotification(input: PushDispatchInput) {
 
       console.debug(`[Push] Successfully sent to subscription ${sub.id}`);
 
-      await (admin as any)
+      const lastUsedUpdate: PushSubscriptionUpdate = {
+        last_used_at: new Date().toISOString(),
+      };
+
+      await pushUpdateClient
         .from("push_subscriptions")
-        .update({ last_used_at: new Date().toISOString() })
+        .update(lastUsedUpdate)
         .eq("id", sub.id);
     } catch (error: unknown) {
       const statusCode =
@@ -193,25 +212,22 @@ export async function dispatchPushForNotification(input: PushDispatchInput) {
 
       console.error(
         `[Push] Error sending notification to subscription ${sub.id}:`,
-        error
+        error,
       );
 
       if (statusCode === 404 || statusCode === 410) {
         console.log(
-          `[Push] Disabling subscription ${sub.id} (endpoint no longer valid)`
+          `[Push] Disabling subscription ${sub.id} (endpoint no longer valid)`,
         );
-        await (admin as any)
+        const disableUpdate: PushSubscriptionUpdate = {
+          disabled_at: new Date().toISOString(),
+        };
+
+        await pushUpdateClient
           .from("push_subscriptions")
-          .update({ disabled_at: new Date().toISOString() })
+          .update(disableUpdate)
           .eq("id", sub.id);
       }
     }
   }
 }
-
-
-
-
-
-
-

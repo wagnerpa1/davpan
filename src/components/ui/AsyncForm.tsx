@@ -1,9 +1,9 @@
 "use client";
 
 import {
+  type FormEvent,
   type FormHTMLAttributes,
   type ReactNode,
-  type FormEvent,
   useCallback,
   useState,
 } from "react";
@@ -13,6 +13,10 @@ interface AsyncFormProps extends FormHTMLAttributes<HTMLFormElement> {
   successChildId?: string;
   children: ReactNode;
 }
+
+type AsyncFormSubmitEvent = Parameters<
+  NonNullable<FormHTMLAttributes<HTMLFormElement>["onSubmit"]>
+>[0];
 
 export function AsyncForm({
   action,
@@ -27,7 +31,7 @@ export function AsyncForm({
 
   const handleSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
-      onSubmit?.(event as any);
+      onSubmit?.(event as AsyncFormSubmitEvent);
       if (event.defaultPrevented) {
         return;
       }
@@ -90,4 +94,3 @@ export function AsyncForm({
     </form>
   );
 }
-

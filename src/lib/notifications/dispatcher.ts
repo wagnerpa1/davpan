@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { dispatchPushForNotification } from "@/lib/notifications/push-dispatch";
-import type { Database } from "@/utils/supabase/types";
+import type { Database, Json } from "@/utils/supabase/types";
 
 type NotificationType =
   | "news"
@@ -24,6 +24,17 @@ interface NotificationInput {
   relatedTourId?: string | null;
   relatedGroupId?: string | null;
   newsPostId?: string | null;
+}
+
+type NotificationInsert =
+  Database["public"]["Tables"]["notifications"]["Insert"];
+
+interface NotificationsInsertClient {
+  from(table: "notifications"): {
+    insert(
+      values: NotificationInsert,
+    ): Promise<{ error: { message: string } | null }>;
+  };
 }
 
 interface PreferenceLike {
@@ -217,17 +228,22 @@ export async function dispatchNotification(
   const audience: Audience = recipientChildId ? "child" : "user";
   const payload = sanitizePayload(input.type, input.payload ?? {}, audience);
 
-  const { error } = await (supabase as any).from("notifications").insert({
+  const insertPayload: NotificationInsert = {
     type: input.type,
     title: input.title,
     body: input.body,
-    payload: payload,
+    payload: payload as Json,
     recipient_user_id: recipientUserId,
     recipient_child_id: recipientChildId,
     related_tour_id: input.relatedTourId ?? null,
     related_group_id: input.relatedGroupId ?? null,
     news_post_id: input.newsPostId ?? null,
-  });
+  };
+
+  const notificationsClient = supabase as unknown as NotificationsInsertClient;
+  const { error } = await notificationsClient
+    .from("notifications")
+    .insert(insertPayload);
 
   if (error) {
     console.error("[Notification] Failed to insert notification:", error);
@@ -235,7 +251,7 @@ export async function dispatchNotification(
   }
 
   console.log(
-    `[Notification] Created ${input.type} notification for ${recipientUserId ? "user" : "child"} ${recipientUserId || recipientChildId}: "${input.title}"`
+    `[Notification] Created ${input.type} notification for ${recipientUserId ? "user" : "child"} ${recipientUserId || recipientChildId}: "${input.title}"`,
   );
 
   await dispatchPushForNotification({
@@ -259,6 +275,3 @@ export async function dispatchToUsers(
     });
   }
 }
-
-
-

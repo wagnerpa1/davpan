@@ -1,9 +1,9 @@
 "use client";
 
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { registerForTour } from "@/app/actions/tour-registration";
 import { Button } from "@/components/ui/button";
 

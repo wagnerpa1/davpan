@@ -12,7 +12,6 @@ function createSupabaseTargetingMock() {
                 data: [{ id: "u-guide" }, { id: "u-admin" }],
               }),
             ),
-            then: undefined,
           })),
         };
       }
@@ -77,4 +76,3 @@ describe("resolveAdminSystemTargets", () => {
     expect(result.childIds).toEqual(["c-group-1"]);
   });
 });
-

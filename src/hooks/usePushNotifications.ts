@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useCallback, useEffect } from "react";
 
 export function usePushNotifications() {
   const registerPushNotifications = useCallback(async () => {
@@ -15,7 +15,8 @@ export function usePushNotifications() {
       const registration = await navigator.serviceWorker.ready;
 
       // Check if already subscribed
-      const existingSubscription = await registration.pushManager.getSubscription();
+      const existingSubscription =
+        await registration.pushManager.getSubscription();
 
       if (!existingSubscription) {
         // Kein Auto-Subscribe ohne User-Geste: nur vorhandene Abos mit Backend synchronisieren.
@@ -49,4 +50,3 @@ export function usePushNotifications() {
     registerPushNotifications();
   }, [registerPushNotifications]);
 }
-

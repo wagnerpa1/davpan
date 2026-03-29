@@ -471,12 +471,13 @@ export function NotificationCenter({ isParent }: NotificationCenterProps) {
                           </span>
                         </div>
                       </div>
-                      <p
-                        className="cursor-pointer text-xs leading-relaxed text-slate-600"
+                      <button
+                        type="button"
+                        className="w-full cursor-pointer text-left text-xs leading-relaxed text-slate-600"
                         onClick={() => void openNotification(item)}
                       >
                         {item.body}
-                      </p>
+                      </button>
                       {sanitizeClientPath(item.payload?.url) && (
                         <button
                           type="button"

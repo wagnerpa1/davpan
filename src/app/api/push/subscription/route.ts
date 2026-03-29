@@ -127,17 +127,15 @@ export async function DELETE(req: NextRequest) {
     .limit(1);
 
   if (!remainingSubs || remainingSubs.length === 0) {
-    await supabase
-      .from("notification_preferences")
-      .upsert(
-        {
-          user_id: user.id,
-          push_enabled: false,
-        },
-        {
-          onConflict: "user_id",
-        },
-      );
+    await supabase.from("notification_preferences").upsert(
+      {
+        user_id: user.id,
+        push_enabled: false,
+      },
+      {
+        onConflict: "user_id",
+      },
+    );
   }
 
   return NextResponse.json({ success: true });
