@@ -1,9 +1,10 @@
 import Link from "next/link";
+import { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { MaterialForm } from "@/app/admin/material/MaterialForm";
 import { canManageMaterial, getCurrentUserProfile } from "@/lib/auth";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Neues Material - Admin | JDAV Pfarrkirchen",
 };
 

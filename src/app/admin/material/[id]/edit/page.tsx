@@ -1,10 +1,11 @@
 import Link from "next/link";
+import { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { MaterialForm } from "@/app/admin/material/MaterialForm";
 import { canManageMaterial, getCurrentUserProfile } from "@/lib/auth";
 import { createClient } from "@/utils/supabase/server";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Material bearbeiten - Admin | JDAV Pfarrkirchen",
 };
 

@@ -1,4 +1,5 @@
 import { File } from "lucide-react";
+import { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getCurrentUserProfile } from "@/lib/auth";
 import { createClient } from "@/utils/supabase/server";
@@ -12,7 +13,7 @@ interface AdminDocument {
   file_url: string;
 }
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Admin - Dokumente verwalten | JDAV Pfarrkirchen",
 };
 

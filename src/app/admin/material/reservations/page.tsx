@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { canAccessMaterialAdmin, getCurrentUserProfile } from "@/lib/auth";
@@ -6,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/server";
 import { ReservationStatusManager } from "./ReservationStatusManager";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Material Reservierungen - Admin | JDAV Pfarrkirchen",
 };
 

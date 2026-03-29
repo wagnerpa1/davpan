@@ -67,12 +67,12 @@ export async function notifyTourOpenForSubscribers(
         .from("notification_preferences")
         .select("user_id")
         .eq("group_notifications_enabled", true)
-        .contains("tour_group_ids", [input.groupId]),
+        .overlaps("tour_group_ids", [input.groupId]),
       supabase
         .from("child_notification_preferences")
         .select("child_id")
         .eq("group_notifications_enabled", true)
-        .contains("tour_group_ids", [input.groupId]),
+        .overlaps("tour_group_ids", [input.groupId]),
     ]);
 
     const userPrefRows = (userPrefs ?? []) as UserPrefRow[];

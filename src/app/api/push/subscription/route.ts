@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { isSameOriginRequest } from "@/lib/security";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { createClient } from "@/utils/supabase/server";
 
 interface SubscribePayload {
@@ -14,6 +15,23 @@ interface SubscribePayload {
 
 interface UnsubscribePayload {
   endpoint?: string;
+}
+
+interface PushSubscriptionUpsertClient {
+  from(table: "push_subscriptions"): {
+    upsert(
+      values: {
+        user_id: string;
+        endpoint: string;
+        p256dh: string;
+        auth: string;
+        user_agent: string | null;
+        disabled_at: null;
+        last_used_at: null;
+      },
+      options: { onConflict: "endpoint" },
+    ): Promise<{ error: { message: string } | null }>;
+  };
 }
 
 export async function POST(req: NextRequest) {
@@ -62,7 +80,47 @@ export async function POST(req: NextRequest) {
   );
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    // Fallback: endpoint ist global unique; bei Account-Wechsel im selben Browser
+    // kann das mit RLS kollidieren. Dann einmal serverseitig mit Service-Role neu zuweisen.
+    const admin = createAdminClient();
+    if (!admin) {
+      return NextResponse.json(
+        {
+          error: `push_subscriptions upsert failed: ${error.message}`,
+          code: "push_upsert_failed",
+        },
+        { status: 500 },
+      );
+    }
+
+    const adminUpsertClient = admin as unknown as PushSubscriptionUpsertClient;
+
+    const { error: adminError } = await adminUpsertClient
+      .from("push_subscriptions")
+      .upsert(
+        {
+          user_id: user.id,
+          endpoint,
+          p256dh,
+          auth,
+          user_agent: req.headers.get("user-agent"),
+          disabled_at: null,
+          last_used_at: null,
+        },
+        {
+          onConflict: "endpoint",
+        },
+      );
+
+    if (adminError) {
+      return NextResponse.json(
+        {
+          error: `admin upsert failed: ${adminError.message}`,
+          code: "push_upsert_admin_failed",
+        },
+        { status: 500 },
+      );
+    }
   }
 
   const { error: prefError } = await supabase

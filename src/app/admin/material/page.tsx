@@ -1,4 +1,5 @@
 import { Package, Plus } from "lucide-react";
+import { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
@@ -25,7 +26,7 @@ interface AdminMaterial {
   pricing: MaterialPricingItem[] | null;
 }
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Admin - Material verwalten | JDAV Pfarrkirchen",
 };
 

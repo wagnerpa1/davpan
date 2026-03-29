@@ -1,4 +1,3 @@
-import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
@@ -290,7 +289,7 @@ export default async function RootLayout({
   return (
     <html lang="de" data-scroll-behavior="smooth">
       <body
-        className={`${GeistSans.variable} ${GeistMono.variable} flex min-h-screen flex-col antialiased`}
+        className={`${GeistSans.variable} flex min-h-screen flex-col antialiased`}
       >
         <SerwistProvider
           swUrl="/serwist/sw.js"

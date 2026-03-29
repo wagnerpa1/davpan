@@ -48,7 +48,23 @@ export function usePushNotifications() {
           return;
         }
 
-        console.error("[Push] Failed to save subscription to backend");
+        let details: string;
+        try {
+          const data = (await response.json()) as {
+            error?: string;
+            code?: string;
+          };
+          details = data.code
+            ? `${data.code}: ${data.error || ""}`
+            : data.error || "";
+        } catch {
+          details = await response.text();
+        }
+
+        console.error(
+          `[Push] Failed to save subscription to backend (${response.status})`,
+          details,
+        );
       } else {
         console.log("[Push] Subscription saved to backend");
       }

@@ -1,12 +1,13 @@
 import { format } from "date-fns";
 import { Euro, Package, Ruler, Settings } from "lucide-react";
+import { Metadata } from "next";
 import Link from "next/link";
 import { cancelOwnPrivateMaterialReservation } from "@/app/actions/material";
 import { MaterialBookingForm } from "@/components/material/MaterialBookingForm";
 import { canAccessMaterialAdmin, getCurrentUserProfile } from "@/lib/auth";
 import { createClient } from "@/utils/supabase/server";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Materialausleihe | JDAV Pfarrkirchen",
   description:
     "Zentraler Material-Verleih für Mitglieder der JDAV Pfarrkirchen",

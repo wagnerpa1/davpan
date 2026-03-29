@@ -1,4 +1,5 @@
 import { Calendar1, Plus } from "lucide-react";
+import { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
@@ -9,7 +10,7 @@ import { getCurrentUserProfile } from "@/lib/auth";
 import { DeleteResourceButton } from "./DeleteResourceButton";
 import { ResourceCalendar } from "./ResourceCalendar";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Admin - Vereinsressourcen | JDAV Pfarrkirchen",
 };
 
