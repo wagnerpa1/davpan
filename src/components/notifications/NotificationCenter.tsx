@@ -109,7 +109,12 @@ export function NotificationCenter({ isParent }: NotificationCenterProps) {
       });
 
       if (!response.ok) {
-        throw new Error("Konnte Benachrichtigungen nicht laden.");
+        console.error(
+          "Notification center load failed with status:",
+          response.status,
+        );
+        setError("Benachrichtigungen konnten nicht geladen werden.");
+        return;
       }
 
       const data = (await response.json()) as NotificationCenterResponse;
