@@ -339,11 +339,11 @@ export function NotificationCenter({ isParent }: NotificationCenterProps) {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 z-50 mt-2 w-[min(92vw,26rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+        <div className="absolute left-1/2 z-50 mt-2 w-[calc(100vw-1rem)] max-w-md -translate-x-1/2 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl md:right-0 md:left-auto md:w-[min(92vw,26rem)] md:translate-x-0">
           <div className="border-b border-slate-100 px-4 py-3">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-bold text-slate-900">
-                Notification Center
+                Benachrichtigungen
               </h2>
               <button
                 type="button"

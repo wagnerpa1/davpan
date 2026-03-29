@@ -28,6 +28,8 @@ export function usePushNotifications() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "x-requested-with": "XMLHttpRequest",
+          accept: "application/json",
         },
         body: JSON.stringify({
           subscription: existingSubscription.toJSON(),
@@ -36,6 +38,16 @@ export function usePushNotifications() {
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          // User ist nicht angemeldet; Auto-Sync in diesem Zustand still beenden.
+          return;
+        }
+
+        if (response.status === 403) {
+          console.warn("[Push] Subscription blocked by CSRF/origin policy");
+          return;
+        }
+
         console.error("[Push] Failed to save subscription to backend");
       } else {
         console.log("[Push] Subscription saved to backend");

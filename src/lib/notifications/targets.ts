@@ -61,51 +61,56 @@ export async function notifyTourOpenForSubscribers(
     groupId: string;
   },
 ) {
-  const [{ data: userPrefs }, { data: childPrefs }] = await Promise.all([
-    supabase
-      .from("notification_preferences")
-      .select("user_id")
-      .eq("group_notifications_enabled", true)
-      .contains("tour_group_ids", [input.groupId]),
-    supabase
-      .from("child_notification_preferences")
-      .select("child_id")
-      .eq("group_notifications_enabled", true)
-      .contains("tour_group_ids", [input.groupId]),
-  ]);
+  try {
+    const [{ data: userPrefs }, { data: childPrefs }] = await Promise.all([
+      supabase
+        .from("notification_preferences")
+        .select("user_id")
+        .eq("group_notifications_enabled", true)
+        .contains("tour_group_ids", [input.groupId]),
+      supabase
+        .from("child_notification_preferences")
+        .select("child_id")
+        .eq("group_notifications_enabled", true)
+        .contains("tour_group_ids", [input.groupId]),
+    ]);
 
-  const userPrefRows = (userPrefs ?? []) as UserPrefRow[];
-  const childPrefRows = (childPrefs ?? []) as ChildPrefRow[];
+    const userPrefRows = (userPrefs ?? []) as UserPrefRow[];
+    const childPrefRows = (childPrefs ?? []) as ChildPrefRow[];
 
-  for (const row of userPrefRows) {
-    await dispatchNotification(supabase, {
-      type: "tour_new",
-      title: `Anmeldung offen: ${input.title}`,
-      body: `Die Tour "${input.title}" ist jetzt zur Anmeldung freigegeben.`,
-      payload: {
-        tour_id: input.tourId,
-        status: "open",
-        url: `/touren/${input.tourId}`,
-      },
-      recipientUserId: row.user_id,
-      relatedTourId: input.tourId,
-      relatedGroupId: input.groupId,
-    });
-  }
+    for (const row of userPrefRows) {
+      await dispatchNotification(supabase, {
+        type: "tour_new",
+        title: `Anmeldung offen: ${input.title}`,
+        body: `Die Tour "${input.title}" ist jetzt zur Anmeldung freigegeben.`,
+        payload: {
+          tour_id: input.tourId,
+          status: "open",
+          url: `/touren/${input.tourId}`,
+        },
+        recipientUserId: row.user_id,
+        relatedTourId: input.tourId,
+        relatedGroupId: input.groupId,
+      });
+    }
 
-  for (const row of childPrefRows) {
-    await dispatchNotification(supabase, {
-      type: "tour_new",
-      title: `Anmeldung offen: ${input.title}`,
-      body: "Eine Tour deiner abonnierten Gruppe ist jetzt zur Anmeldung freigegeben.",
-      payload: {
-        tour_id: input.tourId,
-        status: "open",
-        url: `/touren/${input.tourId}`,
-      },
-      recipientChildId: row.child_id,
-      relatedTourId: input.tourId,
-      relatedGroupId: input.groupId,
-    });
+    for (const row of childPrefRows) {
+      await dispatchNotification(supabase, {
+        type: "tour_new",
+        title: `Anmeldung offen: ${input.title}`,
+        body: "Eine Tour deiner abonnierten Gruppe ist jetzt zur Anmeldung freigegeben.",
+        payload: {
+          tour_id: input.tourId,
+          status: "open",
+          url: `/touren/${input.tourId}`,
+        },
+        recipientChildId: row.child_id,
+        relatedTourId: input.tourId,
+        relatedGroupId: input.groupId,
+      });
+    }
+  } catch (error) {
+    // Benachrichtigungsfehler duerfen Kernprozesse wie Tour-Erstellung nicht blockieren.
+    console.error("[Notification] notifyTourOpenForSubscribers failed:", error);
   }
 }
