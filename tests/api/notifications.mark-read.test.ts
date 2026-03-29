@@ -143,3 +143,6 @@ describe("POST /api/notifications/mark-read (RLS-nahe Szenarien)", () => {
     expect(updateCall).toHaveBeenCalledTimes(1);
   });
 });
+
+
+
