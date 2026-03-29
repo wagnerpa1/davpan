@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
+import { notifyTourOpenForSubscribers } from "@/lib/notifications/targets";
 import { createClient } from "@/utils/supabase/server";
 import { checkAndBookResource } from "./admin-resources";
 
@@ -272,6 +273,14 @@ export async function createTour(formData: FormData) {
     }
   }
 
+  if (tour.status === "open" && tour.group) {
+    await notifyTourOpenForSubscribers(supabase, {
+      tourId: tour.id,
+      title: tour.title,
+      groupId: tour.group,
+    });
+  }
+
   revalidatePath("/touren");
   redirect(`/touren/${tour.id}`);
 }
@@ -394,6 +403,7 @@ export async function updateTour(tourId: string, formData: FormData) {
       tour_id: tourId,
       previous_status: previousTour?.status ?? null,
       next_status: payload.status ?? previousTour?.status ?? null,
+      url: `/touren/${tourId}`,
     },
     relatedTourId: tourId,
     relatedGroupId:
@@ -401,6 +411,25 @@ export async function updateTour(tourId: string, formData: FormData) {
       previousTour?.group ??
       null,
   });
+
+  const nextStatus =
+    typeof payload.status === "string" ? payload.status : previousTour?.status;
+  const nextGroupId =
+    (typeof payload.group === "string" ? payload.group : null) ??
+    previousTour?.group ??
+    null;
+  const nextTitle =
+    (typeof payload.title === "string" ? payload.title : null) ??
+    previousTour?.title ??
+    "Tour";
+
+  if (nextStatus === "open" && previousTour?.status !== "open" && nextGroupId) {
+    await notifyTourOpenForSubscribers(supabase, {
+      tourId,
+      title: nextTitle,
+      groupId: nextGroupId,
+    });
+  }
 
   revalidatePath("/touren");
   revalidatePath(`/touren/${tourId}`);

@@ -8,15 +8,13 @@ import {
   useState,
 } from "react";
 
-interface AsyncFormProps extends FormHTMLAttributes<HTMLFormElement> {
+interface AsyncFormProps
+  extends Omit<FormHTMLAttributes<HTMLFormElement>, "onSubmit"> {
   successKey: string;
   successChildId?: string;
   children: ReactNode;
+  onSubmit?: (event: FormEvent<HTMLFormElement>) => void;
 }
-
-type AsyncFormSubmitEvent = Parameters<
-  NonNullable<FormHTMLAttributes<HTMLFormElement>["onSubmit"]>
->[0];
 
 export function AsyncForm({
   action,
@@ -31,7 +29,7 @@ export function AsyncForm({
 
   const handleSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
-      onSubmit?.(event as AsyncFormSubmitEvent);
+      onSubmit?.(event);
       if (event.defaultPrevented) {
         return;
       }

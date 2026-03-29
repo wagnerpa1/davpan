@@ -140,6 +140,3 @@ describe("dispatchNotification opt-in filtering", () => {
     expect(pushDispatchSpy).toHaveBeenCalledTimes(1);
   });
 });
-
-
-

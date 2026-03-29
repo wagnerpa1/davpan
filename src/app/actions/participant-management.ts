@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
+import { notifyTourOpenForSubscribers } from "@/lib/notifications/targets";
 import { promoteWaitlistParticipants } from "@/lib/tours/waitlist";
 import { createClient } from "@/utils/supabase/server";
 
@@ -111,29 +112,31 @@ export async function updateParticipantStatus(
 
   const statusText: Record<typeof newStatus, string> = {
     confirmed: "bestaetigt",
-    cancelled: "abgelehnt bzw. storniert",
+    cancelled: "abgelehnt",
     pending: "auf pending gesetzt",
     waitlist: "auf die Warteliste gesetzt",
   };
 
-  await dispatchNotification(supabase, {
-    type: notificationType,
-    title:
-      notificationType === "waitlist"
-        ? "Wartelisten-Update"
-        : "Anmeldestatus aktualisiert",
-    body: `Dein Status fuer "${tourInfo?.title || "diese Tour"}" wurde ${statusText[newStatus]}.`,
-    payload: {
-      participant_id: registrationId,
-      old_status: previousStatus,
-      new_status: newStatus,
-      url: `/touren/${tourId}`,
-    },
-    recipientUserId: participantChildId ? null : participantUserId,
-    recipientChildId: participantChildId,
-    relatedTourId: tourId,
-    relatedGroupId: tourInfo?.group ?? null,
-  });
+  if (newStatus === "confirmed" || newStatus === "cancelled") {
+    await dispatchNotification(supabase, {
+      type: notificationType,
+      title:
+        newStatus === "confirmed"
+          ? "Anmeldung bestaetigt"
+          : "Anmeldung abgelehnt",
+      body: `Deine Anmeldung fuer "${tourInfo?.title || "diese Tour"}" wurde ${statusText[newStatus]}.`,
+      payload: {
+        participant_id: registrationId,
+        old_status: previousStatus,
+        new_status: newStatus,
+        url: `/touren/${tourId}`,
+      },
+      recipientUserId: participantChildId ? null : participantUserId,
+      recipientChildId: participantChildId,
+      relatedTourId: tourId,
+      relatedGroupId: tourInfo?.group ?? null,
+    });
+  }
 
   const freesCapacity =
     newStatus === "cancelled" &&
@@ -236,6 +239,19 @@ export async function updateParticipantStatus(
         .from("tours")
         .update({ status: targetStatus })
         .eq("id", tourId);
+
+      if (
+        targetStatus === "open" &&
+        tour.status !== "open" &&
+        tourInfo?.group &&
+        tourInfo?.title
+      ) {
+        await notifyTourOpenForSubscribers(supabase, {
+          tourId,
+          title: tourInfo.title,
+          groupId: tourInfo.group,
+        });
+      }
     }
   }
 

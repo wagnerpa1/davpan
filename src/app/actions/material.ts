@@ -1,6 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import {
+  dispatchNotification,
+  dispatchToUsers,
+} from "@/lib/notifications/dispatcher";
+import { resolveMaterialManagerUserIds } from "@/lib/notifications/targets";
 import { createClient } from "@/utils/supabase/server";
 
 export async function createIndependentMaterialReservation(formData: FormData) {
@@ -32,6 +37,16 @@ export async function createIndependentMaterialReservation(formData: FormData) {
       .single();
 
     if (invError || !invItem) {
+      await dispatchNotification(supabase, {
+        type: "material",
+        title: "Materialreservierung nicht möglich",
+        body: "Die Reservierung konnte nicht erstellt werden, weil im gewaehlten Zeitraum kein Bestand verfuegbar ist.",
+        payload: {
+          status: "failed",
+          url: "/material",
+        },
+        recipientUserId: user.id,
+      });
       return {
         error:
           "Dieses Material ist im gewählten Zeitraum oder in dieser Größe nicht mehr verfügbar.",
@@ -52,6 +67,21 @@ export async function createIndependentMaterialReservation(formData: FormData) {
     if (mError) {
       console.error("Independent Material reservation failed:", mError);
       return { error: "Fehler beim Erstellen der Reservierung." };
+    }
+
+    const managerIds = await resolveMaterialManagerUserIds(supabase);
+    if (managerIds.length > 0) {
+      await dispatchToUsers(supabase, managerIds, {
+        type: "material",
+        title: "Neue Materialanfrage",
+        body: "Eine neue private Materialreservierung wartet auf Bearbeitung.",
+        payload: {
+          status: "requested",
+          url: "/admin/material/reservations",
+        },
+        relatedTourId: null,
+        relatedGroupId: null,
+      });
     }
 
     revalidatePath("/material");

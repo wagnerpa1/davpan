@@ -12,10 +12,6 @@ interface NotificationTab {
     type: string;
     title: string;
     body: string;
-    payload: {
-      url?: string;
-      [key: string]: unknown;
-    } | null;
     created_at: string;
     read_at: string | null;
   }[];
@@ -37,7 +33,7 @@ export async function GET() {
     supabase.from("profiles").select("role").eq("id", user.id).single(),
     supabase
       .from("notifications")
-      .select("id, type, title, body, payload, created_at, read_at")
+      .select("id, type, title, body, created_at, read_at")
       .eq("recipient_user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(50),
@@ -68,7 +64,7 @@ export async function GET() {
       const { data: childNotifications } = await supabase
         .from("notifications")
         .select(
-          "id, type, title, body, payload, created_at, read_at, recipient_child_id",
+          "id, type, title, body, created_at, read_at, recipient_child_id",
         )
         .in("recipient_child_id", childIds)
         .order("created_at", { ascending: false })

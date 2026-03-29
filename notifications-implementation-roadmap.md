@@ -29,25 +29,25 @@ Status: Datenmodell, Notification Center, Profil-Opt-ins und Admin-News sind vor
 
 ## Phase 4 - Realtime + UX
 
-- [x] Supabase Realtime fuer `notifications` abonnieren.
-- [x] Badge im Header live aktualisieren.
+- [ ] Supabase Realtime fuer `notifications` abonnieren.
+- [ ] Badge im Header live aktualisieren.
 - [ ] Notification Item-Aktionen:
-  - [x] "Alle gelesen"
-  - [x] einzelne Nachricht gelesen markieren
-  - [x] optional Deep-Link aus `payload.url`
+  - [ ] "Alle gelesen"
+  - [ ] einzelne Nachricht gelesen markieren
+  - [ ] optional Deep-Link aus `payload.url`
 
 ## Phase 5 - Admin/System Tools
 
-- [x] Admin-Tool fuer Systemnachrichten bauen.
-- [x] Optionales Broadcast-Targeting:
-  - [x] alle
-  - [x] nur Rollen
-  - [x] nur Tour-Gruppen
-- [x] Audit-Log fuer versendete Admin-Nachrichten.
+- [ ] Admin-Tool fuer Systemnachrichten bauen.
+- [ ] Optionales Broadcast-Targeting:
+  - [ ] alle
+  - [ ] nur Rollen
+  - [ ] nur Tour-Gruppen
+- [ ] Audit-Log fuer versendete Admin-Nachrichten.
 
 ## Phase 6 - Tests und Abnahme
 
-- [x] API-Tests fuer Opt-in-Filterung und RLS-Szenarien.
+- [ ] API-Tests fuer Opt-in-Filterung und RLS-Szenarien.
 - [ ] E2E-Tests:
   - [ ] Parent mit mehreren Kindern
   - [ ] Nicht-Parent ohne Tabs
@@ -57,9 +57,9 @@ Status: Datenmodell, Notification Center, Profil-Opt-ins und Admin-News sind vor
 
 ## Priorisierte naechste 3 Arbeitspakete
 
-1. API- und E2E-Tests fuer Notifications ergänzen (Phase 6).
-2. Lasttest fuer Bulk-News/Broadcast durchfuehren (Phase 6).
-3. Optional: Versand-Summary (Erfolgs/Fehler-Count) in Admin-UI anzeigen.
+1. Realtime-Aktualisierung im Notification Center aktivieren (Phase 4).
+2. Admin-Broadcast-Targeting (Rollen/Gruppen) umsetzen (Phase 5).
+3. API- und E2E-Tests fuer Notifications ergänzen (Phase 6).
 
 ## Bereits gestartet (Stand heute)
 

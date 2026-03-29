@@ -259,29 +259,6 @@ export default async function AdminNewsPage() {
             Systemnachricht senden
           </button>
         </form>
-
-        {/* TEMP DEBUG: Remove this block after push smoke tests are done. */}
-        <div className="mt-5 rounded-xl border border-dashed border-amber-300 bg-amber-50 p-4">
-          <p className="text-xs font-bold uppercase tracking-wider text-amber-700">
-            Temporärer Push-Debug
-          </p>
-          <p className="mt-1 text-xs text-amber-800">
-            Sendet eine Test-Benachrichtigung direkt an deinen aktuellen
-            Admin-Account.
-          </p>
-          <form
-            action="/api/admin/test-push-self"
-            method="POST"
-            className="mt-3"
-          >
-            <button
-              type="submit"
-              className="inline-flex items-center rounded-md bg-amber-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-amber-700"
-            >
-              Test-Push an mich senden
-            </button>
-          </form>
-        </div>
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">

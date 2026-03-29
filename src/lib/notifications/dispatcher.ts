@@ -154,7 +154,6 @@ async function canSendToUser(
     .eq("user_id", userId)
     .maybeSingle();
 
-  // Default = true if no explicit preference row exists yet.
   if (!prefs) {
     return true;
   }
@@ -249,10 +248,6 @@ export async function dispatchNotification(
     console.error("[Notification] Failed to insert notification:", error);
     return;
   }
-
-  console.log(
-    `[Notification] Created ${input.type} notification for ${recipientUserId ? "user" : "child"} ${recipientUserId || recipientChildId}: "${input.title}"`,
-  );
 
   await dispatchPushForNotification({
     recipientUserId,

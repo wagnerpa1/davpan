@@ -1,7 +1,6 @@
 "use client";
 
 import { Bell, Check } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient as createBrowserClient } from "@/utils/supabase/client";
 
@@ -10,12 +9,11 @@ interface NotificationItem {
   type: string;
   title: string;
   body: string;
-  payload: {
-    url?: string;
-    [key: string]: unknown;
-  } | null;
   created_at: string;
   read_at: string | null;
+  payload: {
+    url?: string;
+  };
 }
 
 interface NotificationTab {
@@ -59,29 +57,14 @@ function sanitizeClientPath(path: string | undefined): string | null {
     return null;
   }
 
-  const candidate = path.trim();
-  if (!candidate.startsWith("/") || candidate.startsWith("//")) {
-    return null;
+  if (path.startsWith("/")) {
+    return path;
   }
 
-  if (candidate.includes("\\")) {
-    return null;
-  }
-
-  try {
-    const parsed = new URL(candidate, "http://local");
-    if (parsed.origin !== "http://local") {
-      return null;
-    }
-
-    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
-  } catch {
-    return null;
-  }
+  return null;
 }
 
 export function NotificationCenter({ isParent }: NotificationCenterProps) {
-  const router = useRouter();
   const rootRef = useRef<HTMLDivElement | null>(null);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const supabase = useMemo(() => createBrowserClient(), []);
@@ -97,23 +80,23 @@ export function NotificationCenter({ isParent }: NotificationCenterProps) {
   );
 
   const activeTab = useMemo(
-    () => tabs.find((tab) => tab.id === activeTabId) ?? tabs[0],
+    () => tabs.find((tab) => tab.id === activeTabId) ?? tabs[0] ?? null,
     [tabs, activeTabId],
   );
 
-  const hasTabNavigation = tabs.length > 1;
+  const hasTabNavigation = isParent && tabs.length > 1;
 
-  const realtimeFilters = useMemo(() => {
-    return tabs
-      .map((tab) => {
-        if (tab.targetType === "self") {
-          return `recipient_user_id=eq.${tab.targetId}`;
-        }
-
-        return `recipient_child_id=eq.${tab.targetId}`;
-      })
-      .filter(Boolean);
-  }, [tabs]);
+  const realtimeFilters = useMemo(
+    () =>
+      tabs
+        .map((tab) =>
+          tab.targetType === "self"
+            ? `recipient_user_id=eq.${tab.targetId}`
+            : `recipient_child_id=eq.${tab.targetId}`,
+        )
+        .filter(Boolean),
+    [tabs],
+  );
 
   const loadNotifications = useCallback(async () => {
     setIsLoading(true);
@@ -132,15 +115,14 @@ export function NotificationCenter({ isParent }: NotificationCenterProps) {
       const data = (await response.json()) as NotificationCenterResponse;
       setTabs(data.tabs);
 
-      if (!data.tabs.find((tab) => tab.id === activeTabId)) {
-        setActiveTabId(data.tabs[0]?.id ?? "self");
+      if (data.tabs.length === 0) {
+        setActiveTabId("self");
+      } else if (!data.tabs.some((tab) => tab.id === activeTabId)) {
+        setActiveTabId(data.tabs[0].id);
       }
-    } catch (loadError) {
-      setError(
-        loadError instanceof Error
-          ? loadError.message
-          : "Unbekannter Fehler beim Laden.",
-      );
+    } catch (err) {
+      console.error("Notification center load failed:", err);
+      setError("Benachrichtigungen konnten nicht geladen werden.");
     } finally {
       setIsLoading(false);
     }
@@ -159,18 +141,18 @@ export function NotificationCenter({ isParent }: NotificationCenterProps) {
   const markSingleAsReadLocally = useCallback((notificationId: string) => {
     setTabs((currentTabs) =>
       currentTabs.map((tab) => {
-        let tabChanged = false;
+        let changed = false;
 
         const nextItems = tab.items.map((item) => {
           if (item.id !== notificationId || item.read_at) {
             return item;
           }
 
-          tabChanged = true;
+          changed = true;
           return { ...item, read_at: new Date().toISOString() };
         });
 
-        if (!tabChanged) {
+        if (!changed) {
           return tab;
         }
 
@@ -212,101 +194,15 @@ export function NotificationCenter({ isParent }: NotificationCenterProps) {
         await markSingleAsRead(item.id);
       }
 
-      const targetPath = sanitizeClientPath(item.payload?.url);
-      if (targetPath) {
-        setIsOpen(false);
-        router.push(targetPath);
+      const url = sanitizeClientPath(item.payload?.url);
+      if (url) {
+        window.location.href = url;
       }
     },
-    [markSingleAsRead, router],
+    [markSingleAsRead],
   );
 
-  useEffect(() => {
-    return () => {
-      if (refreshTimerRef.current) {
-        clearTimeout(refreshTimerRef.current);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    loadNotifications();
-  }, [loadNotifications]);
-
-  useEffect(() => {
-    if (isOpen) {
-      loadNotifications();
-    }
-  }, [isOpen, loadNotifications]);
-
-  useEffect(() => {
-    if (realtimeFilters.length === 0) {
-      return;
-    }
-
-    const channel = supabase.channel("notification-center-realtime");
-
-    for (const filter of realtimeFilters) {
-      channel.on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "notifications",
-          filter,
-        },
-        () => {
-          scheduleNotificationsRefresh();
-        },
-      );
-    }
-
-    channel.subscribe();
-
-    return () => {
-      if (refreshTimerRef.current) {
-        clearTimeout(refreshTimerRef.current);
-      }
-      supabase.removeChannel(channel);
-    };
-  }, [realtimeFilters, scheduleNotificationsRefresh, supabase]);
-
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
-    const onPointerDown = (event: MouseEvent | TouchEvent) => {
-      const targetNode = event.target as Node | null;
-      if (!targetNode) {
-        return;
-      }
-
-      if (rootRef.current?.contains(targetNode)) {
-        return;
-      }
-
-      setIsOpen(false);
-    };
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", onPointerDown);
-    document.addEventListener("touchstart", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-
-    return () => {
-      document.removeEventListener("mousedown", onPointerDown);
-      document.removeEventListener("touchstart", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [isOpen]);
-
-  const markActiveTabAsRead = async () => {
+  const markActiveTabAsRead = useCallback(async () => {
     if (!activeTab) return;
 
     const response = await fetch("/api/notifications/mark-read", {
@@ -328,7 +224,9 @@ export function NotificationCenter({ isParent }: NotificationCenterProps) {
 
     setTabs((currentTabs) =>
       currentTabs.map((tab) => {
-        if (tab.id !== activeTab.id) return tab;
+        if (tab.id !== activeTab.id) {
+          return tab;
+        }
 
         return {
           ...tab,
@@ -341,7 +239,82 @@ export function NotificationCenter({ isParent }: NotificationCenterProps) {
         };
       }),
     );
-  };
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    void loadNotifications();
+  }, [isOpen, loadNotifications]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const onPointerDown = (event: MouseEvent | TouchEvent) => {
+      if (!rootRef.current) {
+        return;
+      }
+
+      const targetNode = event.target as Node | null;
+      if (targetNode && !rootRef.current.contains(targetNode)) {
+        setIsOpen(false);
+      }
+    };
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("touchstart", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("touchstart", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || realtimeFilters.length === 0) {
+      return;
+    }
+
+    const subscriptions = realtimeFilters.map((filter) =>
+      supabase
+        .channel(`notification-center-${filter}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "notifications",
+            filter,
+          },
+          () => {
+            scheduleNotificationsRefresh();
+          },
+        )
+        .subscribe(),
+    );
+
+    return () => {
+      for (const channel of subscriptions) {
+        void supabase.removeChannel(channel);
+      }
+
+      if (refreshTimerRef.current) {
+        clearTimeout(refreshTimerRef.current);
+      }
+    };
+  }, [isOpen, realtimeFilters, scheduleNotificationsRefresh, supabase]);
 
   return (
     <div ref={rootRef} className="relative">
@@ -361,10 +334,10 @@ export function NotificationCenter({ isParent }: NotificationCenterProps) {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-12 z-50 w-[92vw] max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+        <div className="absolute right-0 z-50 mt-2 w-[min(92vw,26rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
           <div className="border-b border-slate-100 px-4 py-3">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-sm font-semibold text-slate-900">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-bold text-slate-900">
                 Notification Center
               </h2>
               <button
@@ -372,45 +345,42 @@ export function NotificationCenter({ isParent }: NotificationCenterProps) {
                 onClick={markActiveTabAsRead}
                 className="text-xs font-semibold text-jdav-green hover:underline"
               >
-                Alle gelesen
+                {hasTabNavigation
+                  ? "Tab als gelesen markieren"
+                  : "Alle gelesen"}
               </button>
             </div>
-            <p className="mt-0.5 text-xs text-slate-500">
-              {isParent && hasTabNavigation
-                ? "Zwischen dir und deinen Kindern wechseln"
-                : "Deine letzten Benachrichtigungen"}
-            </p>
-          </div>
 
-          {hasTabNavigation && (
-            <div className="flex gap-2 overflow-x-auto border-b border-slate-100 px-3 py-2">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveTabId(tab.id)}
-                  className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-                    tab.id === activeTabId
-                      ? "bg-jdav-green text-white"
-                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                  }`}
-                >
-                  {tab.label}
-                  {tab.unreadCount > 0 && (
-                    <span
-                      className={`rounded-full px-1.5 py-0.5 text-[10px] ${
-                        tab.id === activeTabId
-                          ? "bg-white/20 text-white"
-                          : "bg-slate-200 text-slate-700"
-                      }`}
-                    >
-                      {tab.unreadCount}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
+            {hasTabNavigation && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveTabId(tab.id)}
+                    className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+                      tab.id === activeTabId
+                        ? "bg-jdav-green text-white"
+                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    }`}
+                  >
+                    {tab.label}
+                    {tab.unreadCount > 0 && (
+                      <span
+                        className={`rounded-full px-1.5 py-0.5 text-[10px] ${
+                          tab.id === activeTabId
+                            ? "bg-white/20 text-white"
+                            : "bg-slate-200 text-slate-700"
+                        }`}
+                      >
+                        {tab.unreadCount}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           <div className="max-h-[60vh] overflow-y-auto p-3">
             {isLoading && (
@@ -450,43 +420,48 @@ export function NotificationCenter({ isParent }: NotificationCenterProps) {
                           onClick={() => void openNotification(item)}
                           className="min-w-0 text-left"
                         >
-                          <h3 className="text-sm font-semibold text-slate-900 hover:text-jdav-green transition-colors">
+                          <h3 className="text-sm font-semibold text-slate-900 transition-colors hover:text-jdav-green">
                             {item.title}
                           </h3>
                         </button>
-                        <div className="flex items-center gap-2">
-                          {!item.read_at && (
-                            <button
-                              type="button"
-                              onClick={() => void markSingleAsRead(item.id)}
-                              className="inline-flex items-center gap-1 rounded-full border border-jdav-green/30 bg-white px-2 py-1 text-[10px] font-semibold text-jdav-green hover:bg-jdav-green/5"
-                              aria-label="Als gelesen markieren"
-                            >
-                              <Check className="h-3 w-3" />
-                              Gelesen
-                            </button>
-                          )}
-                          <span className="shrink-0 text-[10px] text-slate-500">
-                            {formatRelative(item.created_at)}
-                          </span>
-                        </div>
+                        <span className="shrink-0 text-[10px] text-slate-500">
+                          {formatRelative(item.created_at)}
+                        </span>
                       </div>
+
                       <button
                         type="button"
-                        className="w-full cursor-pointer text-left text-xs leading-relaxed text-slate-600"
+                        className="cursor-pointer text-left text-xs leading-relaxed text-slate-600"
                         onClick={() => void openNotification(item)}
                       >
                         {item.body}
                       </button>
-                      {sanitizeClientPath(item.payload?.url) && (
-                        <button
-                          type="button"
-                          onClick={() => void openNotification(item)}
-                          className="mt-2 text-[11px] font-semibold text-jdav-green hover:underline"
-                        >
-                          Zum Beitrag
-                        </button>
-                      )}
+
+                      <div className="mt-2 flex items-center justify-between gap-2">
+                        {!item.read_at ? (
+                          <button
+                            type="button"
+                            onClick={() => void markSingleAsRead(item.id)}
+                            className="inline-flex items-center gap-1 rounded-full border border-jdav-green/30 bg-white px-2 py-1 text-[10px] font-semibold text-jdav-green hover:bg-jdav-green/5"
+                            aria-label="Als gelesen markieren"
+                          >
+                            <Check className="h-3 w-3" />
+                            Gelesen
+                          </button>
+                        ) : (
+                          <span />
+                        )}
+
+                        {sanitizeClientPath(item.payload?.url) && (
+                          <button
+                            type="button"
+                            onClick={() => void openNotification(item)}
+                            className="text-[11px] font-semibold text-jdav-green hover:underline"
+                          >
+                            Zum Beitrag
+                          </button>
+                        )}
+                      </div>
                     </li>
                   ))}
                 </ul>

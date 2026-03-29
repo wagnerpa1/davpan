@@ -5,6 +5,11 @@ import {
   dispatchNotification,
   dispatchToUsers,
 } from "@/lib/notifications/dispatcher";
+import {
+  notifyTourOpenForSubscribers,
+  resolveMaterialManagerUserIds,
+  resolveTourManagerUserIds,
+} from "@/lib/notifications/targets";
 import { promoteWaitlistParticipants } from "@/lib/tours/waitlist";
 import { createClient } from "@/utils/supabase/server";
 
@@ -22,6 +27,7 @@ export async function registerForTour(formData: FormData) {
   const tourId = formData.get("tourId") as string;
   const childId = formData.get("childId") as string | null;
   const materialsDataRaw = formData.get("materialsData") as string;
+  let actorDisplayName = "Teilnehmer/in";
   let materials: { material_type_id: string; size: string }[] = [];
   try {
     materials = materialsDataRaw ? JSON.parse(materialsDataRaw) : [];
@@ -52,22 +58,24 @@ export async function registerForTour(formData: FormData) {
     if (childId && childId !== "self") {
       const { data: child } = await supabase
         .from("child_profiles")
-        .select("birthdate, parent_id")
+        .select("birthdate, parent_id, full_name")
         .eq("id", childId)
         .single();
 
       if (child && child.parent_id === user.id) {
         birthdate = child.birthdate;
+        actorDisplayName = child.full_name || "Kind";
       } else {
         return { error: "Ungültiges Kind-Profil." };
       }
     } else {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("birthdate")
+        .select("birthdate, full_name")
         .eq("id", user.id)
         .single();
       birthdate = profile?.birthdate || null;
+      actorDisplayName = profile?.full_name || "Teilnehmer/in";
     }
 
     if (birthdate) {
@@ -150,8 +158,6 @@ export async function registerForTour(formData: FormData) {
 
     if (pError) return { error: "Fehler beim Erstellen der Anmeldung." };
 
-    const actorName = childId && childId !== "self" ? "dein Kind" : "du";
-
     // 4.5 Auto-update tour status if full
     const newCount = currentCount + 1;
     if (
@@ -185,9 +191,19 @@ export async function registerForTour(formData: FormData) {
               .delete()
               .eq("id", createdParticipant.id);
           }
-          // If a requested material is not available, we fail the WHOLE reservation
-          // (or at least inform the user). The user said "materialreservierung funktioniert nicht".
-          // We'll return an error here to prevent partial success confusion.
+          await dispatchNotification(supabase, {
+            type: "material",
+            title: "Materialreservierung nicht möglich",
+            body: `Die Materialreservierung fuer "${tour.title}" konnte nicht abgeschlossen werden, weil Groesse "${mReq.size}" nicht verfuegbar ist.`,
+            payload: {
+              tour_id: tourId,
+              status: "failed",
+              url: `/touren/${tourId}`,
+            },
+            recipientUserId: user.id,
+            relatedTourId: tourId,
+            relatedGroupId: tour.group,
+          });
           return {
             error: `Material in Größe "${mReq.size}" ist leider nicht mehr verfügbar.`,
           };
@@ -223,6 +239,19 @@ export async function registerForTour(formData: FormData) {
               .delete()
               .eq("id", createdParticipant.id);
           }
+          await dispatchNotification(supabase, {
+            type: "material",
+            title: "Materialreservierung fehlgeschlagen",
+            body: `Die Materialreservierung fuer "${tour.title}" konnte nicht gespeichert werden.`,
+            payload: {
+              tour_id: tourId,
+              status: "failed",
+              url: `/touren/${tourId}`,
+            },
+            recipientUserId: user.id,
+            relatedTourId: tourId,
+            relatedGroupId: tour.group,
+          });
           console.error("Material reservation failed:", mError);
           return { error: "Fehler beim Reservieren der Materialien." };
         }
@@ -237,52 +266,19 @@ export async function registerForTour(formData: FormData) {
       }
     }
 
-    // 6. Phase-1 Notifications: Teilnehmer + Tour-Verantwortliche benachrichtigen.
-    await dispatchNotification(supabase, {
-      type: isWaitlist ? "waitlist" : "registration",
-      title: isWaitlist ? "Warteliste" : "Anmeldung eingegangen",
-      body: isWaitlist
-        ? `${actorName} steht jetzt auf der Warteliste.`
-        : `${actorName} ist jetzt mit Status "pending" angemeldet.`,
-      payload: {
-        tour_id: tourId,
-        status,
-        url: `/touren/${tourId}`,
-      },
-      recipientUserId: childId && childId !== "self" ? null : user.id,
-      recipientChildId: childId && childId !== "self" ? childId : null,
-      relatedTourId: tourId,
-      relatedGroupId: tour.group,
-    });
+    // Teilnehmer bei Anmeldung NICHT benachrichtigen; nur Verantwortliche informieren.
+    const managerIds = await resolveTourManagerUserIds(
+      supabase,
+      tourId,
+      tour.created_by ?? null,
+    );
 
-    const [{ data: guides }, { data: tourOwnerProfile }] = await Promise.all([
-      supabase.from("tour_guides").select("user_id").eq("tour_id", tourId),
-      tour.created_by
-        ? supabase
-            .from("profiles")
-            .select("id, role")
-            .eq("id", tour.created_by)
-            .maybeSingle()
-        : Promise.resolve({ data: null }),
-    ]);
-
-    const managerIds = new Set<string>();
-    for (const guide of guides ?? []) {
-      if (guide.user_id) {
-        managerIds.add(guide.user_id);
-      }
-    }
-
-    if (tourOwnerProfile?.id && tourOwnerProfile.role === "admin") {
-      managerIds.add(tourOwnerProfile.id);
-    }
-
-    await dispatchToUsers(supabase, [...managerIds], {
+    await dispatchToUsers(supabase, managerIds, {
       type: isWaitlist ? "waitlist" : "registration",
       title: isWaitlist ? "Neue Wartelisten-Anmeldung" : "Neue Tour-Anmeldung",
       body: isWaitlist
-        ? `Eine Anmeldung ist auf der Warteliste fuer "${tour.title}" gelandet.`
-        : `Eine neue Anmeldung fuer "${tour.title}" wartet auf Bestaetigung.`,
+        ? `${actorDisplayName} steht jetzt auf der Warteliste fuer "${tour.title}".`
+        : `${actorDisplayName} hat sich fuer "${tour.title}" angemeldet (pending).`,
       payload: {
         tour_id: tourId,
         status,
@@ -291,6 +287,22 @@ export async function registerForTour(formData: FormData) {
       relatedTourId: tourId,
       relatedGroupId: tour.group,
     });
+
+    if (materials.length > 0) {
+      const materialManagerIds = await resolveMaterialManagerUserIds(supabase);
+      await dispatchToUsers(supabase, materialManagerIds, {
+        type: "material",
+        title: "Neue Materialreservierung",
+        body: `${actorDisplayName} hat Material fuer "${tour.title}" angefragt.`,
+        payload: {
+          tour_id: tourId,
+          status,
+          url: "/admin/material/reservations",
+        },
+        relatedTourId: tourId,
+        relatedGroupId: tour.group,
+      });
+    }
 
     revalidatePath(`/touren/${tourId}`);
     return {
@@ -337,7 +349,6 @@ export async function cancelRegistration(participantId: string) {
     payload: {
       participant_id: participantId,
       status: "cancelled",
-      url: `/touren/${reg.tour_id}`,
     },
     recipientUserId: reg.child_profile_id ? null : user.id,
     recipientChildId: reg.child_profile_id ?? null,
@@ -396,7 +407,7 @@ export async function cancelRegistration(participantId: string) {
   // If the tour was full & status was confirmed, open it up again
   const { data: tour } = await supabase
     .from("tours")
-    .select("max_participants, status")
+    .select("max_participants, status, title, group")
     .eq("id", tourId)
     .single();
 
@@ -409,6 +420,13 @@ export async function cancelRegistration(participantId: string) {
 
     if ((count || 0) < tour.max_participants) {
       await supabase.from("tours").update({ status: "open" }).eq("id", tourId);
+      if (tour.group && tour.title) {
+        await notifyTourOpenForSubscribers(supabase, {
+          tourId,
+          title: tour.title,
+          groupId: tour.group,
+        });
+      }
     }
   }
 

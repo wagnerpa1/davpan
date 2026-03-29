@@ -115,6 +115,25 @@ export async function updateReservationStatus(id: string, newStatus: string) {
   if (currentStatus === "requested" && newStatus === "reserved") {
     const inventoryResult = await adjustInventory(-1);
     if (inventoryResult.error) {
+      if (reservation.user_id || reservation.child_profile_id) {
+        await dispatchNotification(supabase, {
+          type: "material",
+          title: "Materialreservierung nicht möglich",
+          body: "Die Reservierung konnte nicht bestaetigt werden, weil aktuell kein Bestand verfuegbar ist.",
+          payload: {
+            reservation_id: id,
+            old_status: currentStatus,
+            new_status: "cancelled",
+            status: "failed",
+          },
+          recipientUserId: reservation.child_profile_id
+            ? null
+            : reservation.user_id,
+          recipientChildId: reservation.child_profile_id,
+          relatedTourId: reservation.tour_id,
+          relatedGroupId: null,
+        });
+      }
       return inventoryResult;
     }
   }
@@ -152,13 +171,21 @@ export async function updateReservationStatus(id: string, newStatus: string) {
     relatedTourTitle = tourInfo?.title ?? null;
   }
 
-  if (reservation.user_id || reservation.child_profile_id) {
+  if (
+    (newStatus === "reserved" || newStatus === "cancelled") &&
+    (reservation.user_id || reservation.child_profile_id)
+  ) {
+    const title =
+      newStatus === "reserved"
+        ? "Materialreservierung bestaetigt"
+        : "Materialreservierung abgelehnt";
+
     await dispatchNotification(supabase, {
       type: "material",
-      title: "Materialstatus aktualisiert",
+      title,
       body: relatedTourTitle
-        ? `Deine Materialreservierung fuer "${relatedTourTitle}" ist jetzt "${newStatus}".`
-        : `Der Status deiner Materialreservierung ist jetzt "${newStatus}".`,
+        ? `Deine Materialreservierung fuer "${relatedTourTitle}" wurde ${newStatus === "reserved" ? "bestaetigt" : "abgelehnt"}.`
+        : `Deine Materialreservierung wurde ${newStatus === "reserved" ? "bestaetigt" : "abgelehnt"}.`,
       payload: {
         reservation_id: id,
         old_status: currentStatus,

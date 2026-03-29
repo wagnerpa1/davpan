@@ -14,6 +14,11 @@ type PushSubscriptionUpdate = Partial<
   Pick<Tables<"push_subscriptions">, "last_used_at" | "disabled_at">
 >;
 
+type PushSubscriptionRow = Pick<
+  Tables<"push_subscriptions">,
+  "id" | "endpoint" | "p256dh" | "auth"
+>;
+
 interface PushSubscriptionsUpdateClient {
   from(table: "push_subscriptions"): {
     update(values: PushSubscriptionUpdate): {
@@ -48,7 +53,6 @@ function configureWebPush() {
 
   try {
     webpush.setVapidDetails(subject, publicKey, privateKey);
-    console.log("[Push] VAPID configured successfully");
     pushConfigured = true;
   } catch (error) {
     console.error("[Push] Failed to configure VAPID:", error);
@@ -77,7 +81,6 @@ async function resolvePushTargetUserIds(args: {
       "user_id" | "push_enabled"
     > | null;
 
-    // Default allow for users with active browser subscriptions when no pref row exists yet.
     if (preference && !preference.push_enabled) {
       return [];
     }
@@ -105,7 +108,6 @@ async function resolvePushTargetUserIds(args: {
       return [childPrefs.parent_id];
     }
 
-    // Fallback: no explicit child preferences row yet -> notify parent by child profile relation.
     const { data: childProfileData } = await admin
       .from("child_profiles")
       .select("parent_id")
@@ -130,9 +132,6 @@ async function resolvePushTargetUserIds(args: {
 export async function dispatchPushForNotification(input: PushDispatchInput) {
   configureWebPush();
   if (!pushConfigured) {
-    console.debug(
-      "[Push] Push not configured or disabled, skipping push notification",
-    );
     return;
   }
 
@@ -150,9 +149,6 @@ export async function dispatchPushForNotification(input: PushDispatchInput) {
   });
 
   if (targetUserIds.length === 0) {
-    console.debug(
-      "[Push] No target users for push (permissions disabled or user not found)",
-    );
     return;
   }
 
@@ -162,12 +158,9 @@ export async function dispatchPushForNotification(input: PushDispatchInput) {
     .in("user_id", targetUserIds)
     .is("disabled_at", null);
 
-  const subscriptions = (subscriptionsData ?? []) as Array<
-    Pick<Tables<"push_subscriptions">, "id" | "endpoint" | "p256dh" | "auth">
-  >;
+  const subscriptions = (subscriptionsData ?? []) as PushSubscriptionRow[];
 
   if (subscriptions.length === 0) {
-    console.debug("[Push] No active push subscriptions found for target users");
     return;
   }
 
@@ -176,10 +169,6 @@ export async function dispatchPushForNotification(input: PushDispatchInput) {
     body: input.body,
     payload: input.payload,
   });
-
-  console.log(
-    `[Push] Sending push notification to ${subscriptions.length} subscription(s): "${input.title}"`,
-  );
 
   for (const sub of subscriptions) {
     try {
@@ -193,8 +182,6 @@ export async function dispatchPushForNotification(input: PushDispatchInput) {
         },
         payload,
       );
-
-      console.debug(`[Push] Successfully sent to subscription ${sub.id}`);
 
       const lastUsedUpdate: PushSubscriptionUpdate = {
         last_used_at: new Date().toISOString(),
@@ -216,9 +203,6 @@ export async function dispatchPushForNotification(input: PushDispatchInput) {
       );
 
       if (statusCode === 404 || statusCode === 410) {
-        console.log(
-          `[Push] Disabling subscription ${sub.id} (endpoint no longer valid)`,
-        );
         const disableUpdate: PushSubscriptionUpdate = {
           disabled_at: new Date().toISOString(),
         };

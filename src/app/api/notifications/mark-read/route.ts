@@ -3,10 +3,10 @@ import { isSameOriginRequest } from "@/lib/security";
 import { createClient } from "@/utils/supabase/server";
 
 interface MarkReadPayload {
-  scope?: "all" | "single";
+  scope?: "single" | "all";
+  notificationId?: string;
   targetType?: "self" | "child";
   targetId?: string;
-  notificationId?: string;
 }
 
 export async function POST(req: NextRequest) {
@@ -29,34 +29,24 @@ export async function POST(req: NextRequest) {
   }
 
   const payload = (await req.json()) as MarkReadPayload;
-  const scope = payload.scope ?? "all";
 
-  if (scope === "single") {
-    if (!payload.notificationId) {
-      return NextResponse.json(
-        { error: "notificationId fehlt" },
-        { status: 400 },
-      );
-    }
-
-    const { data: notification, error: notificationError } = await supabase
+  if (payload.scope === "single" && payload.notificationId) {
+    const { data: notification } = await supabase
       .from("notifications")
       .select("id, recipient_user_id, recipient_child_id, read_at")
       .eq("id", payload.notificationId)
       .maybeSingle();
 
-    if (notificationError || !notification) {
+    if (!notification) {
       return NextResponse.json(
         { error: "Benachrichtigung nicht gefunden" },
         { status: 404 },
       );
     }
 
-    let isOwner = false;
+    let allowed = notification.recipient_user_id === user.id;
 
-    if (notification.recipient_user_id === user.id) {
-      isOwner = true;
-    } else if (notification.recipient_child_id) {
+    if (!allowed && notification.recipient_child_id) {
       const { data: child } = await supabase
         .from("child_profiles")
         .select("id")
@@ -64,29 +54,27 @@ export async function POST(req: NextRequest) {
         .eq("parent_id", user.id)
         .maybeSingle();
 
-      isOwner = !!child;
+      allowed = Boolean(child?.id);
     }
 
-    if (!isOwner) {
+    if (!allowed) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    if (!notification.read_at) {
-      const { error } = await supabase
-        .from("notifications")
-        .update({ read_at: new Date().toISOString() })
-        .eq("id", payload.notificationId)
-        .is("read_at", null);
+    const { error } = await supabase
+      .from("notifications")
+      .update({ read_at: new Date().toISOString() })
+      .eq("id", payload.notificationId)
+      .is("read_at", null);
 
-      if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
-      }
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
   }
 
-  if (payload.targetType === "self") {
+  if (payload.scope === "all" && payload.targetType === "self") {
     const { error } = await supabase
       .from("notifications")
       .update({ read_at: new Date().toISOString() })
@@ -100,7 +88,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true });
   }
 
-  if (payload.targetType === "child" && payload.targetId) {
+  if (
+    payload.scope === "all" &&
+    payload.targetType === "child" &&
+    payload.targetId
+  ) {
     const { data: child } = await supabase
       .from("child_profiles")
       .select("id")
@@ -128,5 +120,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true });
   }
 
-  return NextResponse.json({ error: "Ungültige Anfrage" }, { status: 400 });
+  return NextResponse.json({ error: "Ungueltige Anfrage" }, { status: 400 });
 }

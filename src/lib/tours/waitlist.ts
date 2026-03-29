@@ -3,6 +3,10 @@ import {
   dispatchNotification,
   dispatchToUsers,
 } from "@/lib/notifications/dispatcher";
+import {
+  notifyTourOpenForSubscribers,
+  resolveTourManagerUserIds,
+} from "@/lib/notifications/targets";
 import type { Database, Tables } from "@/utils/supabase/types";
 
 interface PromoteWaitlistArgs {
@@ -18,10 +22,6 @@ type WaitlistRow = Pick<
   Tables<"tour_participants">,
   "id" | "waitlist_position" | "created_at"
 >;
-
-type ManagerGuideRow = Pick<Tables<"tour_guides">, "user_id">;
-
-type ManagerOwnerRow = Pick<Tables<"profiles">, "id" | "role">;
 
 type TourSummaryRow = Pick<
   Tables<"tours">,
@@ -64,40 +64,6 @@ async function resequenceWaitlist(
   }
 }
 
-async function getManagerIds(
-  supabase: SupabaseClient<Database>,
-  tourId: string,
-  tourCreatedBy: string | null,
-) {
-  const managerIds = new Set<string>();
-
-  const [{ data: guidesData }, { data: ownerProfile }] = await Promise.all([
-    supabase.from("tour_guides").select("user_id").eq("tour_id", tourId),
-    tourCreatedBy
-      ? supabase
-          .from("profiles")
-          .select("id, role")
-          .eq("id", tourCreatedBy)
-          .maybeSingle()
-      : Promise.resolve({ data: null }),
-  ]);
-
-  const guides = (guidesData ?? []) as ManagerGuideRow[];
-  const owner = ownerProfile as ManagerOwnerRow | null;
-
-  for (const guide of guides) {
-    if (guide.user_id) {
-      managerIds.add(guide.user_id);
-    }
-  }
-
-  if (owner?.id && owner.role === "admin") {
-    managerIds.add(owner.id);
-  }
-
-  return [...managerIds];
-}
-
 export async function promoteWaitlistParticipants({
   supabase,
   tourId,
@@ -114,7 +80,7 @@ export async function promoteWaitlistParticipants({
     return { promotedCount: 0 };
   }
 
-  const managerIds = await getManagerIds(
+  const managerIds = await resolveTourManagerUserIds(
     supabase,
     tourId,
     tour.created_by ?? null,
@@ -226,6 +192,14 @@ export async function promoteWaitlistParticipants({
         .from("tours")
         .update({ status: targetStatus } as never)
         .eq("id", tourId);
+
+      if (targetStatus === "open" && tour.group) {
+        await notifyTourOpenForSubscribers(supabase, {
+          tourId,
+          title: tour.title,
+          groupId: tour.group,
+        });
+      }
     }
   }
 
