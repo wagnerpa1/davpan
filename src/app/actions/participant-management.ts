@@ -2,8 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
-import { notifyTourOpenForSubscribers } from "@/lib/notifications/targets";
-import { promoteWaitlistParticipants } from "@/lib/tours/waitlist";
 import { createClient } from "@/utils/supabase/server";
 
 export async function updateParticipantStatus(
@@ -97,14 +95,21 @@ export async function updateParticipantStatus(
     }
   }
 
-  const { error } = await supabase
-    .from("tour_participants")
-    .update({ status: newStatus })
-    .eq("id", registrationId);
+  const { data: transitionResult, error: transitionError } = await supabase.rpc(
+    "apply_participant_status_transition_atomic",
+    {
+      p_registration_id: registrationId,
+      p_expected_status: previousStatus,
+      p_new_status: newStatus,
+    },
+  );
 
-  if (error) {
-    console.error("Supabase Error updating status:", error);
-    throw new Error(`Failed to update status: ${error.message}`);
+  if (transitionError) {
+    console.error(
+      "Supabase RPC error updating participant status:",
+      transitionError,
+    );
+    throw new Error(`Failed to update status: ${transitionError.message}`);
   }
 
   const notificationType =
@@ -138,18 +143,28 @@ export async function updateParticipantStatus(
     });
   }
 
-  const freesCapacity =
-    newStatus === "cancelled" &&
-    (previousStatus === "confirmed" || previousStatus === "pending");
-
-  if (freesCapacity) {
-    await promoteWaitlistParticipants({
-      supabase,
-      tourId,
+  const promotedCount = Number(transitionResult?.promoted_count || 0);
+  if (promotedCount > 0) {
+    await dispatchNotification(supabase, {
+      type: "waitlist",
+      title: "Du bist nachgerückt",
+      body: `Für "${tourInfo?.title || "die Tour"}" ist ein Platz frei geworden. Du bist jetzt bestätigt.`,
+      payload: {
+        tour_id: tourId,
+        participant_id: transitionResult?.promoted_user_id,
+        status: "confirmed",
+        url: `/touren/${tourId}`,
+      },
+      recipientUserId: transitionResult?.promoted_child_id
+        ? null
+        : transitionResult?.promoted_user_id,
+      recipientChildId: transitionResult?.promoted_child_id || null,
+      relatedTourId: tourId,
+      relatedGroupId: tourInfo?.group ?? null,
     });
   }
 
-  // Keep material reservations in sync with participant status.
+  // ...existing code...
   if (materialReservations && materialReservations.length > 0) {
     if (newStatus === "cancelled") {
       for (const reservation of materialReservations) {
@@ -212,48 +227,8 @@ export async function updateParticipantStatus(
     }
   }
 
-  // Sync tour status
-  const { data: tour } = await supabase
-    .from("tours")
-    .select("max_participants, status")
-    .eq("id", tourId)
-    .single();
-  if (tour?.max_participants) {
-    const { count } = await supabase
-      .from("tour_participants")
-      .select("*", { count: "exact", head: true })
-      .eq("tour_id", tourId)
-      .in("status", ["confirmed", "pending"]);
-
-    const currentCount = count || 0;
-    let targetStatus = tour.status;
-
-    if (currentCount >= tour.max_participants) {
-      targetStatus = "full";
-    } else if (tour.status === "full") {
-      targetStatus = "open";
-    }
-
-    if (targetStatus !== tour.status) {
-      await supabase
-        .from("tours")
-        .update({ status: targetStatus })
-        .eq("id", tourId);
-
-      if (
-        targetStatus === "open" &&
-        tour.status !== "open" &&
-        tourInfo?.group &&
-        tourInfo?.title
-      ) {
-        await notifyTourOpenForSubscribers(supabase, {
-          tourId,
-          title: tourInfo.title,
-          groupId: tourInfo.group,
-        });
-      }
-    }
-  }
+  // Tour status is now automatically synced by trigger on participant update
+  // No need to manually calculate and update here
 
   revalidatePath(`/touren/${tourId}`);
   revalidatePath("/admin/material/reservations");

@@ -125,6 +125,11 @@ interface TourCategoryRelation {
   } | null;
 }
 
+interface TourParticipantCountRow {
+  tour_id: string;
+  confirmed_count: number;
+}
+
 const statusLabel = (status: string) => {
   switch (status) {
     case "planning":
@@ -298,12 +303,19 @@ export default async function TourDetailPage({
     (tg: TourGuide) => tg.profiles?.full_name || "Unbekannt",
   );
   const participants = (tourData.tour_participants || []) as TourParticipant[];
-  const confirmedParticipants = participants.filter(
-    (p) => p.status === "confirmed",
+  const { data: countRows } = await supabase.rpc(
+    "get_tour_participant_counts",
+    {
+      p_tour_ids: [id],
+    },
   );
+  const confirmedParticipantCount =
+    ((countRows as TourParticipantCountRow[] | null)?.[0]?.confirmed_count ??
+      participants.filter((p) => p.status === "confirmed").length) ||
+    0;
   const isFull =
     (tourData.max_participants || 0) > 0 &&
-    confirmedParticipants.length >= (tourData.max_participants || 0);
+    confirmedParticipantCount >= (tourData.max_participants || 0);
 
   const gLabel = (tour as TourGroupRelation).tour_groups?.group_name || null;
   const cLabel =
@@ -434,7 +446,7 @@ export default async function TourDetailPage({
                   isFull && "text-red-600 font-black",
                 )}
               >
-                {confirmedParticipants.length} / {tour.max_participants || "∞"}
+                {confirmedParticipantCount} / {tour.max_participants || "∞"}
               </span>
             </div>
             <div className="flex flex-col items-center justify-center rounded-2xl bg-slate-50 p-4 text-center">
@@ -544,6 +556,7 @@ export default async function TourDetailPage({
                       : "TBA"
                   }
                   maxParticipants={tour.max_participants || 0}
+                  minAge={tour.min_age ?? null}
                   guides={guides}
                   participants={participants}
                   reservations={reservations}

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { resolveAdminSystemTargets } from "@/lib/notifications/admin-targeting";
+import { resolveAdminSystemTargets } from "../../src/lib/notifications/admin-targeting";
 
 function createSupabaseTargetingMock() {
   return {

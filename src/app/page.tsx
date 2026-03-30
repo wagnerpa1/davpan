@@ -25,6 +25,11 @@ interface NewsPost {
   published_at: string;
 }
 
+interface TourParticipantCountRow {
+  tour_id: string;
+  confirmed_count: number;
+}
+
 export default async function Home() {
   const [{ fullName, user }, supabase] = await Promise.all([
     getCurrentUserProfile(),
@@ -50,10 +55,6 @@ export default async function Home() {
         profiles (
           full_name
         )
-      ),
-      tour_participants (
-        id,
-        status
       )
     `)
     .gte("end_date", today) // Keep showing until it ends
@@ -61,6 +62,21 @@ export default async function Home() {
     .order("start_date", { ascending: true })
     .limit(1)
     .single();
+
+  let nextTourWithCount = nextTour;
+  if (nextTour?.id) {
+    const { data: countRows } = await supabase.rpc(
+      "get_tour_participant_counts",
+      {
+        p_tour_ids: [nextTour.id],
+      },
+    );
+    const row = (countRows as TourParticipantCountRow[] | null)?.[0];
+    nextTourWithCount = {
+      ...nextTour,
+      confirmed_participants_count: row?.confirmed_count || 0,
+    };
+  }
 
   // Fetch recent reports (max 5, max 2 months old)
   const twoMonthsAgo = subMonths(new Date(), 2).toISOString();
@@ -107,7 +123,7 @@ export default async function Home() {
           </div>
 
           {nextTour ? (
-            <TourCard tour={nextTour} />
+            <TourCard tour={nextTourWithCount} />
           ) : (
             <div className="rounded-2xl border border-slate-200 border-dashed p-8 text-center bg-slate-50/50">
               <p className="text-sm text-slate-400 italic">

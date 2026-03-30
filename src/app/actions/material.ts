@@ -28,45 +28,42 @@ export async function createIndependentMaterialReservation(formData: FormData) {
   }
 
   try {
-    // 2. Check availability
-    const { data: invItem, error: invError } = await supabase
-      .from("material_inventory")
-      .select("quantity_available")
-      .eq("id", inventoryId)
-      .gt("quantity_available", 0)
-      .single();
+    // Use new atomic RPC for independent reservations
+    const { error } = await supabase.rpc(
+      "reserve_material_independent_atomic",
+      {
+        p_user_id: user.id,
+        p_child_id: null,
+        p_material_inventory_id: inventoryId,
+        p_loan_date: loanDate,
+        p_return_date: returnDate,
+        p_quantity: 1,
+      },
+    );
 
-    if (invError || !invItem) {
-      await dispatchNotification(supabase, {
-        type: "material",
-        title: "Materialreservierung nicht möglich",
-        body: "Die Reservierung konnte nicht erstellt werden, weil im gewählten Zeitraum kein Bestand verfügbar ist.",
-        payload: {
-          status: "failed",
-          url: "/material",
-        },
-        recipientUserId: user.id,
-      });
-      return {
-        error:
-          "Dieses Material ist im gewählten Zeitraum oder in dieser Größe nicht mehr verfügbar.",
-      };
-    }
+    if (error) {
+      const errorMsg =
+        error.message || "Fehler beim Erstellen der Reservierung";
 
-    const { error: mError } = await supabase
-      .from("material_reservations")
-      .insert({
-        material_inventory_id: inventoryId,
-        user_id: user.id,
-        quantity: 1, // Standard für Einzelbuchungen
-        loan_date: loanDate,
-        return_date: returnDate,
-        status: "requested",
-      });
+      if (errorMsg.includes("Insufficient inventory")) {
+        await dispatchNotification(supabase, {
+          type: "material",
+          title: "Materialreservierung nicht möglich",
+          body: "Die Reservierung konnte nicht erstellt werden, weil im gewählten Zeitraum kein Bestand verfügbar ist.",
+          payload: {
+            status: "failed",
+            url: "/material",
+          },
+          recipientUserId: user.id,
+        });
+        return {
+          error:
+            "Dieses Material ist im gewählten Zeitraum oder in dieser Größe nicht mehr verfügbar.",
+        };
+      }
 
-    if (mError) {
-      console.error("Independent Material reservation failed:", mError);
-      return { error: "Fehler beim Erstellen der Reservierung." };
+      console.error("RPC Error:", error);
+      return { error: errorMsg };
     }
 
     const managerIds = await resolveMaterialManagerUserIds(supabase);
@@ -91,7 +88,7 @@ export async function createIndependentMaterialReservation(formData: FormData) {
         "Material erfolgreich angefragt. Das Material-Team bestätigt die Reservierung.",
     };
   } catch (err: unknown) {
-    console.error("Registration error:", err);
+    console.error("Reservation error:", err);
     return { error: "Bei der Buchung ist ein Fehler aufgetreten." };
   }
 }
@@ -109,45 +106,25 @@ export async function cancelOwnPrivateMaterialReservation(
     throw new Error("Nicht eingeloggt.");
   }
 
-  const { data: reservation, error: reservationError } = await supabase
-    .from("material_reservations")
-    .select("id, user_id, tour_id, status, material_inventory_id")
-    .eq("id", reservationId)
-    .single();
+  const { error: rpcError } = await supabase.rpc(
+    "cancel_own_private_material_reservation_atomic",
+    {
+      p_reservation_id: reservationId,
+      p_user_id: user.id,
+    },
+  );
 
-  if (reservationError || !reservation) {
-    throw new Error("Reservierung nicht gefunden.");
-  }
-
-  if (reservation.user_id !== user.id || reservation.tour_id !== null) {
-    throw new Error("Keine Berechtigung für diese Reservierung.");
-  }
-
-  if (reservation.status === "cancelled" || reservation.status === "returned") {
-    throw new Error("Diese Reservierung kann nicht mehr storniert werden.");
-  }
-
-  if (reservation.status === "reserved" || reservation.status === "on loan") {
-    const { data: inventory } = await supabase
-      .from("material_inventory")
-      .select("quantity_available")
-      .eq("id", reservation.material_inventory_id)
-      .single();
-
-    if (inventory) {
-      await supabase
-        .from("material_inventory")
-        .update({ quantity_available: inventory.quantity_available + 1 })
-        .eq("id", reservation.material_inventory_id);
+  if (rpcError) {
+    if (rpcError.code === "02000") {
+      throw new Error("Reservierung nicht gefunden.");
     }
-  }
+    if (rpcError.code === "42501") {
+      throw new Error("Keine Berechtigung für diese Reservierung.");
+    }
+    if (rpcError.code === "23514") {
+      throw new Error("Diese Reservierung kann nicht mehr storniert werden.");
+    }
 
-  const { error: updateError } = await supabase
-    .from("material_reservations")
-    .update({ status: "cancelled" })
-    .eq("id", reservationId);
-
-  if (updateError) {
     throw new Error("Stornierung fehlgeschlagen.");
   }
 

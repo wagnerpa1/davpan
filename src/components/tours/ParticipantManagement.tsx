@@ -60,6 +60,7 @@ interface ParticipantManagementProps {
   meetingPoint: string;
   meetingTime: string;
   maxParticipants: number;
+  minAge: number | null;
   guides: string[];
   participants: Participant[];
   reservations: Reservation[];
@@ -72,6 +73,7 @@ export function ParticipantManagement({
   meetingPoint,
   meetingTime,
   maxParticipants,
+  minAge,
   guides,
   participants,
   reservations,
@@ -145,6 +147,24 @@ export function ParticipantManagement({
   const getParticipantReservations = (p: Participant) => {
     const key = `${p.user_id}:${p.child_profile_id ?? "self"}`;
     return reservationsByParticipant.get(key) || [];
+  };
+
+  const getParticipantAge = (participant: Participant) =>
+    calculateAge(
+      participant.child_profiles?.birthdate || participant.profiles?.birthdate,
+    );
+
+  const hasAgeExceptionRequest = (participant: Participant) => {
+    if (participant.age_override) {
+      return true;
+    }
+
+    if (minAge == null) {
+      return false;
+    }
+
+    const age = getParticipantAge(participant);
+    return age != null && age < minAge;
   };
 
   return (
@@ -277,9 +297,8 @@ export function ParticipantManagement({
           <tbody className="divide-y divide-slate-100 print:divide-slate-800">
             {filteredParticipants.map((p, index) => {
               const resList = getParticipantReservations(p);
-              const age = calculateAge(
-                p.child_profiles?.birthdate || p.profiles?.birthdate,
-              );
+              const age = getParticipantAge(p);
+              const isAgeExceptionRequested = hasAgeExceptionRequest(p);
               const name =
                 p.child_profiles?.full_name ||
                 p.profiles?.full_name ||
@@ -300,9 +319,10 @@ export function ParticipantManagement({
                   <td className="px-4 py-3">
                     <div className="font-bold text-slate-900 flex flex-wrap items-center gap-1.5">
                       {name}
-                      {p.age_override && (
-                        <span className="bg-amber-100 text-amber-700 px-1.5 py-0.2 rounded text-[8px] uppercase font-black">
-                          Ausnahme
+                      {isAgeExceptionRequested && (
+                        <span className="inline-flex items-center gap-1 rounded bg-amber-100 px-1.5 py-0.5 text-[8px] font-black uppercase text-amber-800">
+                          <AlertTriangle className="h-2.5 w-2.5" />
+                          Alters-Ausnahme beantragt
                         </span>
                       )}
                       {p.child_profiles && (
@@ -369,7 +389,10 @@ export function ParticipantManagement({
                       {/* Info Button for Desktop users to see details */}
                       <button
                         type="button"
-                        onClick={() => setSelectedParticipant(p)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setSelectedParticipant(p);
+                        }}
                         className="hidden lg:flex bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-900 p-2 rounded-lg transition-all"
                       >
                         <Info className="h-4 w-4" />
@@ -379,7 +402,10 @@ export function ParticipantManagement({
                         <button
                           type="button"
                           disabled={!!isUpdating}
-                          onClick={() => handleStatusUpdate(p.id, "confirmed")}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleStatusUpdate(p.id, "confirmed");
+                          }}
                           className="bg-jdav-green/10 hover:bg-jdav-green text-jdav-green hover:text-white p-2 rounded-lg transition-all"
                         >
                           <Check className="h-4 w-4" />
@@ -388,7 +414,10 @@ export function ParticipantManagement({
                       <button
                         type="button"
                         disabled={!!isUpdating}
-                        onClick={() => handleStatusUpdate(p.id, "cancelled")}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleStatusUpdate(p.id, "cancelled");
+                        }}
                         className="bg-red-50 hover:bg-red-500 text-red-500 hover:text-white p-2 rounded-lg transition-all"
                       >
                         <UserMinus className="h-4 w-4" />
@@ -407,7 +436,7 @@ export function ParticipantManagement({
 
       {/* Participant Detail Modal */}
       {selectedParticipant && (
-        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/40 backdrop-blur-sm transition-all animate-in fade-in">
+        <div className="fixed inset-0 z-100 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/40 backdrop-blur-sm transition-all animate-in fade-in">
           <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom flex flex-col max-h-[90vh]">
             <div className="p-6 border-b border-slate-100 flex justify-between items-start">
               <div>
@@ -419,7 +448,8 @@ export function ParticipantManagement({
                   {selectedParticipant.child_profiles
                     ? "Kind-Profil"
                     : "Mitglied-Profil"}
-                  {selectedParticipant.age_override && " • AUSNAHME"}
+                  {hasAgeExceptionRequest(selectedParticipant) &&
+                    " • ALTERS-AUSNAHME"}
                 </p>
               </div>
               <button
@@ -450,6 +480,11 @@ export function ParticipantManagement({
                     ) || "n.A."}{" "}
                     Jahre
                   </p>
+                  {hasAgeExceptionRequest(selectedParticipant) && (
+                    <p className="mt-1 text-[10px] font-black uppercase tracking-wide text-amber-700">
+                      Alters-Ausnahme beantragt
+                    </p>
+                  )}
                 </div>
                 <span
                   className={cn(

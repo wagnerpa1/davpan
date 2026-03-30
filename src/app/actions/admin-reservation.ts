@@ -83,78 +83,50 @@ export async function updateReservationStatus(id: string, newStatus: string) {
     }
   }
 
-  const adjustInventory = async (delta: 1 | -1) => {
-    const { data: inv, error: invError } = await supabase
-      .from("material_inventory")
-      .select("quantity_available")
-      .eq("id", reservation.material_inventory_id)
-      .single();
+  const { error: rpcError } = await supabase.rpc(
+    "apply_material_reservation_transition_atomic",
+    {
+      p_reservation_id: id,
+      p_expected_status: currentStatus,
+      p_new_status: newStatus,
+    },
+  );
 
-    if (invError || !inv) {
-      return { error: "Bestand konnte nicht geladen werden." };
-    }
+  if (rpcError) {
+    if (rpcError.code === "08000") {
+      if (currentStatus === "requested" && newStatus === "reserved") {
+        if (reservation.user_id || reservation.child_profile_id) {
+          await dispatchNotification(supabase, {
+            type: "material",
+            title: "Materialreservierung nicht möglich",
+            body: "Die Reservierung konnte nicht bestätigt werden, weil aktuell kein Bestand verfügbar ist.",
+            payload: {
+              reservation_id: id,
+              old_status: currentStatus,
+              new_status: "cancelled",
+              status: "failed",
+            },
+            recipientUserId: reservation.child_profile_id
+              ? null
+              : reservation.user_id,
+            recipientChildId: reservation.child_profile_id,
+            relatedTourId: reservation.tour_id,
+            relatedGroupId: null,
+          });
+        }
+      }
 
-    const nextQuantity = inv.quantity_available + delta;
-    if (nextQuantity < 0) {
       return { error: "Nicht genügend Bestand verfügbar." };
     }
 
-    const { error: updateInventoryError } = await supabase
-      .from("material_inventory")
-      .update({ quantity_available: nextQuantity })
-      .eq("id", reservation.material_inventory_id);
-
-    if (updateInventoryError) {
-      return { error: "Bestand konnte nicht aktualisiert werden." };
+    if (rpcError.code === "40001") {
+      return {
+        error:
+          "Die Reservierung wurde parallel geändert. Bitte Ansicht aktualisieren und erneut versuchen.",
+      };
     }
 
-    return { success: true };
-  };
-
-  // Bestand bei Freigabe abbuchen, bei Rückgabe/Storno zurückbuchen.
-  if (currentStatus === "requested" && newStatus === "reserved") {
-    const inventoryResult = await adjustInventory(-1);
-    if (inventoryResult.error) {
-      if (reservation.user_id || reservation.child_profile_id) {
-        await dispatchNotification(supabase, {
-          type: "material",
-          title: "Materialreservierung nicht möglich",
-          body: "Die Reservierung konnte nicht bestätigt werden, weil aktuell kein Bestand verfügbar ist.",
-          payload: {
-            reservation_id: id,
-            old_status: currentStatus,
-            new_status: "cancelled",
-            status: "failed",
-          },
-          recipientUserId: reservation.child_profile_id
-            ? null
-            : reservation.user_id,
-          recipientChildId: reservation.child_profile_id,
-          relatedTourId: reservation.tour_id,
-          relatedGroupId: null,
-        });
-      }
-      return inventoryResult;
-    }
-  }
-
-  if (
-    (currentStatus === "reserved" || currentStatus === "on loan") &&
-    (newStatus === "returned" || newStatus === "cancelled")
-  ) {
-    const inventoryResult = await adjustInventory(1);
-    if (inventoryResult.error) {
-      return inventoryResult;
-    }
-  }
-
-  const { error } = await supabase
-    .from("material_reservations")
-    .update({ status: newStatus })
-    .eq("id", id);
-
-  if (error) {
-    console.error("Update reservation error: ", error);
+    console.error("RPC update reservation error:", rpcError);
     return { error: "Fehler beim Aktualisieren des Status." };
   }
 

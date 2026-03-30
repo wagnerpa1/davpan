@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { dispatchNotification } from "@/lib/notifications/dispatcher";
+import { dispatchNotification } from "../../src/lib/notifications/dispatcher";
 
 const { pushDispatchSpy } = vi.hoisted(() => ({
   pushDispatchSpy: vi.fn(),

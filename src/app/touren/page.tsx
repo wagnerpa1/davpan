@@ -36,6 +36,11 @@ interface TourCategoryOption {
   category: string | null;
 }
 
+interface TourParticipantCountRow {
+  tour_id: string;
+  confirmed_count: number;
+}
+
 function toTimestamp(value: string | null | undefined) {
   if (!value) return 0;
   const ts = Date.parse(value);
@@ -141,10 +146,6 @@ export default async function TourenPage({
           full_name
         )
       ),
-      tour_participants (
-        id,
-        status
-      ),
       tour_groups!tours_group_fkey (
         group_name
       ),
@@ -168,6 +169,25 @@ export default async function TourenPage({
     console.error("Error fetching tours:", error);
   }
 
+  const tourIds = (tours || []).map((tour) => tour.id);
+  const { data: countRows, error: countError } =
+    tourIds.length > 0
+      ? await supabase.rpc("get_tour_participant_counts", {
+          p_tour_ids: tourIds,
+        })
+      : { data: [], error: null };
+
+  if (countError) {
+    console.error("Error fetching participant counts:", countError);
+  }
+
+  const confirmedCountByTour = new Map<string, number>(
+    ((countRows || []) as TourParticipantCountRow[]).map((row) => [
+      row.tour_id,
+      row.confirmed_count || 0,
+    ]),
+  );
+
   // Check if user is logged in for "Create" button (session already fetched above)
   const userRole = authContext.role;
   const canCreate = userRole === "guide" || userRole === "admin";
@@ -175,7 +195,15 @@ export default async function TourenPage({
   // Apply in-memory filters (Guide & Availability) and Sorting (Capacity)
   let filteredTours: TourCardItem[] = normalizeTourRows(
     tours as RawTourCardItem[] | null,
-  );
+  ).map((tour) => ({
+    ...tour,
+    confirmed_participants_count: confirmedCountByTour.get(tour.id) ?? 0,
+  }));
+
+  const getConfirmedCount = (tour: TourCardItem) =>
+    tour.confirmed_participants_count ??
+    tour.tour_participants?.filter((p) => p.status === "confirmed").length ??
+    0;
 
   if (guideFilter) {
     filteredTours = filteredTours.filter((tour) =>
@@ -185,9 +213,7 @@ export default async function TourenPage({
 
   if (availableOnly) {
     filteredTours = filteredTours.filter((tour) => {
-      const confirmedCount =
-        tour.tour_participants?.filter((p) => p.status === "confirmed")
-          .length || 0;
+      const confirmedCount = getConfirmedCount(tour);
       const maxParticipants = tour.max_participants || 0;
       return maxParticipants === 0 || confirmedCount < maxParticipants;
     });
@@ -196,9 +222,7 @@ export default async function TourenPage({
   if (sortBy.startsWith("capacity")) {
     filteredTours.sort((a, b) => {
       const getCapacity = (t: TourCardItem) => {
-        const conf =
-          t.tour_participants?.filter((p) => p.status === "confirmed").length ||
-          0;
+        const conf = getConfirmedCount(t);
         const max = t.max_participants || 999;
         return conf / max;
       };

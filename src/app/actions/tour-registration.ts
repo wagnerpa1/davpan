@@ -10,7 +10,6 @@ import {
   resolveMaterialManagerUserIds,
   resolveTourManagerUserIds,
 } from "@/lib/notifications/targets";
-import { promoteWaitlistParticipants } from "@/lib/tours/waitlist";
 import { createClient } from "@/utils/supabase/server";
 
 export async function registerForTour(formData: FormData) {
@@ -98,173 +97,87 @@ export async function registerForTour(formData: FormData) {
   }
 
   try {
-    // 2. Check if already registered
-    const checkQuery = supabase
-      .from("tour_participants")
-      .select("id")
-      .eq("tour_id", tourId);
-
-    if (childId && childId !== "self") {
-      checkQuery.eq("child_profile_id", childId);
-    } else {
-      checkQuery.eq("user_id", user.id).is("child_profile_id", null);
-    }
-
-    const { data: existing } = await checkQuery.single();
-    if (existing) {
-      return { error: "Für diese Tour bereits angemeldet." };
-    }
-
-    // 3. Check capacity
-    const { count, error: cError } = await supabase
-      .from("tour_participants")
-      .select("*", { count: "exact", head: true })
-      .eq("tour_id", tourId)
-      .in("status", ["confirmed", "pending"]);
-
-    if (cError) return { error: "Fehler beim Prüfen der Teilnehmerzahl." };
-
-    const currentCount = count || 0;
-    const isWaitlist =
-      tour.max_participants && currentCount >= tour.max_participants;
-
-    const status = isWaitlist ? "waitlist" : "pending";
-    let waitlistPosition = null;
-
-    if (isWaitlist) {
-      const { data: lastPos } = await supabase
-        .from("tour_participants")
-        .select("waitlist_position")
-        .eq("tour_id", tourId)
-        .eq("status", "waitlist")
-        .order("waitlist_position", { ascending: false })
-        .limit(1);
-
-      waitlistPosition = (lastPos?.[0]?.waitlist_position || 0) + 1;
-    }
-
-    // 4. Create participant record
-    const { data: createdParticipant, error: pError } = await supabase
-      .from("tour_participants")
-      .insert({
-        tour_id: tourId,
-        user_id: user.id,
-        child_profile_id: childId && childId !== "self" ? childId : null,
-        status: status,
-        waitlist_position: waitlistPosition,
-      })
-      .select("id")
-      .single();
-
-    if (pError) return { error: "Fehler beim Erstellen der Anmeldung." };
-
-    // 4.5 Auto-update tour status if full
-    const newCount = currentCount + 1;
-    if (
-      tour.max_participants &&
-      newCount >= tour.max_participants &&
-      tour.status !== "full"
-    ) {
-      await supabase.from("tours").update({ status: "full" }).eq("id", tourId);
-    }
-
-    // 5. Create material reservations
+    // 2. Prepare materials as JSONB for RPC
+    let materialsJsonb = null;
     if (materials.length > 0) {
-      const reservationData = [];
-      const inventoryUpdates = [];
+      // Query material inventory to get IDs by type+size
+      const { data: inventoryItems } = await supabase
+        .from("material_inventory")
+        .select("id, material_type_id, size")
+        .in(
+          "material_type_id",
+          materials.map((m) => m.material_type_id),
+        );
 
-      for (const mReq of materials) {
-        // 5.1 Find first available inventory item for this type and size
-        const { data: invItem, error: invError } = await supabase
-          .from("material_inventory")
-          .select("id, quantity_available")
-          .eq("material_type_id", mReq.material_type_id)
-          .eq("size", mReq.size)
-          .gt("quantity_available", 0)
-          .limit(1)
-          .single();
+      const materialReqs = materials
+        .map((m) => {
+          const invItem = inventoryItems?.find(
+            (inv) =>
+              inv.material_type_id === m.material_type_id &&
+              inv.size === m.size,
+          );
+          return invItem
+            ? {
+                material_inventory_id: invItem.id,
+                quantity: 1,
+              }
+            : null;
+        })
+        .filter(Boolean);
 
-        if (invError || !invItem) {
-          if (createdParticipant?.id) {
-            await supabase
-              .from("tour_participants")
-              .delete()
-              .eq("id", createdParticipant.id);
-          }
-          await dispatchNotification(supabase, {
-            type: "material",
-            title: "Materialreservierung nicht möglich",
-            body: `Die Materialreservierung für "${tour.title}" konnte nicht abgeschlossen werden, weil Grösse "${mReq.size}" nicht verfügbar ist.`,
-            payload: {
-              tour_id: tourId,
-              status: "failed",
-              url: `/touren/${tourId}`,
-            },
-            recipientUserId: user.id,
-            relatedTourId: tourId,
-            relatedGroupId: tour.group,
-          });
-          return {
-            error: `Material in Größe "${mReq.size}" ist leider nicht mehr verfügbar.`,
-          };
-        }
-
-        reservationData.push({
-          tour_id: tourId,
-          material_inventory_id: invItem.id,
-          user_id: user.id,
-          child_profile_id: childId && childId !== "self" ? childId : null,
-          quantity: 1,
-          status: "reserved",
-          loan_date: tour.start_date || null,
-          return_date: tour.end_date || tour.start_date || null,
-        });
-
-        inventoryUpdates.push({
-          id: invItem.id,
-          new_quantity: invItem.quantity_available - 1,
-        });
-      }
-
-      if (reservationData.length > 0) {
-        // 5.2 Insert reservations
-        const { error: mError } = await supabase
-          .from("material_reservations")
-          .insert(reservationData);
-
-        if (mError) {
-          if (createdParticipant?.id) {
-            await supabase
-              .from("tour_participants")
-              .delete()
-              .eq("id", createdParticipant.id);
-          }
-          await dispatchNotification(supabase, {
-            type: "material",
-            title: "Materialreservierung fehlgeschlagen",
-            body: `Die Materialreservierung für "${tour.title}" konnte nicht gespeichert werden.`,
-            payload: {
-              tour_id: tourId,
-              status: "failed",
-              url: `/touren/${tourId}`,
-            },
-            recipientUserId: user.id,
-            relatedTourId: tourId,
-            relatedGroupId: tour.group,
-          });
-          console.error("Material reservation failed:", mError);
-          return { error: "Fehler beim Reservieren der Materialien." };
-        }
-
-        // 5.3 Decrement inventory for confirmed reservation records
-        for (const update of inventoryUpdates) {
-          await supabase
-            .from("material_inventory")
-            .update({ quantity_available: update.new_quantity })
-            .eq("id", update.id);
-        }
+      if (materialReqs.length > 0) {
+        materialsJsonb = JSON.stringify(materialReqs);
       }
     }
+
+    // 3. Call atomic RPC (replaces steps 2-5 above)
+    const { data: result, error: rpcError } = await supabase.rpc(
+      "register_for_tour_atomic",
+      {
+        p_tour_id: tourId,
+        p_user_id: user.id,
+        p_child_id: childId && childId !== "self" ? childId : null,
+        p_materials: materialsJsonb,
+      },
+    );
+
+    if (rpcError) {
+      const errorMsg = rpcError.message || "Anmeldung fehlgeschlagen";
+
+      // Handle specific error cases
+      if (
+        rpcError.code === "23505" ||
+        errorMsg.includes("Already registered")
+      ) {
+        return { error: "Für diese Tour bereits angemeldet." };
+      }
+
+      if (errorMsg.includes("Material not available")) {
+        await dispatchNotification(supabase, {
+          type: "material",
+          title: "Materialreservierung nicht möglich",
+          body: `Die Materialreservierung für "${tour.title}" konnte nicht abgeschlossen werden.`,
+          payload: {
+            tour_id: tourId,
+            status: "failed",
+            url: `/touren/${tourId}`,
+          },
+          recipientUserId: user.id,
+          relatedTourId: tourId,
+          relatedGroupId: tour.group,
+        });
+
+        return {
+          error: "Material ist leider nicht mehr verfügbar.",
+        };
+      }
+
+      console.error("RPC Error:", rpcError);
+      return { error: errorMsg };
+    }
+
+    const status = result.status;
+    const waitlistPosition = result.waitlist_position;
 
     // Teilnehmer bei Anmeldung NICHT benachrichtigen; nur Verantwortliche informieren.
     const managerIds = await resolveTourManagerUserIds(
@@ -274,11 +187,15 @@ export async function registerForTour(formData: FormData) {
     );
 
     await dispatchToUsers(supabase, managerIds, {
-      type: isWaitlist ? "waitlist" : "registration",
-      title: isWaitlist ? "Neue Wartelisten-Anmeldung" : "Neue Tour-Anmeldung",
-      body: isWaitlist
-        ? `${actorDisplayName} steht jetzt auf der Warteliste für "${tour.title}".`
-        : `${actorDisplayName} hat sich für "${tour.title}" angemeldet (pending).`,
+      type: status === "waitlist" ? "waitlist" : "registration",
+      title:
+        status === "waitlist"
+          ? "Neue Wartelisten-Anmeldung"
+          : "Neue Tour-Anmeldung",
+      body:
+        status === "waitlist"
+          ? `${actorDisplayName} steht jetzt auf der Warteliste für "${tour.title}".`
+          : `${actorDisplayName} hat sich für "${tour.title}" angemeldet (pending).`,
       payload: {
         tour_id: tourId,
         status,
@@ -308,9 +225,10 @@ export async function registerForTour(formData: FormData) {
     return {
       success: true,
       status: status,
-      message: isWaitlist
-        ? `Warteliste (Position ${waitlistPosition})`
-        : "Erfolgreich angemeldet! Status: Offen",
+      message:
+        status === "waitlist"
+          ? `Warteliste (Position ${waitlistPosition})`
+          : "Erfolgreich angemeldet! Status: Offen",
     };
   } catch (err: unknown) {
     console.error("Registration error:", err);
@@ -335,6 +253,13 @@ export async function cancelRegistration(participantId: string) {
   if (regError || !reg) return { error: "Anmeldung nicht gefunden." };
   if (reg.user_id !== user.id) return { error: "Keine Berechtigung." };
 
+  // Fetch tour info for notifications
+  const { data: tourData } = await supabase
+    .from("tours")
+    .select("title, group")
+    .eq("id", reg.tour_id)
+    .single();
+
   const { error } = await supabase
     .from("tour_participants")
     .update({ status: "cancelled" })
@@ -358,10 +283,34 @@ export async function cancelRegistration(participantId: string) {
 
   const freesCapacity = reg.status === "confirmed" || reg.status === "pending";
   if (freesCapacity) {
-    await promoteWaitlistParticipants({
-      supabase,
-      tourId: reg.tour_id,
-    });
+    // Use new atomic RPC for promotion (single source of truth)
+    const { data: promoted, error: promoteError } = await supabase.rpc(
+      "promote_first_waitlist",
+      { p_tour_id: reg.tour_id },
+    );
+
+    if (promoted?.promoted_count > 0 && !promoteError) {
+      // Single notification (RPC handles the promotion, app handles the notification)
+
+      // Only notify the promoted participant (not guides, they get it from sync_tour_status)
+      await dispatchNotification(supabase, {
+        type: "waitlist",
+        title: "Du bist nachgerückt",
+        body: `Für "${tourData?.title || "die Tour"}" ist ein Platz frei geworden. Du bist jetzt bestätigt.`,
+        payload: {
+          tour_id: reg.tour_id,
+          participant_id: promoted.promoted_user_id,
+          status: "confirmed",
+          url: `/touren/${reg.tour_id}`,
+        },
+        recipientUserId: promoted.promoted_child_id
+          ? null
+          : promoted.promoted_user_id,
+        recipientChildId: promoted.promoted_child_id,
+        relatedTourId: reg.tour_id,
+        relatedGroupId: null,
+      });
+    }
   }
 
   // Cancel associated material reservations & restore inventory

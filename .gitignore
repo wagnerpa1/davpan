@@ -20,6 +20,12 @@
 # production
 /build
 
+# local temp/work artifacts
+/temp/
+
+# local migration drafts
+/supabase/migrations/
+
 # misc
 .DS_Store
 *.pem

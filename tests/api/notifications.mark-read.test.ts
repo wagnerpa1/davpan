@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { POST } from "@/app/api/notifications/mark-read/route";
+import { POST } from "../../src/app/api/notifications/mark-read/route";
 
 vi.mock("@/lib/security", () => ({
   isSameOriginRequest: vi.fn(() => true),

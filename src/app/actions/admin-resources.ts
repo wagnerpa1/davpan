@@ -136,55 +136,20 @@ export async function checkAndBookResource(
 ) {
   const supabase = await createClient();
 
-  // 1. Check overlaps
-  const { data: overlaps, error: overlapError } = await supabase
-    .from("resource_bookings")
-    .select("id")
-    .eq("resource_id", resourceId)
-    .neq("tour_id", tourId) // Ignore self booking if editing
-    .not("status", "eq", "released") // Only active bookings cause overlap
-    .or(`and(start_date.lte.${endDate},end_date.gte.${startDate})`);
+  // Use new atomic RPC (handles conflict checking + upsert in one transaction)
+  const { data, error } = await supabase.rpc("book_resource_for_tour_atomic", {
+    p_resource_id: resourceId,
+    p_tour_id: tourId,
+    p_start_date: startDate,
+    p_end_date: endDate,
+    p_user_id: userId,
+  });
 
-  if (overlapError) {
-    return { error: `Fehler bei Konfliktprüfung: ${overlapError.message}` };
+  if (error) {
+    return { error: error.message || "Resource booking failed" };
   }
 
-  if (overlaps && overlaps.length > 0) {
-    return { error: "Ressource ist in diesem Zeitraum bereits gebucht!" };
-  }
-
-  // 2. Insert or update
-  // First, check if there's already a booking for this tour and this resource
-  const { data: existing } = await supabase
-    .from("resource_bookings")
-    .select("id")
-    .eq("tour_id", tourId)
-    .eq("resource_id", resourceId)
-    .single();
-
-  if (existing) {
-    const { error } = await supabase
-      .from("resource_bookings")
-      .update({
-        start_date: startDate,
-        end_date: endDate,
-        status: "booked", // reactivate if it was released
-      })
-      .eq("id", existing.id);
-    if (error) return { error: "Fehler beim Aktualisieren der Buchung." };
-  } else {
-    const { error } = await supabase.from("resource_bookings").insert({
-      resource_id: resourceId,
-      tour_id: tourId,
-      start_date: startDate,
-      end_date: endDate,
-      status: "booked",
-      created_by: userId,
-    });
-    if (error) return { error: "Fehler beim Buchen der Ressource." };
-  }
-
-  return { success: true };
+  return { success: true, booking_id: data.booking_id };
 }
 
 export async function releaseResourceBooking(resourceBookingId: string) {
@@ -195,16 +160,7 @@ export async function releaseResourceBooking(resourceBookingId: string) {
   } = await supabase.auth.getUser();
   if (!user) return { error: "Nicht eingeloggt." };
 
-  // 1. Get booking details to find tour_id
-  const { data: booking } = await supabase
-    .from("resource_bookings")
-    .select("tour_id")
-    .eq("id", resourceBookingId)
-    .single();
-
-  if (!booking) return { error: "Buchung nicht gefunden." };
-
-  // 2. Permission check: Admin or Guide of this tour
+  // Permission check: Admin or Guide of this tour
   const { data: profile } = await supabase
     .from("profiles")
     .select("role")
@@ -213,6 +169,14 @@ export async function releaseResourceBooking(resourceBookingId: string) {
   const isAdmin = profile?.role === "admin";
 
   if (!isAdmin) {
+    const { data: booking } = await supabase
+      .from("resource_bookings")
+      .select("tour_id")
+      .eq("id", resourceBookingId)
+      .single();
+
+    if (!booking) return { error: "Buchung nicht gefunden." };
+
     const { data: isGuide } = await supabase
       .from("tour_guides")
       .select("id")
@@ -225,11 +189,10 @@ export async function releaseResourceBooking(resourceBookingId: string) {
     }
   }
 
-  // 3. Delete booking
-  const { error } = await supabase
-    .from("resource_bookings")
-    .delete()
-    .eq("id", resourceBookingId);
+  // Use new atomic RPC
+  const { error } = await supabase.rpc("release_resource_booking_atomic", {
+    p_booking_id: resourceBookingId,
+  });
 
   if (error) return { error: `Fehler bei Freigabe: ${error.message}` };
 

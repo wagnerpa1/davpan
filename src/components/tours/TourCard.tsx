@@ -27,6 +27,7 @@ interface TourCardData {
   end_date?: string | null;
   target_area?: string | null;
   max_participants?: number | null;
+  confirmed_participants_count?: number | null;
   difficulty?: string | null;
   tour_participants?: TourParticipant[];
   tour_guides?: TourGuide[];
@@ -38,7 +39,9 @@ interface TourCardProps {
 
 export function TourCard({ tour }: TourCardProps) {
   const confirmedCount =
-    tour.tour_participants?.filter((p) => p.status === "confirmed").length || 0;
+    tour.confirmed_participants_count ??
+    tour.tour_participants?.filter((p) => p.status === "confirmed").length ??
+    0;
   const maxParticipants = tour.max_participants || 0;
   const isFull = maxParticipants > 0 && confirmedCount >= maxParticipants;
   const isLow =
