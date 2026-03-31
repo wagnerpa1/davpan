@@ -6,6 +6,7 @@ import { canAccessMaterialAdmin, getCurrentUserProfile } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/server";
 import { ReservationStatusManager } from "./ReservationStatusManager";
+import { TourBulkReservationManager } from "./TourBulkReservationManager";
 
 export const metadata: Metadata = {
   title: "Material Reservierungen - Admin | JDAV Pfarrkirchen",
@@ -145,6 +146,47 @@ export default async function AdminMaterialReservationsPage({
       ? sortedReservations.filter(isProblematicRequest)
       : sortedReservations;
 
+  const tourBulkMap = new Map<
+    string,
+    {
+      tourId: string;
+      tourTitle: string;
+      requested: number;
+      reserved: number;
+      onLoan: number;
+    }
+  >();
+
+  for (const reservation of sortedReservations) {
+    if (!reservation.tour_id) {
+      continue;
+    }
+
+    const existing = tourBulkMap.get(reservation.tour_id) ?? {
+      tourId: reservation.tour_id,
+      tourTitle: reservation.tours?.title || "Tour",
+      requested: 0,
+      reserved: 0,
+      onLoan: 0,
+    };
+
+    if (reservation.status === "requested") {
+      existing.requested += 1;
+    }
+    if (reservation.status === "reserved") {
+      existing.reserved += 1;
+    }
+    if (reservation.status === "on loan") {
+      existing.onLoan += 1;
+    }
+
+    tourBulkMap.set(reservation.tour_id, existing);
+  }
+
+  const tourBulkRows = Array.from(tourBulkMap.values())
+    .filter((row) => row.requested > 0 || row.reserved > 0 || row.onLoan > 0)
+    .sort((a, b) => a.tourTitle.localeCompare(b.tourTitle, "de"));
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto px-4 py-8 pb-32">
       <div className="mb-4 flex items-center justify-between text-sm">
@@ -200,6 +242,8 @@ export default async function AdminMaterialReservationsPage({
           </p>
         </div>
       )}
+
+      <TourBulkReservationManager rows={tourBulkRows} />
 
       <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
         <table className="w-full text-left text-sm">

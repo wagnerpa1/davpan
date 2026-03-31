@@ -207,13 +207,14 @@ export async function createTour(formData: FormData) {
   const cost_info = normalizeOptional(formData.get("cost_info"));
   const requirements = normalizeOptional(formData.get("requirements"));
   const statusRaw = normalizeOptional(formData.get("status"));
-  const status: "planning" | "open" | "full" | "completed" = [
+  const status: "planning" | "open" | "full" | "completed" | "cancelled" = [
     "planning",
     "open",
     "full",
     "completed",
+    "cancelled",
   ].includes(statusRaw || "")
-    ? (statusRaw as "planning" | "open" | "full" | "completed")
+    ? (statusRaw as "planning" | "open" | "full" | "completed" | "cancelled")
     : "planning";
 
   if (!title || !start_date) {
@@ -421,23 +422,6 @@ export async function updateTour(tourId: string, formData: FormData) {
     }
   }
 
-  await notifyTourAudience(supabase, audienceTargets, {
-    type: "tour_update",
-    title: "Tour aktualisiert",
-    body: `Die Tour "${payload.title || previousTour?.title || "Tour"}" wurde aktualisiert. Bitte Details prüfen.`,
-    payload: {
-      tour_id: tourId,
-      previous_status: previousTour?.status ?? null,
-      next_status: payload.status ?? previousTour?.status ?? null,
-      url: `/touren/${tourId}`,
-    },
-    relatedTourId: tourId,
-    relatedGroupId:
-      (typeof payload.group === "string" ? payload.group : null) ??
-      previousTour?.group ??
-      null,
-  });
-
   const nextStatus =
     typeof payload.status === "string" ? payload.status : previousTour?.status;
   const nextGroupId =
@@ -448,6 +432,26 @@ export async function updateTour(tourId: string, formData: FormData) {
     (typeof payload.title === "string" ? payload.title : null) ??
     previousTour?.title ??
     "Tour";
+
+  const isCancellationTransition =
+    nextStatus === "cancelled" && previousTour?.status !== "cancelled";
+
+  await notifyTourAudience(supabase, audienceTargets, {
+    type: "tour_update",
+    title: isCancellationTransition ? "Tour abgesagt" : "Tour aktualisiert",
+    body: isCancellationTransition
+      ? `Die Tour "${nextTitle}" wurde abgesagt.`
+      : `Die Tour "${nextTitle}" wurde aktualisiert. Bitte Details prüfen.`,
+    payload: {
+      tour_id: tourId,
+      previous_status: previousTour?.status ?? null,
+      next_status: nextStatus ?? previousTour?.status ?? null,
+      cancelled: isCancellationTransition,
+      url: `/touren/${tourId}`,
+    },
+    relatedTourId: tourId,
+    relatedGroupId: nextGroupId,
+  });
 
   if (nextStatus === "open" && previousTour?.status !== "open" && nextGroupId) {
     await notifyTourOpenForSubscribers(supabase, {
@@ -511,11 +515,15 @@ export async function deleteTour(tourId: string) {
     });
   }
 
-  const { error } = await supabase.from("tours").delete().eq("id", tourId);
-  if (error) throw new Error("Failed to delete tour");
+  const { error } = await supabase
+    .from("tours")
+    .update({ status: "cancelled" })
+    .eq("id", tourId);
+  if (error) throw new Error("Failed to cancel tour");
 
   revalidatePath("/touren");
-  redirect("/touren");
+  revalidatePath(`/touren/${tourId}`);
+  redirect(`/touren/${tourId}`);
 }
 
 let _lastSyncTs = 0;
@@ -533,6 +541,7 @@ async function _doSyncTourStatuses() {
   const { data: expiredTours, error } = await supabase
     .from("tours")
     .update({ status: "completed" })
+    .in("status", ["planning", "open", "full"])
     .lt("end_date", today)
     .select("id");
   if (error) {

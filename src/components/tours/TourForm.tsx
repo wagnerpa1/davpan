@@ -572,6 +572,7 @@ export function TourForm({
               <option value="open">Anmeldung offen</option>
               <option value="full">Ausgebucht</option>
               <option value="completed">Abgeschlossen</option>
+              <option value="cancelled">Abgesagt</option>
             </select>
           </div>
         </div>

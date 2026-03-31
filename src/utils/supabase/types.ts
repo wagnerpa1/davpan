@@ -703,7 +703,13 @@ export interface Database {
           duration_hours: number | null;
           cost_info: string | null;
           max_participants: number | null;
-          status: "planning" | "open" | "full" | "completed" | null;
+          status:
+            | "planning"
+            | "open"
+            | "full"
+            | "completed"
+            | "cancelled"
+            | null;
           created_by: string | null;
           created_at: string | null;
           min_age: number | null;
@@ -726,7 +732,13 @@ export interface Database {
           duration_hours?: number | null;
           cost_info?: string | null;
           max_participants?: number | null;
-          status?: "planning" | "open" | "full" | "completed" | null;
+          status?:
+            | "planning"
+            | "open"
+            | "full"
+            | "completed"
+            | "cancelled"
+            | null;
           created_by?: string | null;
           created_at?: string | null;
           min_age?: number | null;
@@ -749,7 +761,13 @@ export interface Database {
           duration_hours?: number | null;
           cost_info?: string | null;
           max_participants?: number | null;
-          status?: "planning" | "open" | "full" | "completed" | null;
+          status?:
+            | "planning"
+            | "open"
+            | "full"
+            | "completed"
+            | "cancelled"
+            | null;
           created_by?: string | null;
           created_at?: string | null;
           min_age?: number | null;

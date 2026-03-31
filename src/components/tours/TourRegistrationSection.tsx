@@ -224,6 +224,7 @@ export function TourRegistrationSection({
   const cannotRegister =
     tourStatus === "planning" ||
     tourStatus === "completed" ||
+    tourStatus === "cancelled" ||
     isRegistrationClosedByDeadline;
   const selfReg = userRegistrations.find((r) => r.child_profile_id === null);
   const childRegs = userRegistrations.filter(

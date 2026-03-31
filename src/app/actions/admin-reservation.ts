@@ -22,6 +22,57 @@ const ALLOWED_TRANSITIONS: Record<string, string[]> = {
   cancelled: [],
 };
 
+async function applyMaterialTransitionRpc(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  reservationId: string,
+  expectedStatus: string,
+  newStatus: string,
+  idempotencyScope: string,
+) {
+  const idempotencyKey = buildIdempotencyKey(idempotencyScope, [
+    reservationId,
+    expectedStatus,
+    newStatus,
+  ]);
+
+  const withIdempotency = await supabase.rpc(
+    "apply_material_reservation_transition_atomic",
+    {
+      p_reservation_id: reservationId,
+      p_expected_status: expectedStatus,
+      p_new_status: newStatus,
+      p_idempotency_key: idempotencyKey,
+    },
+  );
+
+  const error = withIdempotency.error;
+  if (!error) {
+    return { error: null };
+  }
+
+  const mightBeLegacySignature =
+    error.code === "PGRST202" ||
+    error.code === "42883" ||
+    error.message?.includes("apply_material_reservation_transition_atomic") ||
+    error.message?.includes("function") ||
+    error.details?.includes("function");
+
+  if (!mightBeLegacySignature) {
+    return { error };
+  }
+
+  const withoutIdempotency = await supabase.rpc(
+    "apply_material_reservation_transition_atomic",
+    {
+      p_reservation_id: reservationId,
+      p_expected_status: expectedStatus,
+      p_new_status: newStatus,
+    },
+  );
+
+  return { error: withoutIdempotency.error };
+}
+
 export async function updateReservationStatus(id: string, newStatus: string) {
   const supabase = await createClient();
 
@@ -84,18 +135,12 @@ export async function updateReservationStatus(id: string, newStatus: string) {
     }
   }
 
-  const { error: rpcError } = await supabase.rpc(
-    "apply_material_reservation_transition_atomic",
-    {
-      p_reservation_id: id,
-      p_expected_status: currentStatus,
-      p_new_status: newStatus,
-      p_idempotency_key: buildIdempotencyKey("material-status", [
-        id,
-        currentStatus,
-        newStatus,
-      ]),
-    },
+  const { error: rpcError } = await applyMaterialTransitionRpc(
+    supabase,
+    id,
+    currentStatus,
+    newStatus,
+    "material-status",
   );
 
   if (rpcError) {
@@ -206,6 +251,16 @@ export async function bulkUpdateTourReservations(
     return { error: "Keine Berechtigung." };
   }
 
+  if (!ALLOWED_STATUS.has(currentStatus) || !ALLOWED_STATUS.has(newStatus)) {
+    return { error: "Ungültiger Status für Stapelverarbeitung." };
+  }
+
+  if (!ALLOWED_TRANSITIONS[currentStatus]?.includes(newStatus)) {
+    return {
+      error: `Übergang von "${currentStatus}" nach "${newStatus}" ist nicht erlaubt.`,
+    };
+  }
+
   if (isGuideRole(profile?.role)) {
     const { data: guideAssignment } = await supabase
       .from("tour_guides")
@@ -222,7 +277,7 @@ export async function bulkUpdateTourReservations(
   // Fetch all reservations for this tour with current status
   const { data: reservations, error: fetchErr } = await supabase
     .from("material_reservations")
-    .select("id")
+    .select("id, status")
     .eq("tour_id", tourId)
     .eq("status", currentStatus);
 
@@ -235,26 +290,46 @@ export async function bulkUpdateTourReservations(
   }
 
   let successCount = 0;
+  let failedCount = 0;
+  const errors: string[] = [];
+
   for (const res of reservations) {
-    const { error: rpcError } = await supabase.rpc(
-      "apply_material_reservation_transition_atomic",
-      {
-        p_reservation_id: res.id,
-        p_expected_status: currentStatus,
-        p_new_status: newStatus,
-        p_idempotency_key: buildIdempotencyKey("bulk-material-status", [
-          res.id,
-          currentStatus,
-          newStatus,
-        ]),
-      },
+    const expectedStatus = res.status || currentStatus;
+    const { error: rpcError } = await applyMaterialTransitionRpc(
+      supabase,
+      res.id,
+      expectedStatus,
+      newStatus,
+      "bulk-material-status",
     );
-    if (!rpcError) successCount++;
+
+    if (!rpcError) {
+      successCount++;
+      continue;
+    }
+
+    failedCount++;
+    if (errors.length < 5) {
+      if (rpcError.code === "08000") {
+        errors.push("Nicht genügend Bestand verfügbar.");
+      } else if (rpcError.code === "40001") {
+        errors.push("Paralleländerung erkannt. Bitte erneut versuchen.");
+      } else {
+        errors.push(
+          rpcError.message || "Unbekannter Fehler bei Statuswechsel.",
+        );
+      }
+    }
   }
 
   revalidatePath("/admin/material/reservations");
   revalidatePath(`/touren/${tourId}`);
   revalidatePath("/guide/dashboard");
 
-  return { success: true, count: successCount };
+  return {
+    success: failedCount === 0,
+    count: successCount,
+    failedCount,
+    errors,
+  };
 }

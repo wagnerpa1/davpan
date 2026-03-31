@@ -4,7 +4,6 @@ import { Calendar, MapPin, Mountain, MoveLeft } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getTourParticipantsForListing } from "@/app/actions/reports";
-import { ParticipantPopup } from "@/components/reports/ParticipantPopup";
 import { ReportForm } from "@/components/reports/ReportForm";
 import { createClient } from "@/utils/supabase/server";
 
@@ -79,11 +78,6 @@ export default async function NewReportPage({ params }: Props) {
             Teile eure Erlebnisse und Fotos von der Tour.
           </p>
         </div>
-
-        {/* Participant Popup for Guides/Admins */}
-        {participants.length > 0 && (
-          <ParticipantPopup participants={participants} />
-        )}
       </div>
 
       <div className="mb-8 grid gap-4 overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:grid-cols-2 md:grid-cols-3">

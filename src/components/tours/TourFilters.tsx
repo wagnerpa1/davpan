@@ -10,6 +10,7 @@ interface TourFiltersProps {
   difficulties: string[];
   guides: { id: string; full_name: string }[];
   tourGroups: { id: string; group_name: string }[];
+  basePath?: string;
 }
 
 export function TourFilters({
@@ -17,6 +18,7 @@ export function TourFilters({
   difficulties,
   guides,
   tourGroups,
+  basePath = "/touren",
 }: TourFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -41,11 +43,12 @@ export function TourFilters({
       }
     });
 
-    router.push(`/touren?${params.toString()}`, { scroll: false });
+    const query = params.toString();
+    router.push(query ? `${basePath}?${query}` : basePath, { scroll: false });
   };
 
   const clearFilters = () => {
-    router.push("/touren", { scroll: false });
+    router.push(basePath, { scroll: false });
   };
 
   const hasActiveFilters =

@@ -58,6 +58,10 @@ export async function registerForTour(formData: FormData) {
     return { error: "Tour nicht gefunden." };
   }
 
+  if (tour.status !== "open" && tour.status !== "full") {
+    return { error: "Anmeldung für diese Tour ist aktuell nicht möglich." };
+  }
+
   // 1.6 Age Check
   if (tour.min_age && tour.start_date) {
     let birthdate: string | null = null;
@@ -105,7 +109,8 @@ export async function registerForTour(formData: FormData) {
 
   try {
     // 2. Prepare materials as JSONB for RPC
-    let materialReqs: { material_inventory_id: string; quantity: number }[] = [];
+    let materialReqs: { material_inventory_id: string; quantity: number }[] =
+      [];
     let materialsFingerprint = "";
     if (materials.length > 0) {
       // Query material inventory to get IDs by type+size
@@ -131,7 +136,10 @@ export async function registerForTour(formData: FormData) {
               }
             : null;
         })
-        .filter(Boolean);
+        .filter(
+          (item): item is { material_inventory_id: string; quantity: number } =>
+            item !== null,
+        );
 
       materialsFingerprint = JSON.stringify(materialReqs);
     }

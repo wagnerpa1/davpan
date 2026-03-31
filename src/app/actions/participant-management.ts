@@ -5,10 +5,12 @@ import { buildIdempotencyKey } from "@/lib/idempotency";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
 import { createClient } from "@/utils/supabase/server";
 
-function isParticipantTransitionRpcSignatureMismatch(error: {
-  code?: string;
-  message?: string;
-} | null) {
+function isParticipantTransitionRpcSignatureMismatch(
+  error: {
+    code?: string;
+    message?: string;
+  } | null,
+) {
   if (!error) return false;
 
   const message = error.message ?? "";

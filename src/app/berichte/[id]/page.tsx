@@ -12,8 +12,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import ReactMarkdown from "react-markdown";
-import { getTourParticipantsForListing } from "@/app/actions/reports";
-import { ParticipantPopup } from "@/components/reports/ParticipantPopup";
 import { ReportGallery } from "@/components/reports/ReportGallery";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/server";
@@ -89,11 +87,6 @@ export default async function ReportDetailPage({ params }: Props) {
   const isGuideOfTour = guides.some((g) => g.user_id === user.id);
   const canEdit = isAdmin || isGuideOfTour;
 
-  const participants =
-    canEdit && report.tours
-      ? await getTourParticipantsForListing(report.tours.id)
-      : [];
-
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8">
       {/* Top Navigation - Simple like Tour detail page */}
@@ -106,9 +99,6 @@ export default async function ReportDetailPage({ params }: Props) {
         </Link>
         {canEdit && (
           <div className="flex gap-2">
-            {participants.length > 0 && (
-              <ParticipantPopup participants={participants} />
-            )}
             <Link
               href={`/touren/${report.tours?.id}/bericht/edit?id=${report.id}`}
             >

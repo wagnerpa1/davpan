@@ -175,7 +175,8 @@ export async function promoteWaitlistParticipants({
   if (
     tour.max_participants &&
     tour.status !== "completed" &&
-    tour.status !== "planning"
+    tour.status !== "planning" &&
+    tour.status !== "cancelled"
   ) {
     const { count: activeCountAfterRaw } = await supabase
       .from("tour_participants")

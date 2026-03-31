@@ -1,14 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const {
-  createClientSpy,
-  dispatchNotificationSpy,
-  revalidatePathSpy,
-} = vi.hoisted(() => ({
-  createClientSpy: vi.fn(),
-  dispatchNotificationSpy: vi.fn(),
-  revalidatePathSpy: vi.fn(),
-}));
+const { createClientSpy, dispatchNotificationSpy, revalidatePathSpy } =
+  vi.hoisted(() => ({
+    createClientSpy: vi.fn(),
+    dispatchNotificationSpy: vi.fn(),
+    revalidatePathSpy: vi.fn(),
+  }));
 
 vi.mock("@/utils/supabase/server", () => ({
   createClient: createClientSpy,
@@ -31,10 +28,7 @@ type MockResponse = {
 
 function createSupabaseMockForCancelWithFallback() {
   const rpcSpy = vi
-    .fn<
-      [string, Record<string, unknown>],
-      Promise<MockResponse>
-    >()
+    .fn<[string, Record<string, unknown>], Promise<MockResponse>>()
     .mockResolvedValueOnce({
       data: null,
       error: {

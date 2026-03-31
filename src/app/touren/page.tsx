@@ -157,7 +157,7 @@ export default async function TourenPage({
         category
       )
     `)
-    .neq("status", "completed"); // Only show active tours
+    .neq("status", "completed"); // Keep cancelled visible until end date
 
   if (normalizedCategoryFilter) {
     query = query.eq("category", normalizedCategoryFilter);
@@ -211,6 +211,21 @@ export default async function TourenPage({
     ...tour,
     confirmed_participants_count: confirmedCountByTour.get(tour.id) ?? 0,
   }));
+
+  const todayIso = new Date().toISOString().split("T")[0];
+  filteredTours = filteredTours.filter((tour) => {
+    if (tour.status !== "cancelled") {
+      return true;
+    }
+
+    // Cancelled tours remain visible up to and including their end date.
+    const relevantEndDate = tour.end_date || tour.start_date;
+    if (!relevantEndDate) {
+      return false;
+    }
+
+    return relevantEndDate >= todayIso;
+  });
 
   const getConfirmedCount = (tour: TourCardItem) =>
     tour.confirmed_participants_count ??

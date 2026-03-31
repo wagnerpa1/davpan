@@ -59,6 +59,7 @@ export default async function Home() {
     `)
     .gte("end_date", today) // Keep showing until it ends
     .neq("status", "completed")
+    .neq("status", "cancelled")
     .order("start_date", { ascending: true })
     .limit(1)
     .single();

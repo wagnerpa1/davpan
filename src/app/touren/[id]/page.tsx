@@ -140,6 +140,8 @@ const statusLabel = (status: string) => {
       return "Ausgebucht";
     case "completed":
       return "Abgeschlossen";
+    case "cancelled":
+      return "Abgesagt";
     default:
       return status;
   }

@@ -128,7 +128,10 @@ export default async function MaterialPage() {
   }
 
   const visibleReservations = reservations.filter((reservation) => {
-    if (reservation.status === "cancelled" && isLoanDateInPast(reservation.loan_date)) {
+    if (
+      reservation.status === "cancelled" &&
+      isLoanDateInPast(reservation.loan_date)
+    ) {
       return false;
     }
     return true;
@@ -143,7 +146,9 @@ export default async function MaterialPage() {
   });
 
   const archivedReservations = visibleReservations.filter((reservation) => {
-    return reservation.status === "returned" || reservation.status === "cancelled";
+    return (
+      reservation.status === "returned" || reservation.status === "cancelled"
+    );
   });
 
   const hasAnyVisibleReservations = visibleReservations.length > 0;
@@ -266,8 +271,8 @@ export default async function MaterialPage() {
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="font-semibold text-slate-900">
-                          {reservation.material_inventory?.material_types?.name ||
-                            "Unbekanntes Material"}
+                          {reservation.material_inventory?.material_types
+                            ?.name || "Unbekanntes Material"}
                           {reservation.material_inventory?.size && (
                             <span className="ml-2 text-xs text-slate-500">
                               ({reservation.material_inventory.size})
@@ -285,7 +290,10 @@ export default async function MaterialPage() {
                       <div className="mt-2 text-xs text-slate-600">
                         Von{" "}
                         {reservation.loan_date
-                          ? format(new Date(reservation.loan_date), "dd.MM.yyyy")
+                          ? format(
+                              new Date(reservation.loan_date),
+                              "dd.MM.yyyy",
+                            )
                           : "-"}{" "}
                         bis{" "}
                         {reservation.return_date
@@ -334,8 +342,8 @@ export default async function MaterialPage() {
                         >
                           <div className="flex flex-wrap items-center justify-between gap-2">
                             <div className="font-semibold text-slate-900">
-                              {reservation.material_inventory?.material_types?.name ||
-                                "Unbekanntes Material"}
+                              {reservation.material_inventory?.material_types
+                                ?.name || "Unbekanntes Material"}
                               {reservation.material_inventory?.size && (
                                 <span className="ml-2 text-xs text-slate-500">
                                   ({reservation.material_inventory.size})
@@ -353,7 +361,10 @@ export default async function MaterialPage() {
                           <div className="mt-2 text-xs text-slate-600">
                             Von{" "}
                             {reservation.loan_date
-                              ? format(new Date(reservation.loan_date), "dd.MM.yyyy")
+                              ? format(
+                                  new Date(reservation.loan_date),
+                                  "dd.MM.yyyy",
+                                )
                               : "-"}{" "}
                             bis{" "}
                             {reservation.return_date

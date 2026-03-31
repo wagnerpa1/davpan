@@ -107,13 +107,13 @@ function buildFormData(values: Record<string, string>) {
   return fd;
 }
 
-describe("upsertReport archive transition", () => {
+describe("upsertReport archive flow", () => {
   beforeEach(() => {
     createClientMock.mockReset();
     revalidatePathSpy.mockReset();
   });
 
-  it("marks tour as completed when first report is inserted", async () => {
+  it("creates first report without mutating tour status", async () => {
     const mocks = createSupabaseMock({ role: "guide", isGuide: true });
     createClientMock.mockResolvedValue(mocks.supabase);
 
@@ -128,9 +128,9 @@ describe("upsertReport archive transition", () => {
     );
 
     expect(result).toEqual({ success: true, id: "report-new" });
-    expect(mocks.toursUpdate).toHaveBeenCalledWith({ status: "completed" });
-    expect(mocks.toursUpdateEq).toHaveBeenCalledWith("id", "tour-1");
-    expect(mocks.toursUpdateNeq).toHaveBeenCalledWith("status", "completed");
+    expect(mocks.toursUpdate).not.toHaveBeenCalled();
+    expect(mocks.toursUpdateEq).not.toHaveBeenCalled();
+    expect(mocks.toursUpdateNeq).not.toHaveBeenCalled();
   });
 
   it("does not change tour status on report update", async () => {

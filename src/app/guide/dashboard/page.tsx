@@ -104,6 +104,10 @@ export default async function GuideDashboardPage() {
     planning: { label: "Planung", classes: "bg-blue-100 text-blue-700" },
     open: { label: "Anmeldung offen", classes: "bg-green-100 text-green-700" },
     full: { label: "Ausgebucht", classes: "bg-amber-100 text-amber-700" },
+    cancelled: {
+      label: "Abgesagt",
+      classes: "bg-red-100 text-red-700",
+    },
     completed: {
       label: "Abgeschlossen",
       classes: "bg-slate-100 text-slate-600",
@@ -113,14 +117,15 @@ export default async function GuideDashboardPage() {
   // Filter for active vs archived
   const activeTours = tours.filter(
     (t) =>
-      t.status !== "completed" ||
-      !t.tour_reports ||
-      t.tour_reports.length === 0,
+      (t.status !== "completed" && t.status !== "cancelled") ||
+      (t.status === "completed" &&
+        (!t.tour_reports || t.tour_reports.length === 0)),
   );
 
   const archivedTours = tours.filter(
     (t) =>
-      t.status === "completed" && t.tour_reports && t.tour_reports.length > 0,
+      t.status === "cancelled" ||
+      (t.status === "completed" && t.tour_reports && t.tour_reports.length > 0),
   );
 
   const TourItem = ({ tour }: { tour: GuideDashboardTour }) => (
@@ -130,7 +135,9 @@ export default async function GuideDashboardPage() {
         tour.status === "completed" &&
           (!tour.tour_reports || tour.tour_reports.length === 0)
           ? "border-red-500 shadow-md shadow-red-50/50"
-          : "border-slate-200",
+          : tour.status === "cancelled"
+            ? "border-red-200 bg-red-50/20"
+            : "border-slate-200",
       )}
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 gap-4">
