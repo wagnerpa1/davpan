@@ -5,6 +5,22 @@ import { buildIdempotencyKey } from "@/lib/idempotency";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
 import { createClient } from "@/utils/supabase/server";
 
+function isParticipantTransitionRpcSignatureMismatch(error: {
+  code?: string;
+  message?: string;
+} | null) {
+  if (!error) return false;
+
+  const message = error.message ?? "";
+  return (
+    (error.code === "PGRST202" ||
+      message.includes(
+        "Could not find the function public.apply_participant_status_transition_atomic",
+      )) &&
+    message.includes("p_idempotency_key")
+  );
+}
+
 export async function updateParticipantStatus(
   registrationId: string,
   newStatus: "confirmed" | "cancelled" | "pending" | "waitlist",
@@ -96,12 +112,16 @@ export async function updateParticipantStatus(
     }
   }
 
-  const { data: transitionResult, error: transitionError } = await supabase.rpc(
+  const transitionParams = {
+    p_registration_id: registrationId,
+    p_expected_status: previousStatus,
+    p_new_status: newStatus,
+  };
+
+  let { data: transitionResult, error: transitionError } = await supabase.rpc(
     "apply_participant_status_transition_atomic",
     {
-      p_registration_id: registrationId,
-      p_expected_status: previousStatus,
-      p_new_status: newStatus,
+      ...transitionParams,
       p_idempotency_key: buildIdempotencyKey("participant-status", [
         registrationId,
         previousStatus,
@@ -109,6 +129,17 @@ export async function updateParticipantStatus(
       ]),
     },
   );
+
+  // Backward-compatible retry for environments where PostgREST still exposes
+  // the older RPC signature without p_idempotency_key.
+  if (isParticipantTransitionRpcSignatureMismatch(transitionError)) {
+    const retry = await supabase.rpc(
+      "apply_participant_status_transition_atomic",
+      transitionParams,
+    );
+    transitionResult = retry.data;
+    transitionError = retry.error;
+  }
 
   if (transitionError) {
     console.error(

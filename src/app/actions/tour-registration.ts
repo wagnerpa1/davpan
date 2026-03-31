@@ -105,7 +105,8 @@ export async function registerForTour(formData: FormData) {
 
   try {
     // 2. Prepare materials as JSONB for RPC
-    let materialsJsonb = null;
+    let materialReqs: { material_inventory_id: string; quantity: number }[] = [];
+    let materialsFingerprint = "";
     if (materials.length > 0) {
       // Query material inventory to get IDs by type+size
       const { data: inventoryItems } = await supabase
@@ -116,7 +117,7 @@ export async function registerForTour(formData: FormData) {
           materials.map((m) => m.material_type_id),
         );
 
-      const materialReqs = materials
+      materialReqs = materials
         .map((m) => {
           const invItem = inventoryItems?.find(
             (inv) =>
@@ -132,9 +133,7 @@ export async function registerForTour(formData: FormData) {
         })
         .filter(Boolean);
 
-      if (materialReqs.length > 0) {
-        materialsJsonb = JSON.stringify(materialReqs);
-      }
+      materialsFingerprint = JSON.stringify(materialReqs);
     }
 
     // 3. Call atomic RPC (replaces steps 2-5 above)
@@ -143,7 +142,7 @@ export async function registerForTour(formData: FormData) {
       user.id,
       tourId,
       normalizedChildId,
-      materialsJsonb || "",
+      materialsFingerprint,
       clientRequestId,
     ]);
 
@@ -153,7 +152,7 @@ export async function registerForTour(formData: FormData) {
         p_tour_id: tourId,
         p_user_id: user.id,
         p_child_id: normalizedChildId !== "self" ? normalizedChildId : null,
-        p_materials: materialsJsonb,
+        p_materials: materialReqs,
         p_idempotency_key: idempotencyKey,
       },
     );

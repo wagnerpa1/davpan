@@ -1,5 +1,6 @@
 import { Activity, Clock, Database, ShieldAlert } from "lucide-react";
 import { redirect } from "next/navigation";
+import { getNotificationDeliveryMode } from "@/lib/notifications/outbox";
 import { createClient } from "@/utils/supabase/server";
 
 export default async function ObservabilityDashboard() {
@@ -22,11 +23,13 @@ export default async function ObservabilityDashboard() {
     redirect("/");
   }
 
+  const deliveryMode = getNotificationDeliveryMode();
+
   // 1. Fetch system metrics
-  const { data: metrics } = await supabase
+  const { data: metrics, error: metricsError } = await supabase
     .from("system_metrics_outbox")
     .select("*")
-    .single();
+    .maybeSingle();
 
   // 2. Fetch recent audit logs
   const { data: audits } = await supabase
@@ -44,6 +47,22 @@ export default async function ObservabilityDashboard() {
         <p className="text-slate-600 mt-2">
           P3.1 Überwachung des Event-Systems und der Domain-Status-Transitions
         </p>
+        <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+          <span className="font-semibold">Notification Delivery Mode:</span>{" "}
+          <span className="uppercase tracking-wide">{deliveryMode}</span>
+          {deliveryMode === "direct" && (
+            <p className="mt-1 text-amber-700">
+              Outbox-Metriken bleiben in "direct" meist leer. Setze
+              NOTIFICATION_DELIVERY_MODE=outbox, damit das System die Outbox und
+              diese Metriken aktiv nutzt.
+            </p>
+          )}
+        </div>
+        {metricsError && (
+          <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            Fehler beim Laden der Outbox-Metriken: {metricsError.message}
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

@@ -299,7 +299,9 @@ export default async function RootLayout({
         >
           {user && <Header userRole={userRole} />}
           {user && <PushNotificationInit />} {user && <OfflineIndicator />}{" "}
-          <main className="flex-1 pb-16 md:pb-0">{children}</main>
+          <main className={`flex-1 pb-16 md:pb-0 ${user ? "pt-16" : ""}`}>
+            {children}
+          </main>
           {user && <BottomNavigation userRole={userRole} />}
         </SerwistProvider>
       </body>

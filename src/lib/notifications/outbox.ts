@@ -136,7 +136,7 @@ interface NotificationsReadClient {
 const DEFAULT_MAX_OUTBOX_ATTEMPTS = 8;
 
 function parseDeliveryMode(raw: string | undefined): DeliveryMode {
-  const value = (raw || "direct").toLowerCase();
+  const value = (raw || "outbox").toLowerCase();
   if (value === "outbox") {
     return "outbox";
   }
