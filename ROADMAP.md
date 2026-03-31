@@ -173,7 +173,7 @@ Retries und Doppelklicks muessen semantisch gleiches Ergebnis liefern, ohne dopp
 
 ---
 
-## Offene Stufen (ausfuehrlicher Plan)
+## Abgeschlossene Stufen (Detailplan)
 
 ## P2.3 - Event Ordering + Notification Outbox (abgeschlossen)
 
@@ -398,6 +398,7 @@ P2 gilt als abgeschlossen, wenn alle Punkte erfuellt sind:
 
 ## Master-Roadmap Abschluss
 Alle P-Stufen (P0 bis P3.3) wurden erfolgreich konzeptioniert, implementiert und abgesichert. Das System verfuegt nun ueber eine transaktionale Schreibarchitektur mit RPCs, ein asynchrones Notification Outbox Pattern sowie robuste Cross-Domain Constraints im Datenbank Core. Offline-faehigkeiten ueber den Service Worker behandeln Netzwerk-Drops zuverlaessig bei gleichbleibender Payload Idempotenz.
+
 
 
 
