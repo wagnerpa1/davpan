@@ -94,6 +94,11 @@ export function buildNavigation(userRole?: string | null): AppNavigation {
           href: "/admin/news",
           description: "News erstellen und veroefentlichen",
         },
+        {
+          label: "Observability",
+          href: "/admin/observability",
+          description: "Metriken, Outbox und Audit-Logs",
+        },
       ],
     });
   }
@@ -108,3 +113,4 @@ export function buildNavigation(userRole?: string | null): AppNavigation {
     groups,
   };
 }
+

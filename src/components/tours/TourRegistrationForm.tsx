@@ -3,8 +3,9 @@
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type React from "react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { registerForTour } from "@/app/actions/tour-registration";
+import { runClientAction } from "@/lib/client-action-runner";
 import { Button } from "@/components/ui/button";
 
 interface Material {
@@ -46,6 +47,11 @@ export function TourRegistrationForm({
   const [selectedMaterials, setSelectedMaterials] = useState<
     Record<string, string>
   >({});
+  const clientRequestIdRef = useRef<string>(
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  );
 
   // Age calculation for selected profile
   let ageTooYoung = false;
@@ -80,6 +86,7 @@ export function TourRegistrationForm({
     const formData = new FormData();
     formData.append("tourId", tourId);
     formData.append("childId", selectedChild);
+    formData.append("clientRequestId", clientRequestIdRef.current);
 
     // Pass materials: material_type_id and selected size
     const materialsData = Object.entries(selectedMaterials).map(
@@ -90,12 +97,22 @@ export function TourRegistrationForm({
     );
     formData.append("materialsData", JSON.stringify(materialsData));
 
-    const result = await registerForTour(formData);
+    const result = await runClientAction(() => registerForTour(formData));
 
     setIsPending(false);
-    if (result.error) {
+
+    if ("offlineQueued" in result && result.offlineQueued) {
+      setSuccess("Du bist offline. Deine Anmeldung wurde gespeichert und wird synchronisiert, sobald Du wieder verbunden bist.");
+      setTimeout(() => {
+        router.refresh();
+        if (onSuccess) onSuccess();
+      }, 3500);
+      return;
+    }
+
+    if ("error" in result && result.error) {
       setError(result.error);
-    } else if (result.success) {
+    } else if ("success" in result && result.success) {
       setSuccess(result.message || "Erfolgreich angemeldet.");
       // Refresh the page to update tour registrations
       router.refresh();

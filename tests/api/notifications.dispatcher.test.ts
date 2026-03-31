@@ -1,12 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { dispatchNotification } from "../../src/lib/notifications/dispatcher";
 
-const { pushDispatchSpy } = vi.hoisted(() => ({
+const { enqueueSpy, pushDispatchSpy } = vi.hoisted(() => ({
+  enqueueSpy: vi.fn(),
   pushDispatchSpy: vi.fn(),
 }));
 
 vi.mock("@/lib/notifications/push-dispatch", () => ({
   dispatchPushForNotification: pushDispatchSpy,
+}));
+
+vi.mock("@/lib/notifications/outbox", () => ({
+  enqueueNotificationCreatedEvent: enqueueSpy,
+  getNotificationDeliveryMode: vi.fn(() => "direct"),
 }));
 
 type PreferenceRow = {
@@ -22,7 +28,15 @@ function createSupabaseMock(options?: {
   userPrefs?: PreferenceRow | null;
   childPrefs?: PreferenceRow | null;
 }) {
-  const notificationInsert = vi.fn().mockResolvedValue({ error: null });
+  const notificationInsertSingle = vi
+    .fn()
+    .mockResolvedValue({ data: { id: "notification-1" }, error: null });
+  const notificationInsertSelect = vi.fn(() => ({
+    single: notificationInsertSingle,
+  }));
+  const notificationInsert = vi.fn(() => ({
+    select: notificationInsertSelect,
+  }));
 
   const supabase = {
     from: vi.fn((table: string) => {
@@ -63,11 +77,15 @@ function createSupabaseMock(options?: {
   return {
     supabase,
     notificationInsert,
+    notificationInsertSelect,
+    notificationInsertSingle,
   };
 }
 
 describe("dispatchNotification opt-in filtering", () => {
   beforeEach(() => {
+    enqueueSpy.mockReset();
+    enqueueSpy.mockResolvedValue(true);
     pushDispatchSpy.mockReset();
   });
 
@@ -138,5 +156,34 @@ describe("dispatchNotification opt-in filtering", () => {
     });
     expect(insertArg.payload).not.toHaveProperty("emergency_phone");
     expect(pushDispatchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("queued event statt push, wenn outbox mode aktiv ist", async () => {
+    const outboxModule = await import("@/lib/notifications/outbox");
+    vi.mocked(outboxModule.getNotificationDeliveryMode).mockReturnValue(
+      "outbox",
+    );
+
+    const { supabase } = createSupabaseMock({
+      userPrefs: {
+        news_enabled: true,
+        system_enabled: true,
+        material_enabled: true,
+        comments_enabled: true,
+        group_notifications_enabled: true,
+        tour_group_ids: [],
+      },
+    });
+
+    await dispatchNotification(supabase as never, {
+      type: "system",
+      title: "Outbox Test",
+      body: "Wird in die Queue geschrieben",
+      recipientUserId: "user-42",
+      payload: { source: "admin_system_notification", url: "/" },
+    });
+
+    expect(enqueueSpy).toHaveBeenCalledTimes(1);
+    expect(pushDispatchSpy).not.toHaveBeenCalled();
   });
 });

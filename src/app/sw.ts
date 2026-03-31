@@ -3,9 +3,11 @@
 /// <reference lib="webworker" />
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
 import {
+  BackgroundSyncPlugin,
   CacheFirst,
   ExpirationPlugin,
   NetworkFirst,
+  NetworkOnly,
   Serwist,
   StaleWhileRevalidate,
 } from "serwist";
@@ -22,6 +24,55 @@ declare global {
 
 declare const self: ServiceWorkerGlobalScope;
 
+const bgSyncPlugin = new BackgroundSyncPlugin("offline-mutations-queue", {
+  maxRetentionTime: 24 * 60, // Retry for max 24 Hours
+  onSync: async ({ queue }) => {
+    let entry;
+    while ((entry = await queue.shiftRequest())) {
+      try {
+        const response = await fetch(entry.request.clone());
+        
+        if (response.ok) {
+          const clone = response.clone();
+          const text = await clone.text();
+          
+          if (text.includes('"success":false') && text.includes('"error"')) {
+            let conflictType = "Konflikt";
+            if (text.includes('stale_write')) conflictType = "Daten veraltet";
+            else if (text.includes('Material') || text.includes('inventory_exceeded')) conflictType = "Material nicht mehr verfuegbar";
+            else if (text.includes('ausgebucht') || text.includes('capacity_exceeded')) conflictType = "Kein freier Platz mehr";
+            else if (text.includes('invalid_state')) conflictType = "Status-Konflikt";
+
+            // If the server explicitly rejected the logical request as an error, 
+            // infinite retry won't fix it. We drop it and inform the user locally.
+            self.registration.showNotification("Offline-Aktion verweigert", {
+              body: `Eine deiner Offline-Aenderungen konnte nicht synchronisiert werden: ${conflictType}. Bitte ueberpruefe den Stand.`,
+              icon: "/android-chrome-192x192.png",
+              badge: "/favicon-32x32.png",
+              tag: "offline-conflict",
+              requireInteraction: true
+            });
+            console.warn(`[SW] Offline request dropped due to domain conflict: ${conflictType}`);
+            continue;
+          }
+        }
+
+        if (!response.ok && response.status >= 500) {
+          throw new Error(`Server returned ${response.status}`);
+        }
+      } catch (error) {
+        console.error("[SW] BackgroundSync replay failed, scheduling retry:", error);
+        await queue.unshiftRequest(entry);
+        throw error;
+      }
+    }
+    // Alert client we are back online and synced!
+    self.clients.matchAll().then((clients) => {
+      clients.forEach((c) => c.postMessage({ type: "OFFLINE_SYNC_COMPLETE" }));
+    });
+  },
+});
+
 const NON_CACHEABLE_NAVIGATION_PREFIXES = [
   "/api/",
   "/auth/",
@@ -30,7 +81,14 @@ const NON_CACHEABLE_NAVIGATION_PREFIXES = [
   "/profile",
 ];
 
-const runtimeCaching = [
+const runtimeCaching: import("serwist").RuntimeCaching[] = [
+  {
+    // Capture Next.js Server Action Mutations (POST requests)
+    matcher: ({ request }: { request: Request }) => request.method === "POST",
+    handler: new NetworkOnly({
+      plugins: [bgSyncPlugin],
+    }),
+  },
   {
     matcher: ({ request, url }: { request: Request; url: URL }) =>
       request.mode === "navigate" &&

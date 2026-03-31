@@ -1,4 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  enqueueNotificationCreatedEvent,
+  getNotificationDeliveryMode,
+} from "@/lib/notifications/outbox";
 import { dispatchPushForNotification } from "@/lib/notifications/push-dispatch";
 import type { Database, Json } from "@/utils/supabase/types";
 
@@ -31,9 +35,14 @@ type NotificationInsert =
 
 interface NotificationsInsertClient {
   from(table: "notifications"): {
-    insert(
-      values: NotificationInsert,
-    ): Promise<{ error: { message: string } | null }>;
+    insert(values: NotificationInsert): {
+      select(columns: "id"): {
+        single(): Promise<{
+          data: { id: string } | null;
+          error: { message: string } | null;
+        }>;
+      };
+    };
   };
 }
 
@@ -54,6 +63,7 @@ const GROUP_DRIVEN_TYPES = new Set<NotificationType>([
 ]);
 
 const SENSITIVE_PAYLOAD_KEYS = /(phone|emergency|medical|notes|contact)/i;
+const USER_DISPATCH_BATCH_SIZE = 20;
 
 const ALLOWED_PAYLOAD_KEYS: Record<NotificationType, Set<string>> = {
   news: new Set(["news_post_id", "url"]),
@@ -240,12 +250,34 @@ export async function dispatchNotification(
   };
 
   const notificationsClient = supabase as unknown as NotificationsInsertClient;
-  const { error } = await notificationsClient
+  const { data: insertedNotification, error } = await notificationsClient
     .from("notifications")
-    .insert(insertPayload);
+    .insert(insertPayload)
+    .select("id")
+    .single();
 
   if (error) {
     console.error("[Notification] Failed to insert notification:", error);
+    return;
+  }
+
+  const deliveryMode = getNotificationDeliveryMode();
+  if (deliveryMode === "outbox") {
+    if (!insertedNotification?.id) {
+      return;
+    }
+
+    const enqueued = await enqueueNotificationCreatedEvent(supabase, {
+      notificationId: insertedNotification.id,
+      payload: payload,
+    });
+
+    if (!enqueued) {
+      console.warn(
+        "[Notification] Outbox mode active but enqueue failed. Push dispatch skipped.",
+      );
+    }
+
     return;
   }
 
@@ -263,10 +295,19 @@ export async function dispatchToUsers(
   userIds: string[],
   input: Omit<NotificationInput, "recipientUserId" | "recipientChildId">,
 ) {
-  for (const userId of userIds) {
-    await dispatchNotification(supabase, {
-      ...input,
-      recipientUserId: userId,
-    });
+  if (userIds.length === 0) {
+    return;
+  }
+
+  for (let i = 0; i < userIds.length; i += USER_DISPATCH_BATCH_SIZE) {
+    const batch = userIds.slice(i, i + USER_DISPATCH_BATCH_SIZE);
+    await Promise.allSettled(
+      batch.map((userId) =>
+        dispatchNotification(supabase, {
+          ...input,
+          recipientUserId: userId,
+        }),
+      ),
+    );
   }
 }

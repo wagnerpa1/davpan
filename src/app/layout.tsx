@@ -5,6 +5,7 @@ import type React from "react";
 import { BottomNavigation } from "@/components/layout/BottomNavigation";
 import { Header } from "@/components/layout/Header";
 import { PushNotificationInit } from "@/components/layout/PushNotificationInit";
+import { OfflineIndicator } from "@/components/ui/OfflineIndicator";
 import { getCurrentUserProfile } from "@/lib/auth";
 import { SerwistProvider } from "./serwist";
 
@@ -297,8 +298,7 @@ export default async function RootLayout({
           options={{ scope: "/" }}
         >
           {user && <Header userRole={userRole} />}
-          {user && <PushNotificationInit />}
-          <main className="flex-1 pb-16 md:pb-0">{children}</main>
+          {user && <PushNotificationInit />}            {user && <OfflineIndicator />}          <main className="flex-1 pb-16 md:pb-0">{children}</main>
           {user && <BottomNavigation userRole={userRole} />}
         </SerwistProvider>
       </body>

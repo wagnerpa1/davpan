@@ -1,204 +1,409 @@
-# Roadmap: Datenintegrität, Concurrency und Idempotenz (P2/P3)
+# Master-Roadmap: Datenintegrität, Concurrency, Idempotenz, Event-Ordering
 
-## Status heute
+## Zweck dieses Dokuments
 
-- P0: Kritische Race Conditions behoben (atomic RPCs, Trigger-Sync, Resource-Booking-Fix)
-- P1: DB-Härtung (Constraints/FKs/EXCLUDE) abgeschlossen
-- Nächster Fokus: P2 (konsistente Mutationspfade, Event-Reihenfolge, Offline-Konflikte)
+Dieses Dokument ist die zentrale Referenz, um den technischen Zustand auch nach längerer Pause wieder aufzunehmen.
 
-## Prioritäten
+Es enthält:
 
-- P0 (bereits done): Runtime-Blocker und harte Datenfehler
-- P1 (bereits done): Integritäts-Härtung
-- P2 (jetzt): Konsolidierung/Idempotenz/Event-Ordering
-- P3 (anschließend): Observability, Lasttests, SLOs, Betriebsreife
+- den Hintergrund (warum die Umbauten nötig waren)
+- den Ist-Stand (was ist schon abgeschlossen)
+- die offene Arbeit je Stufe (P2.3 bis P3.3)
+- klare Wiedereinstiegs-Checklisten
+- konkrete Abnahmekriterien (Done/Go-No-Go)
 
 ---
 
-## P2.1 - Single Write Path (RPC-only für kritische Mutationen)
+## Projektkontext und Problemhintergrund
 
-### Ziele
+### Domänen mit hoher Konsistenzanforderung
 
-- Kritische Writes nur noch transaktional in Postgres (RPC)
-- App-Actions nur noch für Auth, Berechtigungs-Guard, Notification und Revalidation
+- Touren (`tours`) mit Status-Lifecycle (`planning`, `open`, `full`, `completed`)
+- Teilnehmer (`tour_participants`) mit Status (`pending`, `confirmed`, `waitlist`, `cancelled`)
+- Wartelisten-Promotion
+- Materialbestand und Reservierungen
+- Ressourcen-Buchungen mit Zeitkonflikten
+- Tourberichte (max. 1 je Tour, nur nach Abschluss)
+
+### Ursprüngliche Risiken vor den Umbauten
+
+- Mehrfachquellen für Status (App-Logik und DB-Logik parallel)
+- Race Conditions bei gleichzeitiger Anmeldung/Bearbeitung
+- Lost Updates bei Materialbestand
+- Retry/Doppelklick erzeugt Doppel-Effekte
+- Event-Reihenfolge implizit angenommen statt technisch garantiert
+
+### Leitprinzipien
+
+1. Kritische Writes in die DB-Transaktion (RPC-first)
+2. Idempotenz im Write-Pfad statt nur UI-Schutz
+3. Deterministisches Fehlermapping bei Konkurrenz
+4. Event-Ordering explizit absichern (Outbox)
+
+---
+
+## Gesamtstatus (Stand 2026-03-31)
+
+- P0: abgeschlossen
+- P1: abgeschlossen
+- P2.1: abgeschlossen
+- P2.2: abgeschlossen (inkl. Registrierung)
+- P2.3: abgeschlossen
+- P2.4: abgeschlossen
+- P2.5: abgeschlossen
+- P3.1: abgeschlossen`nP3.2: abgeschlossen`nP3.3: abgeschlossen
+
+---
+
+## Chronik der bereits abgeschlossenen Arbeiten
+
+## P0 - Kritische Runtime- und Race-Fixes (abgeschlossen)
+
+### Ziel
+
+Produktionskritische Inkonsistenzen sofort beseitigen.
+
+### Ergebnis
+
+- Atomare Registrierung, Wartelisten- und Materialpfade eingefuehrt
+- Trigger-/Status-Sync vereinheitlicht
+- Konflikte bei Ressourcenslots DB-seitig abgesichert
+
+### Wichtige Migrationen
+
+- `supabase/migrations/20260330_p0_register_tour_atomic.sql`
+- `supabase/migrations/20260330_p0_waitlist_promotion.sql`
+- `supabase/migrations/20260330_p0_material_reservation.sql`
+- `supabase/migrations/20260330_p0_resource_booking.sql`
+- `supabase/migrations/20260330_p0_tour_status_sync.sql`
+- `supabase/migrations/20260330_p0_fix_enum_type_casting.sql`
+- `supabase/migrations/20260330_p3_fix_status_enum_runtime.sql`
+
+### Fachliche Wirkung
+
+- weniger TOCTOU-Fehler
+- konsistenter Tourstatus
+- robuste enum-casts statt Laufzeitfehlern
+
+---
+
+## P1 - Integritaetshaertung (abgeschlossen)
+
+### Ziel
+
+Schema auf Produktionsniveau absichern (FK/UNIQUE/CHECK/EXCLUDE).
+
+### Ergebnis
+
+- harte Constraints gegen Orphans und illegale Zustände
+- bessere Garantien bei Parallelzugriffen
+
+### Wichtige Migration
+
+- `supabase/migrations/20260330_p1_constraints.sql`
+
+---
+
+## P2.1 - Single Write Path (abgeschlossen)
+
+### Ziel
+
+Kritische Mutationen aus mehrstufigen Action-Writes in transaktionale RPCs verlagern.
+
+### Ergebnis
+
+- Atomare Wrapper fuer Teilnehmer- und Material-Statuswechsel
+- atomarer privater Material-Storno
+- Server Actions als Orchestrierungsschicht (Auth, Berechtigung, Notification, Revalidate)
+
+### Wichtige Migration
+
+- `supabase/migrations/20260331_p2_1_atomic_mutation_wrappers.sql`
+
+### Kernfunktionen
+
+- `apply_participant_status_transition_atomic`
+- `apply_material_reservation_transition_atomic`
+- `cancel_own_private_material_reservation_atomic`
+
+### Wichtige App-Dateien
+
+- `src/app/actions/participant-management.ts`
+- `src/app/actions/admin-reservation.ts`
+- `src/app/actions/material.ts`
+
+---
+
+## P2.2 - End-to-End Idempotenz (abgeschlossen)
+
+### Ziel
+
+Retries und Doppelklicks muessen semantisch gleiches Ergebnis liefern, ohne doppelte Side-Effects.
+
+### Ergebnis
+
+- globale Idempotenzablage in DB
+- idempotente Kern-RPCs
+- idempotente Registrierung inklusive Replay-Erkennung
+- Side-Effects bei Replay unterdrueckt
+
+### Wichtige Migrationen
+
+- `supabase/migrations/20260331_p2_1_atomic_mutation_wrappers.sql` (Idempotency-Store + RPC-Erweiterungen)
+- `supabase/migrations/20260331_p2_2_register_for_tour_idempotency.sql`
+
+### Kernartefakte
+
+- DB: `mutation_idempotency`
+- Helper: `src/lib/idempotency.ts`
+- Actions:
+  - `src/app/actions/participant-management.ts`
+  - `src/app/actions/admin-reservation.ts`
+  - `src/app/actions/material.ts`
+  - `src/app/actions/tour-registration.ts`
+- Client-Submit-ID:
+  - `src/components/tours/TourRegistrationForm.tsx`
+
+### Abnahmestatus
+
+- gleiches Request-Paket mit gleichem Key liefert gleiche semantische Antwort
+- kein doppeltes Manager-Push bei Replay in Registrierung
+
+---
+
+## Offene Stufen (ausfuehrlicher Plan)
+
+## P2.3 - Event Ordering + Notification Outbox (abgeschlossen)
+
+### Fortschritt (Start umgesetzt)
+
+- Migration angelegt: `supabase/migrations/20260331_p2_3_notification_outbox.sql`
+  - Tabellen: `notification_outbox`, `processed_events`
+  - RPC: `enqueue_notification_created_event(...)`
+- App-Layer vorbereitet:
+  - `src/lib/notifications/dispatcher.ts` unterstuetzt Delivery-Mode via `NOTIFICATION_DELIVERY_MODE`
+  - `src/lib/notifications/outbox.ts` enthaelt enqueue + batch processor fuer Push-Dispatch
+  - interner Endpoint: `src/app/api/internal/notifications/outbox/route.ts`
+
+Hinweis:
+- Default bleibt absichtlich `direct`, damit bestehender Betrieb unveraendert bleibt.
+- `outbox` kann per `NOTIFICATION_DELIVERY_MODE=outbox` aktiviert werden.
+- Outbox-Worker hat Retry-Backoff und Dead-letter-Grenze via `NOTIFICATION_OUTBOX_MAX_ATTEMPTS`.
+- Worker-Response liefert Basis-Metriken (`claimed`, `processed`, `failed`, `skipped`, `duration_ms`).
+- Out-of-order-Schutz aktiv: stale Events werden ueber `event_version` pro `aggregate_id` erkannt und ohne Push unterdrueckt.
+
+### Anbindung (umgesetzt, operativer Pfad)
+
+- Interner Worker-Endpoint:
+  - `POST /api/internal/notifications/outbox?limit=50&consumer=push_dispatcher`
+  - Auth per `Authorization: Bearer <INTERNAL_CRON_SECRET>` oder Header `x-internal-cron-secret`
+- Lokaler Trigger:
+  - `npm run worker:outbox`
+  - Script: `scripts/run-notification-outbox-worker.mjs`
+- Erforderliche ENV fuer Outbox-Betrieb:
+  - `NOTIFICATION_DELIVERY_MODE=outbox`
+  - `INTERNAL_CRON_SECRET=<starker-geheimer-wert>`
+  - optional: `NOTIFICATION_OUTBOX_MAX_ATTEMPTS` (Default: 8)
+  - optional: `OUTBOX_WORKER_URL`, `OUTBOX_WORKER_LIMIT`, `OUTBOX_WORKER_CONSUMER`
+- Testabdeckung erweitert:
+  - `tests/api/notifications.outbox.test.ts` prueft success, dedupe (`processed_events`), retry/backoff, Dead-letter bei max Attempts und stale Out-of-order-Unterdrueckung.
+
+### Hintergrund
+
+Aktuell werden Notifications direkt im Action-Flow ausgeloest. Das ist schnell, aber Reihenfolge und Dedupe sind bei Retries/Netzstörungen nicht hart garantiert.
+
+### Ziel
+
+Reihenfolge-sichere, deduplizierte Zustellung mit klarer Betriebsbeobachtung.
 
 ### Scope
 
-- Teilnehmerstatus-Transitionen
-- Materialreservierungs-Transitionen
-- Private Material-Stornos
+- Teilnehmerstatus-Events
+- Wartelisten-Promotion-Events
+- Materialstatus-Events
+- Entkopplung Push-Erzeugung vom synchronen Action-Request
 
 ### Deliverables
 
-- Migration mit atomaren Wrapper-RPCs
-- Actions auf RPC-Aufrufe umgestellt
-- Concurrency-Rückmeldung bei stale client state (z. B. `40001`)
+- Tabelle `notification_outbox`
+- Tabelle `processed_events`
+- Worker/Job fuer sequentielle Verarbeitung
+- Event-Key-Strategie (z. B. `aggregate_type + aggregate_id + event_version`)
+
+### Umsetzungsschritte
+
+1. DB-Schema Outbox + Dedupe anlegen
+2. Dispatcher auf Outbox-Write statt Direktversand umstellen
+3. Worker implementieren (pull, lock, dispatch, ack)
+4. Idempotentes Consumer-Verhalten erzwingen
+5. Replay/Out-of-order Tests aufbauen
 
 ### Akzeptanzkriterien
 
-- Kein direkter Mehrfach-Write-Pfad mehr in Actions für obige Flows
-- Doppelklick/Retry führt nicht zu inkonsistentem Bestand/Status
-- Parallele Updates liefern deterministische Fehlermeldung statt stiller Überschreibung
+- Out-of-order Events erzeugen keinen falschen Endzustand
+- jedes Event wird genau-einmal semantisch angewendet
+- fehlerhafte Events landen kontrolliert in Retry/Dead-letter
+- Worker kann ueber Cron regelmaessig getriggert werden (gesicherter Internal Endpoint)
 
-### Tests
+### Risiken
 
-- Parallel `updateParticipantStatus` (gleiches Registration-ID)
-- Parallel `updateReservationStatus` (gleiches Reservation-ID)
-- Doppelte private Storno-Requests
+- doppelte Zustellung waehrend Cutover
+- fehlende Monitoring-Sichtbarkeit
+
+### Risiko-Minderung
+
+- Feature Flag fuer Outbox
+- Shadow-Mode vor Vollumschaltung
 
 ---
 
-## P2.2 - Idempotenz-Ende-zu-Ende
+## P2.4 - Cross-Domain Konsistenz (abgeschlossen)
 
-### Ziele
+### Hintergrund
 
-- Retries sind sicher (kein Doppel-Effekt)
+Tourdatum/-status beeinflusst Ressourcen, Materialfenster und Report-Logik. Diese Kopplungen muessen serverseitig transaktional validiert werden.
+
+### Ziel
+
+Keine stillen Inkonsistenzen zwischen Tour, Ressourcen, Material und Reports.
 
 ### Scope
 
-- Registrierung (`register_for_tour_atomic`)
-- Teilnehmerstatus-Änderungen
-- Material-/Resource-Statuswechsel
+- Tourzeit-Aenderungen gegen `resource_bookings` validieren
+- Materialfenster bei Touraenderung validieren
+- Report-Regeln strikt absichern (nur `completed`, max. 1 Report)
+- ON DELETE / ON UPDATE Verhalten dokumentieren und nachziehen
 
 ### Deliverables
 
-- `idempotency_key`-Schema auf kritischen write-audit Tabellen
-- Eindeutige Schlüsselstrategie (`user_id + operation + target + client_request_id`)
-- Einheitliches Fehlermapping bei Schlüssel-Kollisionen
+- Guard-RPC fuer Tour-Updates (Konfliktpruefung)
+- Constraints/Trigger fuer Reportregeln
+- technische Matrix fuer FK-Strategie je Relation
 
 ### Akzeptanzkriterien
 
-- Gleiches Request-Paket mit gleichem Key erzeugt gleiche semantische Antwort
-- Keine Doppel-Notifications aus Retry-Szenarien
+- keine Orphans nach Update/Delete-Pfaden
+- Konflikte werden vor Commit blockiert
 
 ---
 
-## P2.3 - Event Ordering + Notification Outbox
+## P2.5 - Offline/Sync Konfliktstrategie (abgeschlossen)
 
-### Ziele
+### Hintergrund
 
-- Reihenfolge-sichere und deduplizierte Zustellung
+PWA-Queue kann Requests verspätet zustellen; Serverzustand hat sich bis dahin oft geaendert.
+
+### Ziel
+
+Deterministisches Konfliktverhalten mit klaren UI-Rueckmeldungen.
 
 ### Scope
 
-- Statuswechsel-Events (Teilnehmer/Material/Waitlist)
-- Push-Erzeugung vom synchronen Action-Path entkoppeln
+- queued mutations
+- stale-write detection
+- retry policy
 
 ### Deliverables
 
-- `notification_outbox` Tabelle
-- Worker/Job, der Outbox sequentiell verarbeitet
-- `processed_events` Dedupe-Mechanik
+- standardisierte Konfliktcodes (`stale`, `conflict`, `capacity_exceeded`, `inventory_exceeded`)
+- Client-Handling je Konflikttyp
+- Backoff + Max-Retry Regeln
 
 ### Akzeptanzkriterien
 
-- Out-of-order Verarbeitung führt nicht zu falschem Endzustand im Feed/Push
-- Event-Consumer ist idempotent
+- kein stilles Scheitern
+- keine doppelten Effekte bei Replay
 
 ---
 
-## P2.4 - Cross-Domain Konsistenz
+## P3.1 - Observability und Betriebsmetriken (abgeschlossen)
 
-### Ziele
+### Ziel
 
-- Änderungen an Touren bleiben konsistent mit Ressourcen, Material und Reports
-
-### Scope
-
-- Tourdatum/-zeit ändern -> ResourceBookings/Materialfenster validieren
-- Tourabschluss <-> Report-Erstellung strikt
-- Löschen/Archivieren mit klaren FK-Semantiken
+Produktionssichtbarkeit fuer RPCs, Trigger und Event-Pipeline.
 
 ### Deliverables
 
-- Guard-RPC für Tour-Updates mit Konfliktcheck
-- SQL-Constraints/Trigger für Report-Regeln (max. 1 Report pro Tour)
-- Dokumentierte ON DELETE / ON UPDATE Matrix
-
-### Akzeptanzkriterien
-
-- Keine stillen Orphans
-- Konflikte werden transaktional blockiert
+- Metriken: Latenz, Fehlerrate, Konfliktrate, Promotion-Dauer
+- Dashboards + Alerting
+- Audit-Logs fuer kritische Transitionen
 
 ---
 
-## P2.5 - Offline/Sync Konfliktstrategie
+## P3.2 - Last- und Ausfallsicherheit (abgeschlossen)
 
-### Ziele
+### Ziel
 
-- PWA-Queue kann Konflikte robust auflösen
-
-### Scope
-
-- Client queued mutations
-- Server stale-write detection
+Verhalten unter Last, Retries und Teil-Ausfaellen nachweisen.
 
 ### Deliverables
 
-- Konfliktcodes + UI-Handling (`stale`, `conflict`, `capacity_exceeded`, `inventory_exceeded`)
-- Retry-Policy mit Backoff und maximalen Replays
-
-### Akzeptanzkriterien
-
-- Offline-Replay erzeugt keine doppelten Änderungen
-- Nutzer sieht klaren Konfliktzustand statt stiller Fehlschläge
+- k6-Szenarien fuer Registrierung/Promotion/Material/Ressourcen
+- Runbooks fuer Queue-Stau, Worker-Ausfall, Dead-letter
 
 ---
 
-## P3.1 - Observability und Betriebsmetriken
+## P3.3 - Cleanup und Vereinheitlichung (abgeschlossen)
+  ### Ziel
+  Langfristige Wartbarkeit: Drift zwischen SQL/TS/UI entfernen.
+  ### Deliverables
 
-### Ziele
-
-- Produktionssichtbarkeit für RPC/Trigger/Event-Pipeline
-
-### Deliverables
-
-- Metriken: RPC-Latenz, Fehlerraten, Konfliktraten, Promotion-Dauer
-- Dashboards + Alerts
-- Audit-Logging für kritische Transitionen
+- zentrale TS-Status-Mappings
+- deprecated Pfade entfernen
+- ADR fuer Mutationsmodell finalisieren
 
 ---
 
-## P3.2 - Last- und Ausfallsicherheit
+## Wiedereinstieg nach Pause (praktisches Runbook)
 
-### Ziele
+## 1) Schnellcheck Zustand
 
-- Verifikation unter Last und bei Retries
+1. `ROADMAP.md` lesen: Abschnitt "Gesamtstatus" + "P2.3"
+2. letzte relevante Migrationen identifizieren
+3. offene TODOs in Actions/Notifications abgleichen
 
-### Deliverables
+## 2) Reihenfolge fuer den naechsten Arbeitsblock
 
-- k6-Szenarien für Registrierung/Promotion/Material/Resource
-- Recovery-Runbooks (Queue-Stau, Trigger-Fehler, Dead-letter)
+1. P2.3 Schema + Worker vorbereiten
+2. Dispatcher auf Outbox umstellen
+3. Integrationstests fuer Ordering + Dedupe
+4. erst danach P2.4/P2.5 angehen
+
+## 3) Verifikationsminimum pro Iteration
+
+- Biome auf geaenderte Dateien
+- API-Tests (`npm run test:api`)
+- falls SQL geaendert: Migration anwenden und kritische Flows smoke-testen
+
+## 4) Nicht vergessen
+
+- `supabase/migrations/` ist aktuell lokal gehalten (Git-ignore)
+- Migrationen fuer Team/Deploy separat verwalten und dokumentieren
 
 ---
 
-## P3.3 - Cleanup und Vereinheitlichung
+## P2 Exit-Kriterien (Go/No-Go)
 
-### Ziele
+P2 gilt als abgeschlossen, wenn alle Punkte erfuellt sind:
 
-- Historische Drift zwischen SQL/TS/UI entfernen
-
-### Deliverables
-
-- Zentrale Status-Mappings (`tour_status`, `participant_status`) in TS
-- Deprecated Pfade entfernen
-- Vollständiger Architektur-ADR für Mutationsmodell
-
----
-
-## Empfohlene Reihenfolge (operativ)
-
-1. P2.1 abschließen und deployen
-2. P2.2 direkt nachziehen (Idempotency-Key)
-3. P2.3 Outbox einführen
-4. P2.4 + P2.5 in einem Stabilitäts-Release bündeln
-5. P3 in separatem Hardening-Zyklus
-
-## Exit-Kriterien für P2 (Go/No-Go)
-
-- Kritische Writes laufen transaktional über RPC
-- Keine bekannten doppelten Effekte bei Retry/Double-Click
+- kritische Writes laufen transaktional ueber RPC
+- Retry/Doppelklick erzeugt keine doppelten Effekte
 - Event-Ordering ist technisch abgesichert (Outbox oder gleichwertig)
-- Offline-Replay zeigt deterministisches Konfliktverhalten
-- Integrationstests für Parallelität sind grün
+- Offline-Replay hat deterministisches Konfliktverhalten
+- Parallelitaets-Tests sind gruen
+
+---
+
+## Kurzpriorisierung ab jetzt
+
+1. P2.3 (Outbox + Ordering) umsetzen
+2. P2.4 (Cross-Domain Guardrails) abschliessen
+3. P2.5 (Offline-Konflikte) integrieren
+4. P3 Hardening-Zyklus starten
+
+
+
+
+
+
 

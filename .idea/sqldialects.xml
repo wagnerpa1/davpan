@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="SqlDialectMappings">
+    <file url="file://$PROJECT_DIR$/database-policies.md" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/supabase/migrations/20260328_notifications_and_news.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/supabase/migrations/20260328_push_subscriptions.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/supabase/migrations/20260330_p0_material_reservation.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/supabase/migrations/20260330_p0_register_tour_atomic.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/supabase/migrations/20260330_p0_resource_booking.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/supabase/migrations/20260330_p0_tour_status_sync.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/supabase/migrations/20260330_p0_waitlist_promotion.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/supabase/migrations/20260330_p1_constraints.sql" dialect="PostgreSQL" />
+  </component>
+</project>

@@ -130,9 +130,10 @@ Wichtige Tabellen:
   - API: `/api/admin/news`
   - Beim Posten werden `notifications` für User/Kinder erzeugt (nach Opt-in)
 
-Migration:
+Migrationen:
 
-- `supabase/migrations/20260328_notifications_and_news.sql`
+- Migrationen liegen lokal unter `supabase/migrations/`, sind in diesem Repo aber bewusst von Git ausgeschlossen.
+- Für das Anwenden auf die DB die vorhandenen Skripte unter `scripts/` nutzen (z. B. `scripts/apply-migrations.ts`).
 
 Notification-Center APIs:
 
@@ -171,6 +172,11 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=...
 ```powershell
 npm install
 ```
+
+### Lokale Arbeitsartefakte
+
+- `temp/` wird nur lokal für Berichte, Scratch-Dateien und Zwischenstände verwendet.
+- `supabase/migrations/` wird lokal gepflegt und nicht ins Repository eingecheckt.
 
 ### Development-Server
 

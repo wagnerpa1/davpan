@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { buildIdempotencyKey } from "@/lib/idempotency";
 import {
   dispatchNotification,
   dispatchToUsers,
@@ -111,6 +112,10 @@ export async function cancelOwnPrivateMaterialReservation(
     {
       p_reservation_id: reservationId,
       p_user_id: user.id,
+      p_idempotency_key: buildIdempotencyKey("private-material-cancel", [
+        reservationId,
+        user.id,
+      ]),
     },
   );
 

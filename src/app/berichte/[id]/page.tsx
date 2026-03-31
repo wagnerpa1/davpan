@@ -12,10 +12,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import ReactMarkdown from "react-markdown";
-import { getTourParticipantsForListing } from "@/app/actions/reports";
 import { ParticipantPopup } from "@/components/reports/ParticipantPopup";
 import { ReportGallery } from "@/components/reports/ReportGallery";
 import { Button } from "@/components/ui/button";
+import { getTourParticipantsForListing } from "@/lib/reports/participants";
 import { createClient } from "@/utils/supabase/server";
 
 interface Props {
@@ -91,7 +91,7 @@ export default async function ReportDetailPage({ params }: Props) {
 
   const participants =
     canEdit && report.tours
-      ? await getTourParticipantsForListing(report.tours.id)
+      ? await getTourParticipantsForListing(supabase, report.tours.id, user.id)
       : [];
 
   return (

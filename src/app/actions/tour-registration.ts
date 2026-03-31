@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { buildIdempotencyKey } from "@/lib/idempotency";
 import {
   dispatchNotification,
   dispatchToUsers,
@@ -26,6 +27,12 @@ export async function registerForTour(formData: FormData) {
   const tourId = formData.get("tourId") as string;
   const childId = formData.get("childId") as string | null;
   const materialsDataRaw = formData.get("materialsData") as string;
+  const clientRequestIdRaw = formData.get("clientRequestId");
+  const clientRequestId =
+    typeof clientRequestIdRaw === "string" &&
+    clientRequestIdRaw.trim().length > 0
+      ? clientRequestIdRaw.trim()
+      : "";
   let actorDisplayName = "Teilnehmer/in";
   let materials: { material_type_id: string; size: string }[] = [];
   try {
@@ -131,13 +138,23 @@ export async function registerForTour(formData: FormData) {
     }
 
     // 3. Call atomic RPC (replaces steps 2-5 above)
+    const normalizedChildId = childId && childId !== "self" ? childId : "self";
+    const idempotencyKey = buildIdempotencyKey("tour-registration", [
+      user.id,
+      tourId,
+      normalizedChildId,
+      materialsJsonb || "",
+      clientRequestId,
+    ]);
+
     const { data: result, error: rpcError } = await supabase.rpc(
       "register_for_tour_atomic",
       {
         p_tour_id: tourId,
         p_user_id: user.id,
-        p_child_id: childId && childId !== "self" ? childId : null,
+        p_child_id: normalizedChildId !== "self" ? normalizedChildId : null,
         p_materials: materialsJsonb,
+        p_idempotency_key: idempotencyKey,
       },
     );
 
@@ -178,47 +195,51 @@ export async function registerForTour(formData: FormData) {
 
     const status = result.status;
     const waitlistPosition = result.waitlist_position;
+    const isIdempotencyReplay = Boolean(result.idempotency_replayed);
 
-    // Teilnehmer bei Anmeldung NICHT benachrichtigen; nur Verantwortliche informieren.
-    const managerIds = await resolveTourManagerUserIds(
-      supabase,
-      tourId,
-      tour.created_by ?? null,
-    );
+    if (!isIdempotencyReplay) {
+      // Teilnehmer bei Anmeldung NICHT benachrichtigen; nur Verantwortliche informieren.
+      const managerIds = await resolveTourManagerUserIds(
+        supabase,
+        tourId,
+        tour.created_by ?? null,
+      );
 
-    await dispatchToUsers(supabase, managerIds, {
-      type: status === "waitlist" ? "waitlist" : "registration",
-      title:
-        status === "waitlist"
-          ? "Neue Wartelisten-Anmeldung"
-          : "Neue Tour-Anmeldung",
-      body:
-        status === "waitlist"
-          ? `${actorDisplayName} steht jetzt auf der Warteliste für "${tour.title}".`
-          : `${actorDisplayName} hat sich für "${tour.title}" angemeldet (pending).`,
-      payload: {
-        tour_id: tourId,
-        status,
-        url: `/touren/${tourId}`,
-      },
-      relatedTourId: tourId,
-      relatedGroupId: tour.group,
-    });
-
-    if (materials.length > 0) {
-      const materialManagerIds = await resolveMaterialManagerUserIds(supabase);
-      await dispatchToUsers(supabase, materialManagerIds, {
-        type: "material",
-        title: "Neue Materialreservierung",
-        body: `${actorDisplayName} hat Material für "${tour.title}" angefragt.`,
+      await dispatchToUsers(supabase, managerIds, {
+        type: status === "waitlist" ? "waitlist" : "registration",
+        title:
+          status === "waitlist"
+            ? "Neue Wartelisten-Anmeldung"
+            : "Neue Tour-Anmeldung",
+        body:
+          status === "waitlist"
+            ? `${actorDisplayName} steht jetzt auf der Warteliste für "${tour.title}".`
+            : `${actorDisplayName} hat sich für "${tour.title}" angemeldet (pending).`,
         payload: {
           tour_id: tourId,
           status,
-          url: "/admin/material/reservations",
+          url: `/touren/${tourId}`,
         },
         relatedTourId: tourId,
         relatedGroupId: tour.group,
       });
+
+      if (materials.length > 0) {
+        const materialManagerIds =
+          await resolveMaterialManagerUserIds(supabase);
+        await dispatchToUsers(supabase, materialManagerIds, {
+          type: "material",
+          title: "Neue Materialreservierung",
+          body: `${actorDisplayName} hat Material für "${tour.title}" angefragt.`,
+          payload: {
+            tour_id: tourId,
+            status,
+            url: "/admin/material/reservations",
+          },
+          relatedTourId: tourId,
+          relatedGroupId: tour.group,
+        });
+      }
     }
 
     revalidatePath(`/touren/${tourId}`);

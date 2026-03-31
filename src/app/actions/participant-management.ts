@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { buildIdempotencyKey } from "@/lib/idempotency";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
 import { createClient } from "@/utils/supabase/server";
 
@@ -101,6 +102,11 @@ export async function updateParticipantStatus(
       p_registration_id: registrationId,
       p_expected_status: previousStatus,
       p_new_status: newStatus,
+      p_idempotency_key: buildIdempotencyKey("participant-status", [
+        registrationId,
+        previousStatus,
+        newStatus,
+      ]),
     },
   );
 

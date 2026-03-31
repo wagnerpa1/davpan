@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { canManageMaterial, isGuideRole } from "@/lib/auth";
+import { buildIdempotencyKey } from "@/lib/idempotency";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
 import { createClient } from "@/utils/supabase/server";
 
@@ -89,6 +90,11 @@ export async function updateReservationStatus(id: string, newStatus: string) {
       p_reservation_id: id,
       p_expected_status: currentStatus,
       p_new_status: newStatus,
+      p_idempotency_key: buildIdempotencyKey("material-status", [
+        id,
+        currentStatus,
+        newStatus,
+      ]),
     },
   );
 

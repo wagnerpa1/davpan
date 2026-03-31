@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTourParticipantsForListing as getTourParticipantsForListingHelper } from "@/lib/reports/participants";
 import { createClient } from "@/utils/supabase/server";
 
 export async function upsertReport(formData: FormData) {
@@ -219,51 +220,5 @@ export async function getTourParticipantsForListing(tourId: string) {
   } = await supabase.auth.getUser();
   if (!user) return [];
 
-  // Check permission
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  const isAdmin = profile?.role === "admin";
-  const { data: isGuide } = await supabase
-    .from("tour_guides")
-    .select("id")
-    .eq("tour_id", tourId)
-    .eq("user_id", user.id)
-    .single();
-
-  if (!isAdmin && !isGuide) return [];
-
-  const { data: participants } = await supabase
-    .from("tour_participants")
-    .select(`
-      id,
-      status,
-      user_id,
-      child_profile_id,
-      profiles (
-        full_name,
-        phone,
-        emergency_phone,
-        medical_notes,
-        image_consent
-      ),
-      child_profiles (
-        full_name,
-        medical_notes,
-        image_consent
-      )
-    `)
-    .eq("tour_id", tourId)
-    .in("status", ["confirmed", "pending"]);
-
-  return (participants || []).map((p) => ({
-    ...p,
-    profiles: Array.isArray(p.profiles) ? p.profiles[0] : p.profiles,
-    child_profiles: Array.isArray(p.child_profiles)
-      ? p.child_profiles[0]
-      : p.child_profiles,
-  }));
+  return getTourParticipantsForListingHelper(supabase, tourId, user.id);
 }

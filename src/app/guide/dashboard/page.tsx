@@ -25,22 +25,32 @@ interface GuideDashboardTour {
   tour_categorys?: { category: string | null } | null;
 }
 
-type RawGuideDashboardTour = Omit<GuideDashboardTour, "tour_categorys"> & {
+type RawGuideDashboardTour = Omit<GuideDashboardTour, "tour_categorys" | "tour_reports"> & {
   tour_categorys?:
     | { category: string | null }
     | { category: string | null }[]
     | null;
+  tour_reports?: Array<{ id: string }> | { id: string } | null;
 };
 
 function normalizeTours(
   data: RawGuideDashboardTour[] | null,
 ): GuideDashboardTour[] {
-  return (data || []).map((tour) => ({
-    ...tour,
-    tour_categorys: Array.isArray(tour.tour_categorys)
-      ? (tour.tour_categorys[0] ?? null)
-      : tour.tour_categorys,
-  }));
+  return (data || []).map((tour) => {
+    const normalizedReports = Array.isArray(tour.tour_reports)
+      ? tour.tour_reports
+      : tour.tour_reports
+        ? [tour.tour_reports]
+        : [];
+
+    return {
+      ...tour,
+      tour_reports: normalizedReports,
+      tour_categorys: Array.isArray(tour.tour_categorys)
+        ? (tour.tour_categorys[0] ?? null)
+        : tour.tour_categorys,
+    };
+  });
 }
 
 export default async function GuideDashboardPage() {
@@ -101,7 +111,7 @@ export default async function GuideDashboardPage() {
   const activeTours = tours.filter(
     (t) =>
       t.status !== "completed" ||
-      (t.tour_reports && t.tour_reports.length === 0),
+      (!t.tour_reports || t.tour_reports.length === 0),
   );
 
   const archivedTours = tours.filter(
