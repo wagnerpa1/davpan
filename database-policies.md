@@ -203,6 +203,43 @@ to authenticated
 using (parent_id = auth.uid() or public.is_admin())
 with check (parent_id = auth.uid() or public.is_admin());
 
+create policy child_profiles_linked_parent_read
+on public.child_profiles
+for select
+to authenticated
+using (
+  public.is_admin()
+  or exists (
+    select 1
+    from public.parent_child_relations pcr
+    where pcr.child_id = public.child_profiles.id
+      and pcr.parent_id = auth.uid()
+  )
+);
+
+create policy child_profiles_linked_parent_update
+on public.child_profiles
+for update
+to authenticated
+using (
+  public.is_admin()
+  or exists (
+    select 1
+    from public.parent_child_relations pcr
+    where pcr.child_id = public.child_profiles.id
+      and pcr.parent_id = auth.uid()
+  )
+)
+with check (
+  public.is_admin()
+  or exists (
+    select 1
+    from public.parent_child_relations pcr
+    where pcr.child_id = public.child_profiles.id
+      and pcr.parent_id = auth.uid()
+  )
+);
+
 create policy child_profiles_guide_admin_read
 on public.child_profiles
 for select

@@ -44,7 +44,7 @@ function PreferenceFields({
   return (
     <>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <label className="flex items-center gap-2 rounded-lg border border-slate-200 p-3 text-sm">
+        <label className="flex items-center gap-2 rounded-card border border-slate-200 p-4 text-sm">
           <input
             type="checkbox"
             name="news_enabled"
@@ -53,7 +53,7 @@ function PreferenceFields({
           />
           Vereinsnews
         </label>
-        <label className="flex items-center gap-2 rounded-lg border border-slate-200 p-3 text-sm">
+        <label className="flex items-center gap-2 rounded-card border border-slate-200 p-4 text-sm">
           <input
             type="checkbox"
             name="system_enabled"
@@ -62,7 +62,7 @@ function PreferenceFields({
           />
           Systemmeldungen
         </label>
-        <label className="flex items-center gap-2 rounded-lg border border-slate-200 p-3 text-sm">
+        <label className="flex items-center gap-2 rounded-card border border-slate-200 p-4 text-sm">
           <input
             type="checkbox"
             name="material_enabled"
@@ -71,7 +71,7 @@ function PreferenceFields({
           />
           Materialmeldungen
         </label>
-        <label className="flex items-center gap-2 rounded-lg border border-slate-200 p-3 text-sm">
+        <label className="flex items-center gap-2 rounded-card border border-slate-200 p-4 text-sm">
           <input
             type="checkbox"
             name="comments_enabled"
@@ -80,7 +80,7 @@ function PreferenceFields({
           />
           Kommentare auf eigene Inhalte
         </label>
-        <label className="flex items-center gap-2 rounded-lg border border-slate-200 p-3 text-sm">
+        <label className="flex items-center gap-2 rounded-card border border-slate-200 p-4 text-sm">
           <input
             type="checkbox"
             name="group_notifications_enabled"
@@ -89,7 +89,7 @@ function PreferenceFields({
           />
           Tour-Gruppen-Benachrichtigungen aktiv
         </label>
-        <label className="flex items-center gap-2 rounded-lg border border-slate-200 p-3 text-sm">
+        <label className="flex items-center gap-2 rounded-card border border-slate-200 p-4 text-sm">
           <input
             type="checkbox"
             name="push_enabled"
@@ -100,11 +100,11 @@ function PreferenceFields({
         </label>
       </div>
 
-      <div className="rounded-xl border border-slate-200 p-4">
+      <div className="rounded-card border border-slate-200 p-5">
         <p className="mb-3 text-sm font-semibold text-slate-900">
           Tour-Gruppen
         </p>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {tourGroups.map((group) => (
             <label
               key={group.id}
@@ -144,7 +144,7 @@ export function NotificationPreferencesPanel({
   }, [activeTab, childPreferences]);
 
   return (
-    <div className="mt-8 space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <div className="mt-8 space-y-6 rounded-card border border-slate-200 bg-white p-6 shadow-sm">
       <div>
         <h2 className="text-xl font-semibold">Benachrichtigungen</h2>
         <p className="text-sm text-slate-500">
@@ -156,7 +156,7 @@ export function NotificationPreferencesPanel({
       <PushSubscriptionControl />
 
       {hasChildTabs && (
-        <div className="flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2">
+        <div className="flex flex-wrap gap-2 rounded-card border border-slate-200 bg-slate-50 p-2">
           <button
             type="button"
             onClick={() => setActiveTab("self")}
@@ -190,7 +190,7 @@ export function NotificationPreferencesPanel({
           action="/api/profile/notifications"
           method="POST"
           successKey="notifications_self"
-          className="space-y-5"
+          className="flex flex-col gap-3"
         >
           <PreferenceFields
             preferences={ownPreferences}
@@ -199,7 +199,7 @@ export function NotificationPreferencesPanel({
           <AnimatedSubmitButton
             successKey="notifications_self"
             successLabel="Gespeichert"
-            className="inline-flex items-center justify-center rounded-md bg-jdav-green px-4 py-2 font-medium text-white transition-colors hover:bg-jdav-green-dark"
+            className="inline-flex items-center justify-center rounded-button bg-jdav-green px-4 py-2 font-medium text-white transition-colors hover:bg-jdav-green-dark"
           >
             Benachrichtigungen speichern
           </AnimatedSubmitButton>
@@ -212,7 +212,7 @@ export function NotificationPreferencesPanel({
           method="POST"
           successKey="notifications_child"
           successChildId={activeChild.id}
-          className="space-y-5"
+          className="flex flex-col gap-3"
         >
           <input type="hidden" name="child_id" value={activeChild.id} />
           <PreferenceFields
@@ -223,7 +223,7 @@ export function NotificationPreferencesPanel({
             successKey="notifications_child"
             successChildId={activeChild.id}
             successLabel="Gespeichert"
-            className="inline-flex items-center justify-center rounded-md bg-jdav-green px-4 py-2 font-medium text-white transition-colors hover:bg-jdav-green-dark"
+            className="inline-flex items-center justify-center rounded-button bg-jdav-green px-4 py-2 font-medium text-white transition-colors hover:bg-jdav-green-dark"
           >
             Einstellungen für {activeChild.full_name} speichern
           </AnimatedSubmitButton>

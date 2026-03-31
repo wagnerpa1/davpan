@@ -14,6 +14,7 @@ import {
 import Image from "next/image";
 import { useMemo, useState } from "react";
 import { updateParticipantStatus } from "@/app/actions/participant-management";
+import { bulkUpdateTourReservations } from "@/app/actions/admin-reservation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { calculateAge } from "@/utils/date";
@@ -82,6 +83,7 @@ export function ParticipantManagement({
     useState<Participant | null>(null);
   const [filter, setFilter] = useState<string>("all");
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
+  const [isBulking, setIsBulking] = useState(false);
 
   const counts = useMemo(() => {
     let active = 0;
@@ -266,14 +268,31 @@ export function ParticipantManagement({
           </button>
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => window.print()}
-          className="bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-xl"
-        >
-          <Printer className="h-4 w-4 mr-2" /> Liste drucken
-        </Button>
+                <div className="flex gap-2 print:hidden items-center">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={async () => {
+              if (confirm("Moechten Sie alle reservierten Materialien auf 'Ausgegeben' setzen?")) {
+                setIsBulking(true);
+                await bulkUpdateTourReservations(tourId, "reserved", "on loan");
+                setIsBulking(false);
+              }
+            }}
+            disabled={isBulking}
+            className="bg-white border-jdav-green text-jdav-green hover:bg-green-50 rounded-xl"
+          >
+            <Package className="h-4 w-4 mr-2" /> Alle Ausgeben
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.print()}
+            className="bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-xl"
+          >
+            <Printer className="h-4 w-4 mr-2" /> Liste drucken
+          </Button>
+        </div>
       </div>
 
       {/* Main Table Content */}

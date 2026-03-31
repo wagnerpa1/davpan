@@ -291,11 +291,23 @@ export async function processNotificationOutboxBatch(options?: {
       }
 
       const { data: notification, error: notificationError } =
-        await notificationsClient
+        (await notificationsClient
           .from("notifications")
-          .select("recipient_user_id, recipient_child_id, title, body, payload")
+          .select(
+            "recipient_user_id, recipient_child_id, title, body, payload, type",
+          )
           .eq("id", item.aggregate_id)
-          .maybeSingle();
+          .maybeSingle()) as unknown as {
+          data: {
+            recipient_user_id: string | null;
+            recipient_child_id: string | null;
+            title: string;
+            body: string;
+            payload: unknown;
+            type: string;
+          } | null;
+          error: Error | null;
+        };
 
       if (notificationError) {
         throw new Error(notificationError.message);
@@ -325,6 +337,29 @@ export async function processNotificationOutboxBatch(options?: {
             ? (notification.payload as Record<string, unknown>)
             : {},
       });
+
+      // Phase 4: Trigger mandatory email for registration/waitlist status changes
+      if (
+        notification.type === "registration" ||
+        notification.type === "waitlist" ||
+        notification.type === "tour_update"
+      ) {
+        if (notification.recipient_user_id) {
+          const { data: userData } = await admin.auth.admin.getUserById(
+            notification.recipient_user_id,
+          );
+          if (userData?.user?.email) {
+            const { dispatchEmailForNotification } = await import(
+              "./email-dispatcher"
+            );
+            await dispatchEmailForNotification(
+              userData.user.email,
+              notification.title,
+              notification.body,
+            );
+          }
+        }
+      }
 
       await outboxClient
         .from("notification_outbox")

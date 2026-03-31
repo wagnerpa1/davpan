@@ -110,6 +110,20 @@ const runtimeCaching: import("serwist").RuntimeCaching[] = [
     }),
   },
   {
+    matcher: ({ url }: { url: URL }) => url.pathname.startsWith("/touren"),
+    handler: new NetworkFirst({
+      cacheName: "jdav-touren",
+      networkTimeoutSeconds: 4,
+      plugins: [
+        new ExpirationPlugin({
+          maxEntries: 20, // Strict limit for offline touren
+          maxAgeSeconds: 60 * 60 * 24 * 30,
+        }),
+      ],
+    }),
+  },
+  
+  {
     matcher: ({ request, url }: { request: Request; url: URL }) =>
       request.mode === "navigate" &&
       !NON_CACHEABLE_NAVIGATION_PREFIXES.some((prefix) =>
@@ -121,7 +135,7 @@ const runtimeCaching: import("serwist").RuntimeCaching[] = [
       plugins: [
         new ExpirationPlugin({
           maxEntries: 48,
-          maxAgeSeconds: 60 * 60 * 24,
+          maxAgeSeconds: 60 * 60 * 12,
         }),
       ],
     }),
@@ -148,7 +162,7 @@ const runtimeCaching: import("serwist").RuntimeCaching[] = [
       cacheName: "jdav-images",
       plugins: [
         new ExpirationPlugin({
-          maxEntries: 96,
+          maxEntries: 40,
           maxAgeSeconds: 60 * 60 * 24 * 30,
         }),
       ],
@@ -175,6 +189,31 @@ const serwist = new Serwist({
 });
 
 serwist.addEventListeners();
+
+self.addEventListener("message", (event) => {
+  const message = event.data as { type?: string } | undefined;
+  if (message?.type !== "CLEAR_AUTH_CACHES") {
+    return;
+  }
+
+  event.waitUntil(
+    caches
+      .keys()
+      .then((cacheNames) =>
+        Promise.all(
+          cacheNames
+            .filter((name) =>
+              [
+                "jdav-pages",
+                "jdav-touren",
+                "jdav-images",
+              ].includes(name),
+            )
+            .map((name) => caches.delete(name)),
+        ),
+      ),
+  );
+});
 
 self.addEventListener("push", (event) => {
   if (!event.data) {
@@ -240,3 +279,4 @@ self.addEventListener("notificationclick", (event) => {
       }),
   );
 });
+

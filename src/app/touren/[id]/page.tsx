@@ -575,6 +575,7 @@ export default async function TourDetailPage({
               minAge={tour.min_age || null}
               userBirthdate={userBirthdate}
               tourStartDate={tour.start_date}
+              registrationDeadline={tour.registration_deadline}
               isLoggedIn={isLoggedIn}
               childrenProfiles={childrenProfiles}
               availableMaterials={availableMaterials}

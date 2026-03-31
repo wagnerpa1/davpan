@@ -184,3 +184,69 @@ export async function updateReservationStatus(id: string, newStatus: string) {
   }
   return { success: true };
 }
+export async function bulkUpdateTourReservations(tourId: string, currentStatus: string, newStatus: string) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht eingeloggt." };
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (!canManageMaterial(profile?.role) && !isGuideRole(profile?.role)) {
+    return { error: "Keine Berechtigung." };
+  }
+
+  if (isGuideRole(profile?.role)) {
+    const { data: guideAssignment } = await supabase
+      .from("tour_guides")
+      .select("id")
+      .eq("tour_id", tourId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!guideAssignment) {
+      return { error: "Keine Berechtigung fuer diese Tour." };
+    }
+  }
+
+  // Fetch all reservations for this tour with current status
+  const { data: reservations, error: fetchErr } = await supabase
+    .from("material_reservations")
+    .select("id")
+    .eq("tour_id", tourId)
+    .eq("status", currentStatus);
+
+  if (fetchErr || !reservations) {
+    return { error: "Fehler beim Laden der Reservierungen." };
+  }
+
+  if (reservations.length === 0) {
+    return { success: true, count: 0 };
+  }
+
+  let successCount = 0;
+  for (const res of reservations) {
+    const { error: rpcError } = await supabase.rpc(
+      "apply_material_reservation_transition_atomic",
+      {
+        p_reservation_id: res.id,
+        p_expected_status: currentStatus,
+        p_new_status: newStatus,
+        p_idempotency_key: buildIdempotencyKey("bulk-material-status", [res.id, currentStatus, newStatus]),
+      }
+    );
+    if (!rpcError) successCount++;
+  }
+
+  revalidatePath(/admin/material/reservations);
+  revalidatePath(/touren/ + tourId);
+  revalidatePath(/guide/dashboard);
+
+  return { success: true, count: successCount };
+}

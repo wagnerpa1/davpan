@@ -52,7 +52,9 @@ function getAllowedOrigins(): string[] {
 }
 
 const nextConfig: NextConfig = {
-  turbopack: {},
+  turbopack: {
+    root: process.cwd(),
+  },
   experimental: {
     serverActions: {
       allowedOrigins: getAllowedOrigins(),

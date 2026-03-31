@@ -98,6 +98,7 @@ type TourUpdatePayload = {
     | "cost_info"
     | "requirements"
     | "status"
+    | "registration_deadline"
     | "min_age"]?: string | number | null;
 };
 
@@ -186,6 +187,9 @@ export async function createTour(formData: FormData) {
   const target_area = normalizeOptional(formData.get("target_area"));
   const start_date = normalizeOptional(formData.get("start_date"));
   const end_date = normalizeOptional(formData.get("end_date")) || start_date;
+  const registration_deadline = normalizeOptional(
+    formData.get("registration_deadline"),
+  );
   const meeting_point = normalizeOptional(formData.get("meeting_point"));
   const meeting_time = normalizeOptional(formData.get("meeting_time"));
   const difficulty = normalizeOptional(formData.get("difficulty"));
@@ -231,6 +235,7 @@ export async function createTour(formData: FormData) {
       target_area,
       start_date,
       end_date,
+      registration_deadline,
       meeting_point,
       meeting_time,
       difficulty: difficulty || null,
@@ -330,6 +335,7 @@ export async function updateTour(tourId: string, formData: FormData) {
     "target_area",
     "start_date",
     "end_date",
+    "registration_deadline",
     "meeting_point",
     "meeting_time",
     "difficulty",
@@ -528,9 +534,7 @@ async function _doSyncTourStatuses() {
     .from("tours")
     .update({ status: "completed" })
     .lt("end_date", today)
-    .neq("status", "completed")
     .select("id");
-
   if (error) {
     console.error("Error syncing tour statuses:", error);
     return { error: error.message };

@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import { buildIdempotencyKey } from "@/lib/idempotency";
@@ -72,7 +72,7 @@ export async function registerForTour(formData: FormData) {
         birthdate = child.birthdate;
         actorDisplayName = child.full_name || "Kind";
       } else {
-        return { error: "Ungültiges Kind-Profil." };
+        return { error: "Ung�ltiges Kind-Profil." };
       }
     } else {
       const { data: profile } = await supabase
@@ -95,7 +95,7 @@ export async function registerForTour(formData: FormData) {
 
       const isUnderMinAge = age < tour.min_age;
       if (isUnderMinAge) {
-        // Registrierung bleibt bewusst möglich (Guide kann Ausnahme manuell prüfen/bestätigen).
+        // Registrierung bleibt bewusst m�glich (Guide kann Ausnahme manuell pr�fen/best�tigen).
       }
 
       // We allow the registration even if too young, but it will be pending/waitlisted
@@ -166,14 +166,14 @@ export async function registerForTour(formData: FormData) {
         rpcError.code === "23505" ||
         errorMsg.includes("Already registered")
       ) {
-        return { error: "Für diese Tour bereits angemeldet." };
+        return { error: "F�r diese Tour bereits angemeldet." };
       }
 
       if (errorMsg.includes("Material not available")) {
         await dispatchNotification(supabase, {
           type: "material",
-          title: "Materialreservierung nicht möglich",
-          body: `Die Materialreservierung für "${tour.title}" konnte nicht abgeschlossen werden.`,
+          title: "Materialreservierung nicht m�glich",
+          body: `Die Materialreservierung f�r "${tour.title}" konnte nicht abgeschlossen werden.`,
           payload: {
             tour_id: tourId,
             status: "failed",
@@ -185,7 +185,7 @@ export async function registerForTour(formData: FormData) {
         });
 
         return {
-          error: "Material ist leider nicht mehr verfügbar.",
+          error: "Material ist leider nicht mehr verf�gbar.",
         };
       }
 
@@ -213,8 +213,8 @@ export async function registerForTour(formData: FormData) {
             : "Neue Tour-Anmeldung",
         body:
           status === "waitlist"
-            ? `${actorDisplayName} steht jetzt auf der Warteliste für "${tour.title}".`
-            : `${actorDisplayName} hat sich für "${tour.title}" angemeldet (pending).`,
+            ? `${actorDisplayName} steht jetzt auf der Warteliste f�r "${tour.title}".`
+            : `${actorDisplayName} hat sich f�r "${tour.title}" angemeldet (pending).`,
         payload: {
           tour_id: tourId,
           status,
@@ -230,7 +230,7 @@ export async function registerForTour(formData: FormData) {
         await dispatchToUsers(supabase, materialManagerIds, {
           type: "material",
           title: "Neue Materialreservierung",
-          body: `${actorDisplayName} hat Material für "${tour.title}" angefragt.`,
+          body: `${actorDisplayName} hat Material f�r "${tour.title}" angefragt.`,
           payload: {
             tour_id: tourId,
             status,
@@ -316,8 +316,8 @@ export async function cancelRegistration(participantId: string) {
       // Only notify the promoted participant (not guides, they get it from sync_tour_status)
       await dispatchNotification(supabase, {
         type: "waitlist",
-        title: "Du bist nachgerückt",
-        body: `Für "${tourData?.title || "die Tour"}" ist ein Platz frei geworden. Du bist jetzt bestätigt.`,
+        title: "Du bist nachger�ckt",
+        body: `F�r "${tourData?.title || "die Tour"}" ist ein Platz frei geworden. Du bist jetzt best�tigt.`,
         payload: {
           tour_id: reg.tour_id,
           participant_id: promoted.promoted_user_id,
@@ -348,7 +348,7 @@ export async function cancelRegistration(participantId: string) {
 
   if (resItems && resItems.length > 0) {
     for (const resItem of resItems) {
-      // Bestand nur zurückgeben, wenn die Anfrage bereits reserviert/ausgegeben wurde.
+      // Bestand nur zur�ckgeben, wenn die Anfrage bereits reserviert/ausgegeben wurde.
       if (resItem.status === "reserved" || resItem.status === "on loan") {
         const { data: inv } = await supabase
           .from("material_inventory")
@@ -398,6 +398,69 @@ export async function cancelRegistration(participantId: string) {
         });
       }
     }
+  }
+
+  revalidatePath(`/touren/${tourId}`);
+  return { success: true };
+}
+
+export async function confirmWaitlistSpot(
+  participantId: string,
+  tourId: string,
+) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return { success: false, error: "Nicht authentifiziert" };
+  }
+
+  const { error } = await supabase.rpc("confirm_waitlist_promotion", {
+    p_participant_id: participantId,
+  });
+
+  if (error) {
+    console.error("Waitlist confirm error:", error);
+    return {
+      success: false,
+      error: "Best�tigung fehlgeschlagen. Evtl. ist die 24h-Frist abgelaufen.",
+    };
+  }
+
+  revalidatePath(`/touren/${tourId}`);
+  return { success: true };
+}
+
+export async function updateParticipantMaterials(
+  tourId: string,
+  childId: string | null,
+  materials: { material_inventory_id: string; quantity: number }[],
+) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: "Nicht authentifiziert" };
+  }
+
+  const { error } = await supabase.rpc("update_my_tour_material", {
+    p_tour_id: tourId,
+    p_child_profile_id: childId,
+    p_materials: materials,
+  });
+
+  if (error) {
+    console.error("Material update error:", error);
+    return {
+      success: false,
+      error:
+        "Material konnte nicht aktualisiert werden. Eventuell ist die Frist abgelaufen oder der Bestand nicht ausreichend.",
+    };
   }
 
   revalidatePath(`/touren/${tourId}`);

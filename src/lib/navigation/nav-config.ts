@@ -19,29 +19,26 @@ export interface AppNavigation {
 export function buildNavigation(userRole?: string | null): AppNavigation {
   const isGuideOrAdmin = userRole === "guide" || userRole === "admin";
   const isAdmin = userRole === "admin";
-  const isMaterialwart = userRole === "materialwart";
   const canOpenMaterialAdmin = canAccessMaterialAdmin(userRole);
   const canOpenReservations = canManageMaterial(userRole);
 
   const groups: AppNavGroup[] = [];
 
-  if (!isMaterialwart) {
-    groups.push({
-      label: "Allgemein",
-      items: [
-        {
-          label: "Profil",
-          href: "/profile",
-          description: "Persoenliche Daten und Einstellungen",
-        },
-        {
-          label: "Dokumente",
-          href: "/dokumente",
-          description: "Formulare, Vereinsregeln und Packlisten",
-        },
-      ],
-    });
-  }
+  groups.push({
+    label: "Allgemein",
+    items: [
+      {
+        label: "Profil",
+        href: "/profile",
+        description: "Persoenliche Daten und Einstellungen",
+      },
+      {
+        label: "Dokumente",
+        href: "/dokumente",
+        description: "Formulare, Vereinsregeln und Packlisten",
+      },
+    ],
+  });
 
   if (canOpenMaterialAdmin || canOpenReservations) {
     const materialItems: AppNavItem[] = [];
@@ -98,6 +95,11 @@ export function buildNavigation(userRole?: string | null): AppNavigation {
           label: "Observability",
           href: "/admin/observability",
           description: "Metriken, Outbox und Audit-Logs",
+        },
+        {
+          label: "Datenexport",
+          href: "/admin/export",
+          description: "Touren und Teilnehmer als CSV exportieren",
         },
       ],
     });

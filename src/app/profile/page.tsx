@@ -1,5 +1,10 @@
 import { redirect } from "next/navigation";
 import {
+  CreateChildInviteAction,
+  RedeemChildInvitePopup,
+} from "@/components/profile/ChildInviteCards";
+import { DeleteAccountButton } from "@/components/profile/DeleteAccountButton";
+import {
   type NotificationPreference,
   NotificationPreferencesPanel,
   type TourGroupItem,
@@ -37,11 +42,29 @@ export default async function ProfilePage() {
   // If role is parent, fetch children
   let children: ChildProfile[] = [];
   if (profile?.role === "parent") {
-    const { data: fetchChildren } = await supabase
+    // Legacy 1:N relations
+    const { data: legacyChildren } = await supabase
       .from("child_profiles")
       .select("*")
       .eq("parent_id", user.id);
-    children = fetchChildren || [];
+
+    // New M:N relations
+    const { data: relationChildren } = await supabase
+      .from("child_profiles")
+      .select("*, parent_child_relations!inner(parent_id)")
+      .eq("parent_child_relations.parent_id", user.id);
+
+    const childrenMap = new Map<string, ChildProfile>();
+    legacyChildren?.forEach((c) => {
+      childrenMap.set(c.id, c);
+    });
+    relationChildren?.forEach((c) => {
+      // Remove relation property for cleaner mapping
+      const { parent_child_relations: _unused, ...rest } = c;
+      childrenMap.set(c.id, rest as ChildProfile);
+    });
+
+    children = Array.from(childrenMap.values());
   }
 
   const defaultPreferences: NotificationPreference = {
@@ -106,12 +129,12 @@ export default async function ProfilePage() {
   }));
 
   return (
-    <div className="container mx-auto max-w-2xl px-4 py-8">
+    <div className="container mx-auto max-w-2xl px-4 py-6">
       <h1 className="mb-6 text-3xl font-bold tracking-tight text-slate-900">
         Profil & Einstellungen
       </h1>
 
-      <div className="space-y-6 rounded-2xl bg-white p-6 shadow-sm border border-slate-200">
+      <div className="flex flex-col gap-3 rounded-card bg-white p-6 shadow-sm border border-slate-200">
         <div>
           <h2 className="text-xl font-semibold">Persönliche Daten</h2>
           <p className="text-sm text-slate-500">
@@ -123,10 +146,10 @@ export default async function ProfilePage() {
           action="/api/profile/update"
           method="POST"
           successKey="profile"
-          className="space-y-5"
+          className="flex flex-col gap-3"
         >
           {/* In future steps: Add full edit form with emergency contact and medical info */}
-          <div className="space-y-1.5">
+          <div className="flex flex-col gap-1">
             <label
               htmlFor="profile-email"
               className="block text-sm font-medium text-slate-700"
@@ -138,11 +161,11 @@ export default async function ProfilePage() {
               type="text"
               disabled
               defaultValue={user.email}
-              className="mt-1 block w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-500"
+              className="block w-full rounded-input border border-slate-300 bg-slate-50 px-3 py-1.5 text-sm text-slate-500"
             />
           </div>
 
-          <div className="space-y-1.5">
+          <div className="flex flex-col gap-1">
             <label
               htmlFor="profile-full-name"
               className="block text-sm font-medium text-slate-700"
@@ -154,39 +177,56 @@ export default async function ProfilePage() {
               type="text"
               name="full_name"
               defaultValue={profile?.full_name || ""}
-              className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
+              className="block w-full rounded-input border border-slate-300 px-3 py-1.5 text-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
               placeholder="Dein Vor- und Nachname"
             />
           </div>
 
-          <div className="space-y-1.5">
+          <div className="flex flex-col gap-1">
             <label
-              htmlFor="profile-role-display"
+              htmlFor="profile-role"
               className="block text-sm font-medium text-slate-700"
             >
               Konto-Typ / Rolle
             </label>
-            <input
-              id="profile-role-display"
-              type="text"
-              disabled
-              defaultValue={
-                profile?.role === "parent"
-                  ? "Elternkonto"
-                  : profile?.role === "guide"
+            {["guide", "materialwart", "admin"].includes(
+              profile?.role || "",
+            ) ? (
+              <input
+                id="profile-role-read-only"
+                type="text"
+                disabled
+                defaultValue={
+                  profile?.role === "guide"
                     ? "Tourenleiter (Guide)"
                     : profile?.role === "materialwart"
                       ? "Materialwart"
                       : profile?.role === "admin"
                         ? "Administrator"
                         : "Mitglied"
-              }
-              className="mt-1 block w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-500 capitalize"
-            />
+                }
+                className="block w-full rounded-input border border-slate-300 bg-slate-50 px-3 py-1.5 text-sm text-slate-500 capitalize"
+              />
+            ) : (
+              <select
+                id="profile-role"
+                name="role"
+                defaultValue={profile?.role || "member"}
+                className="block w-full rounded-input border border-slate-300 px-3 py-1.5 text-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
+              >
+                <option value="member">Mitglied</option>
+                <option value="parent">Elternkonto</option>
+              </select>
+            )}
+            <p className="pt-0.5 text-xs text-slate-500">
+              {["guide", "materialwart", "admin"].includes(profile?.role || "")
+                ? "Deine Rolle wird durch Administratoren verwaltet"
+                : "Wähle zwischen Mitgliedskonto und Elternkonto"}
+            </p>
           </div>
 
           {profile?.role !== "parent" && (
-            <div className="space-y-1.5">
+            <div className="flex flex-col gap-1">
               <label
                 htmlFor="profile-birthdate"
                 className="block text-sm font-medium text-slate-700"
@@ -198,46 +238,48 @@ export default async function ProfilePage() {
                 type="date"
                 name="birthdate"
                 defaultValue={profile?.birthdate || ""}
-                className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
+                className="block w-full rounded-input border border-slate-300 px-3 py-1.5 text-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
               />
             </div>
           )}
 
-          <div className="space-y-1.5">
-            <label
-              htmlFor="profile-phone"
-              className="block text-sm font-medium text-slate-700"
-            >
-              Persönliche Telefonnummer
-            </label>
-            <input
-              id="profile-phone"
-              type="tel"
-              name="phone"
-              defaultValue={profile?.phone || ""}
-              placeholder="Deine Handynummer"
-              className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
-            />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="flex flex-col gap-1">
+              <label
+                htmlFor="profile-phone"
+                className="block text-sm font-medium text-slate-700"
+              >
+                Persönliche Telefonnummer
+              </label>
+              <input
+                id="profile-phone"
+                type="tel"
+                name="phone"
+                defaultValue={profile?.phone || ""}
+                placeholder="Deine Handynummer"
+                className="block w-full rounded-input border border-slate-300 px-3 py-1.5 text-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label
+                htmlFor="profile-emergency-phone"
+                className="block text-sm font-medium text-slate-700"
+              >
+                Notfallkontakt (Telefon)
+              </label>
+              <input
+                id="profile-emergency-phone"
+                type="tel"
+                name="emergency_phone"
+                defaultValue={profile?.emergency_phone || ""}
+                placeholder="Wird nur Guides angezeigt"
+                className="block w-full rounded-input border border-slate-300 px-3 py-1.5 text-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
+              />
+            </div>
           </div>
 
-          <div className="space-y-1.5">
-            <label
-              htmlFor="profile-emergency-phone"
-              className="block text-sm font-medium text-slate-700"
-            >
-              Notfallkontakt (Telefon)
-            </label>
-            <input
-              id="profile-emergency-phone"
-              type="tel"
-              name="emergency_phone"
-              defaultValue={profile?.emergency_phone || ""}
-              placeholder="Wird nur Guides angezeigt"
-              className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
-            />
-          </div>
-
-          <div className="space-y-1.5">
+          <div className="flex flex-col gap-1">
             <label
               htmlFor="profile-medical-notes"
               className="block text-sm font-medium text-slate-700"
@@ -250,11 +292,11 @@ export default async function ProfilePage() {
               defaultValue={profile?.medical_notes || ""}
               placeholder="Allergien, Medikamente etc. (nur für Guides sichtbar)"
               rows={3}
-              className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
+              className="block w-full rounded-input border border-slate-300 px-3 py-1.5 text-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
             />
           </div>
 
-          <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+          <div className="rounded-card border border-slate-100 bg-slate-50 p-3">
             <label className="flex items-start gap-3 cursor-pointer">
               <input
                 type="checkbox"
@@ -262,11 +304,11 @@ export default async function ProfilePage() {
                 defaultChecked={profile?.image_consent}
                 className="mt-1 h-4 w-4 rounded border-slate-300 text-jdav-green focus:ring-jdav-green"
               />
-              <div className="text-sm">
+              <div className="space-y-1.5 text-sm">
                 <span className="font-bold text-slate-900">
                   Einwilligung zur Verwendung von Bildern
                 </span>
-                <p className="mt-1 text-xs text-slate-500 leading-relaxed">
+                <p className="text-xs text-slate-500 leading-relaxed">
                   Ich erkläre mich damit einverstanden, dass Fotos von mir, die
                   im Rahmen von Vereinsaktivitäten entstehen, auf der Webseite,
                   in Druckerzeugnissen oder Social-Media-Kanälen der Sektion
@@ -279,7 +321,7 @@ export default async function ProfilePage() {
           <AnimatedSubmitButton
             successKey="profile"
             successLabel="Gespeichert"
-            className="inline-flex w-full items-center justify-center rounded-md bg-jdav-green px-4 py-2 font-medium text-white transition-colors hover:bg-jdav-green-dark"
+            className="inline-flex w-full items-center justify-center rounded-button bg-jdav-green px-4 py-2 font-medium text-white transition-colors hover:bg-jdav-green-dark"
           >
             Profil speichern
           </AnimatedSubmitButton>
@@ -293,7 +335,7 @@ export default async function ProfilePage() {
       />
 
       {profile?.role === "parent" && (
-        <div className="mt-8 space-y-6 rounded-2xl bg-white p-6 shadow-sm border border-slate-200">
+        <div className="mt-6 flex flex-col gap-3 rounded-card bg-white p-6 shadow-sm border border-slate-200">
           <div>
             <h2 className="text-xl font-semibold">Meine Kinder</h2>
             <p className="text-sm text-slate-500">
@@ -302,14 +344,14 @@ export default async function ProfilePage() {
           </div>
 
           {children.length > 0 ? (
-            <div className="space-y-6">
+            <div className="flex flex-col gap-3">
               {children.map((child) => (
                 <div
                   key={child.id}
-                  className="rounded-xl border border-slate-200 overflow-hidden"
+                  className="rounded-card border border-slate-200 overflow-hidden"
                 >
                   <details className="group">
-                    <summary className="flex cursor-pointer items-center justify-between bg-slate-50 p-4 transition-colors hover:bg-slate-100">
+                    <summary className="flex cursor-pointer items-center justify-between bg-slate-50 p-3 transition-colors hover:bg-slate-100">
                       <div>
                         <span className="block font-bold text-slate-900">
                           {child.full_name}
@@ -323,17 +365,17 @@ export default async function ProfilePage() {
                         Details / Bearbeiten
                       </span>
                     </summary>
-                    <div className="p-4 bg-white border-t border-slate-100">
+                    <div className="p-3 bg-white border-t border-slate-100">
                       <AsyncForm
                         action="/api/profile/child"
                         method="POST"
                         successKey="child_updated"
                         successChildId={child.id}
-                        className="space-y-5"
+                        className="flex flex-col gap-3"
                       >
                         <input type="hidden" name="child_id" value={child.id} />
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                          <div className="space-y-1.5">
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                          <div className="flex flex-col gap-1">
                             <label
                               htmlFor={`${child.id}-child-name`}
                               className="block text-xs font-medium text-slate-700 uppercase tracking-wider"
@@ -346,10 +388,10 @@ export default async function ProfilePage() {
                               name="child_name"
                               defaultValue={child.full_name}
                               required
-                              className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
+                              className="block w-full rounded-input border border-slate-300 px-3 py-1.5 text-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
                             />
                           </div>
-                          <div className="space-y-1.5">
+                          <div className="flex flex-col gap-1">
                             <label
                               htmlFor={`${child.id}-child-birthdate`}
                               className="block text-xs font-medium text-slate-700 uppercase tracking-wider"
@@ -362,11 +404,11 @@ export default async function ProfilePage() {
                               name="child_birthdate"
                               defaultValue={child.birthdate}
                               required
-                              className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
+                              className="block w-full rounded-input border border-slate-300 px-3 py-1.5 text-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
                             />
                           </div>
                         </div>
-                        <div className="space-y-1.5">
+                        <div className="flex flex-col gap-1">
                           <label
                             htmlFor={`${child.id}-medical-notes`}
                             className="block text-xs font-medium text-slate-700 uppercase tracking-wider"
@@ -379,10 +421,10 @@ export default async function ProfilePage() {
                             defaultValue={child.medical_notes || ""}
                             placeholder="Allergien, Medikamente etc."
                             rows={2}
-                            className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
+                            className="block w-full rounded-input border border-slate-300 px-3 py-1.5 text-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
                           />
                         </div>
-                        <div className="rounded-lg bg-slate-50 p-3">
+                        <div className="rounded-card bg-slate-50 p-4">
                           <label className="flex items-start gap-3 cursor-pointer">
                             <input
                               type="checkbox"
@@ -390,11 +432,11 @@ export default async function ProfilePage() {
                               defaultChecked={child.image_consent ?? false}
                               className="mt-1 h-3.5 w-3.5 rounded border-slate-300 text-jdav-green focus:ring-jdav-green"
                             />
-                            <div className="text-[11px] leading-tight text-slate-600">
+                            <div className="space-y-1 text-[11px] leading-tight text-slate-600">
                               <span className="font-bold text-slate-900">
                                 Einwilligung zur Bildverwendung
                               </span>
-                              <p className="mt-0.5">
+                              <p>
                                 Ich erlaube die Verwendung von Fotos dieses
                                 Kindes für Vereinszwecke.
                               </p>
@@ -406,24 +448,36 @@ export default async function ProfilePage() {
                             successKey="child_updated"
                             successChildId={child.id}
                             successLabel="Gespeichert"
-                            className="rounded-md bg-slate-800 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-slate-700"
+                            className="rounded-button bg-slate-800 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-slate-700"
                           >
                             Änderungen speichern
                           </AnimatedSubmitButton>
                         </div>
-                      </AsyncForm>
+                      </AsyncForm>{" "}
+                      <CreateChildInviteAction childId={child.id} />{" "}
                     </div>
                   </details>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
+            <div className="rounded-card border border-dashed border-slate-300 p-3 text-center text-sm text-slate-500">
               Du hast noch keine Kinderprofile angelegt.
             </div>
           )}
 
-          <div className="mt-8 border-t border-slate-100 pt-8">
+          <div className="mt-6 space-y-2">
+            <h3 className="text-lg font-bold text-slate-900">
+              Kind per Einladungscode hinzufügen
+            </h3>
+            <p className="text-sm text-slate-500">
+              Wenn ein anderer Elternteil das Kind bereits angelegt hat, kannst
+              du es hier per Code verknüpfen.
+            </p>
+            <RedeemChildInvitePopup />
+          </div>
+
+          <div className="mt-6 border-t border-slate-100 pt-8">
             <h3 className="mb-4 text-lg font-bold text-slate-900">
               Neues Kind hinzufügen
             </h3>
@@ -431,10 +485,10 @@ export default async function ProfilePage() {
               action="/api/profile/child"
               method="POST"
               successKey="child_created"
-              className="space-y-5 rounded-2xl bg-slate-50 p-6 border border-slate-100"
+              className="flex flex-col gap-3 rounded-card bg-slate-50 p-4 border border-slate-100"
             >
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-1.5">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="flex flex-col gap-1">
                   <label
                     htmlFor="new-child-name"
                     className="block text-xs font-medium text-slate-700 uppercase tracking-wider"
@@ -447,10 +501,10 @@ export default async function ProfilePage() {
                     name="child_name"
                     placeholder="Vor- und Nachname"
                     required
-                    className="mt-1 block w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
+                    className="block w-full rounded-input border border-slate-200 bg-white px-3 py-1.5 text-sm shadow-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
                   />
                 </div>
-                <div className="space-y-1.5">
+                <div className="flex flex-col gap-1">
                   <label
                     htmlFor="new-child-birthdate"
                     className="block text-xs font-medium text-slate-700 uppercase tracking-wider"
@@ -462,11 +516,11 @@ export default async function ProfilePage() {
                     type="date"
                     name="child_birthdate"
                     required
-                    className="mt-1 block w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
+                    className="block w-full rounded-input border border-slate-200 bg-white px-3 py-1.5 text-sm shadow-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
                   />
                 </div>
               </div>
-              <div className="space-y-1.5">
+              <div className="flex flex-col gap-1">
                 <label
                   htmlFor="new-child-medical-notes"
                   className="block text-xs font-medium text-slate-700 uppercase tracking-wider"
@@ -478,21 +532,21 @@ export default async function ProfilePage() {
                   name="medical_notes"
                   placeholder="Z.B. Asthma, Nussallergie..."
                   rows={2}
-                  className="mt-1 block w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
+                  className="block w-full rounded-input border border-slate-200 bg-white px-3 py-1.5 text-sm shadow-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
                 />
               </div>
-              <div className="rounded-xl border border-slate-200 bg-white p-4">
+              <div className="rounded-card border border-slate-200 bg-white p-3">
                 <label className="flex items-start gap-3 cursor-pointer">
                   <input
                     type="checkbox"
                     name="image_consent"
                     className="mt-1 h-4 w-4 rounded border-slate-300 text-jdav-green focus:ring-jdav-green"
                   />
-                  <div className="text-xs leading-relaxed text-slate-600">
+                  <div className="space-y-1.5 text-xs leading-relaxed text-slate-600">
                     <span className="font-bold text-slate-900 uppercase tracking-wider">
                       Bild-Einwilligung erteilen
                     </span>
-                    <p className="mt-1">
+                    <p>
                       Hiermit willige ich in die Veröffentlichung von
                       Bildmaterial meines Kindes für Vereinszwecke ein.
                     </p>
@@ -502,7 +556,7 @@ export default async function ProfilePage() {
               <AnimatedSubmitButton
                 successKey="child_created"
                 successLabel="Kind hinzugefügt"
-                className="inline-flex w-full items-center justify-center rounded-xl bg-jdav-green px-4 py-2.5 text-sm font-black text-white shadow-md transition-all hover:bg-jdav-green-dark hover:shadow-lg"
+                className="inline-flex w-full items-center justify-center rounded-card bg-jdav-green px-4 py-2.5 text-sm font-black text-white shadow-md transition-all hover:bg-jdav-green-dark hover:shadow-lg"
               >
                 Kind hinzufügen
               </AnimatedSubmitButton>
@@ -510,6 +564,21 @@ export default async function ProfilePage() {
           </div>
         </div>
       )}
+      {/* Gefahrenzone: Konto loeschen */}
+      <div className="mt-8 flex flex-col gap-3 rounded-card border border-red-200 bg-red-50 p-6 shadow-sm">
+        <div>
+          <h2 className="text-xl font-semibold text-red-700">
+            Account loeschen
+          </h2>
+          <p className="mt-1 text-sm text-red-600">
+            Hier kannst du dein Benutzerkonto endgueltig loeschen. Dein Profil
+            wird in der Historie und auf vergangenen Touren als "Geloeschter
+            Nutzer" anonymisiert. Wir entfernen alle erfassten Notfalldaten und
+            Kontaktdetails unwiderruflich.
+          </p>
+        </div>
+        <DeleteAccountButton />
+      </div>
     </div>
   );
 }

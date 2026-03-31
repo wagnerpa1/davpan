@@ -6,6 +6,10 @@ import { syncTourStatuses } from "@/app/actions/tour-management";
 import { TourCard } from "@/components/tours/TourCard";
 import { TourFilters } from "@/components/tours/TourFilters";
 import { getCurrentUserProfile } from "@/lib/auth";
+import {
+  getTourVisibilityDateLimit,
+  shouldApplyTourVisibilityLimit,
+} from "@/lib/tours/visibility";
 import { createClient } from "@/utils/supabase/server";
 
 type TourCardItem = ComponentProps<typeof TourCard>["tour"];
@@ -160,6 +164,14 @@ export default async function TourenPage({
   }
   if (difficultyFilter) query = query.eq("difficulty", difficultyFilter);
   if (groupFilter) query = query.eq("group", groupFilter);
+
+  // Business logic: Filter future tours by visibility date for members.
+  const visibilityDateLimit = getTourVisibilityDateLimit(new Date());
+
+  // Hide future "planung" or regular tours from non-guides if date limit exceeded
+  if (shouldApplyTourVisibilityLimit(authContext.role)) {
+    query = query.lt("start_date", visibilityDateLimit);
+  }
 
   const { data: tours, error } = await query.order("start_date", {
     ascending: sortBy === "date_asc",

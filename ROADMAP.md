@@ -1,43 +1,53 @@
-﻿# Master-Roadmap: Business Logic & Feature Refinements
+# Master-Roadmap: Business Logic & Feature Refinements
 
 ## Zweck dieses Dokuments
-Dieses Dokument ersetzt die alte technische Roadmap (P0-P3.3), da alle Datenintegritäts- und Infrastruktur-Maßnahmen erfolgreich abgeschlossen wurden. 
-Hier wird nun die Umsetzung der fachlichen Geschäftslogiken (Business Logic) der JDAV/DAV Pfarrkirchen Sektion getrackt.
+Diese Roadmap trackt den fachlichen Umsetzungsstand der JDAV/DAV Pfarrkirchen Plattform.
+Alle Infrastruktur- und Integritaetsmassnahmen aus der alten P0-P3.3 Roadmap sind abgeschlossen.
+
+Stand: 2026-03-31
 
 ---
 
 ## Phase 1: Eltern-Kind-Verwaltung (M:N)
 **Ziel:** Ein Kind-Profil kann von beiden Elternteilen verwaltet werden.
-- [ ] **DB-Migration:** Neue Tabelle `parent_child_relations` zur Ablösung der alten 1:N Logik erstellen.
-- [ ] **Backend/Server Actions:** Einladungscode-System aufbauen (Code erzeugen).
-- [ ] **Sicherheit (Einlösen):** Beim Einlösen des Codes das Geburtsdatum/Alter des Kindes als 2. Faktor abfragen.
-- [ ] **UI:** Ansicht im Profil zum Generieren und Eingeben des Codes.
+- [x] DB-Migration: Tabelle `parent_child_relations` als Abloesung der alten 1:N Logik
+- [x] Einladungscode-System zum Verknuepfen von Elternteilen
+- [x] Sicherheitsfaktor beim Einloesen: Geburtsdatum als zusaetzliche Pruefung
+- [x] Profil-UI zum Erstellen und Einloesen von Einladungen
 
 ## Phase 2: Touren-Sichtbarkeit, Fristen & Lifecycle
 **Ziel:** Feingranulares Rechtemanagement und zeitliche Steuerung von Touren.
-- [ ] **Sichtbarkeits-Regel (Dezember):** Touren im Status "Planung" (im aktuellen Jahr) sichtbar machen (ohne Anmeldung). Touren fürs *nächste Jahr* erst ab Anfang Dezember im System anzeigen.
-- [ ] **Anmeldefrist:** Pflicht-/Optionales Feld bei der Tourenerstellung hinzufügen.
-- [ ] **Altersprüfung:** Prüfung anpassen -> Alter zählt exakt am *Tag der Anmeldung*, nicht am Startdatum der Tour.
-- [ ] **Löschen & Absagen:** 
-    - Admin-Recht für hartes Löschen (Hard Delete) fehlerhafter Touren einbauen.
-    - Status "Canceled" (Tour absagen durch Guide) verankern -> Löst Benachrichtigungen an alle aus.
-- [ ] **Co-Guides:** Rechte-Checker so anpassen, dass Co-Guides 1:1 die gleichen Bearbeitungsrechte bezüglich Teilnehmern/Material auf der Tour haben wie der Haupt-Guide.
+- [x] Dezember-Regel fuer Sichtbarkeit von Folgejahres-Touren
+- [x] Anmeldefrist-Feld in Erstellung/Bearbeitung
+- [x] Alterspruefung am Tag der Anmeldung
+- [x] Hard Delete fuer Admins und Status `canceled` fuer Guide-Absagen
+- [x] Co-Guides mit gleichen Teilnehmer/Material-Rechten wie Hauptguide
 
 ## Phase 3: Warteliste & Material
 **Ziel:** Automatisierung und Limitierung von Teilnahmen.
-- [ ] **Wartelisten-Limit:** Max. 10 Plätze pro Tour (z. B. Check-Constraint oder Backend-Check).
-- [ ] **24h-Frist:** "First Come, First Serve" Nachrück-Regelung. Nachrücker haben strikt 24h Zeit zum Bestätigen.
-- [ ] **Material-Anpassung:** Teilnehmer dürfen ihr ausgewähltes Material noch bis zum Ablauf der *Anmeldefrist* eigenständig bearbeiten.
+- [x] Wartelisten-Limit: maximal 10 Plaetze pro Tour
+- [x] 24h Nachrueck-Frist mit `pending_confirmation`
+- [x] Material kann bis zur Anmeldefrist vom Teilnehmer angepasst werden
 
 ## Phase 4: E-Mail SMTP & Offline PWA Limits
-**Ziel:** Verlässliche Auslieferung und PWA Speicherschonung.
-- [ ] **E-Mail Dispatcher:** Eigenen SMTP per `nodemailer` o.ä. in `src/lib/notifications/email-dispatcher.ts` anbinden via generischen Env-Variablen (`SMTP_HOST`, `SMTP_PORT`, etc.).
-- [ ] **Trigger:** Jeder *Anmeldestatus-Wechsel* triggert ab sofort zwingend eine E-Mail an Betroffene. Keine separaten Push-Opt-Outs nötig.
-- [ ] **Offline Caching:** Serwist PWA-Service so limitieren, dass strikt nur die *nächsten 20 anstehenden Touren* und die *letzten 5 Berichte* offline verfügbar sind.
-- [ ] **Berichte (Archiv):** Berichte sind generell *öffentlich* sichtbar. Mit Erstellung des ersten Berichts wandert die Tour direkt ins Archiv. Keine extra Checkbox für Bildrechte nötig.
+**Ziel:** Verlaessliche Auslieferung und PWA-Speicherschonung.
+- [x] SMTP Dispatcher auf generischen Env-Variablen (`SMTP_HOST`, `SMTP_PORT`, ...)
+- [x] Jeder Anmeldestatus-Wechsel triggert zwingend E-Mail-Benachrichtigung
+- [x] Offline-Caching limitiert auf 20 Touren-Eintraege und 5 Berichts-Eintraege
+- [x] Berichte sind oeffentlich sichtbar und erster Bericht fuehrt Tour ins Archiv
+- [x] Bildrechte-Checkbox entfernt; Datenschutz-Hinweis bleibt sichtbar
 
 ## Phase 5: Exporte & Historie
 **Ziel:** Datenauswertung und Datenschutz.
-- [ ] **Admin-Export:** CSV/Excel-Exportfunktion für Admin, um *alle* geplanten Touren inkl. Teilnehmer-Daten des Folgejahres auszugeben.
-- [ ] **Nutzerlöschung:** Wenn ein Konto gelöscht wird, wird der Datensatz in eine Maskierung überführt -> Anzeige als "Gelöschter Nutzer" in Historie und Teilnehmerlisten, ohne dass alte Touren kaputtgehen.
-- [ ] **Notfallinfos:** Wird immer strikt aus den eigenen User-Settings gezogen und als Notfallkontakt dem Guide angezeigt.
+- [x] Admin-Export (CSV/Excel) fuer geplante Folgejahres-Touren inkl. Teilnehmerdaten
+- [x] Nutzerloeschung via Maskierung auf `Geloeschter Nutzer` ohne Historienbruch
+- [x] Notfallinfos werden aus User-Settings gezogen und Guides angezeigt
+
+---
+
+## Offene Spaeter-Themen (bewusst nicht blockierend)
+- [ ] Materialverfuegbarkeit mit datumsgenauer Verfuegbarkeitslogik (als spaeteres Todo)
+
+## Betriebsnotiz
+- Leaked Password Protection in Supabase ist im Free Plan nicht verfuegbar.
+  Die App kompensiert mit bestehenden Schutzmassnahmen und Monitoring.

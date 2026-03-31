@@ -57,7 +57,7 @@ export function TourCard({ tour }: TourCardProps) {
       href={`/touren/${tour.id}`}
       className="motion-press block"
     >
-      <div className="motion-card motion-enter group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:border-jdav-green hover:shadow-md">
+      <div className="motion-card motion-enter group relative overflow-hidden rounded-card border border-slate-200 bg-white shadow-sm transition-all hover:border-jdav-green hover:shadow-md">
         {/* Capacity Bar */}
         <div className={cn("h-1.5 w-full", barColor)} />
 

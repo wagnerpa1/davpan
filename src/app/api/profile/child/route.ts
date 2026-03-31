@@ -43,6 +43,33 @@ export async function POST(req: NextRequest) {
 
   if (childId) {
     savedAction = "child_updated";
+    // Authorize update for legacy owner or linked parent (M:N relation)
+    const { data: child, error: childError } = await supabase
+      .from("child_profiles")
+      .select("id, parent_id")
+      .eq("id", childId)
+      .single();
+
+    if (childError || !child) {
+      return NextResponse.json({ error: "Child not found" }, { status: 404 });
+    }
+
+    let canUpdate = child.parent_id === user.id;
+    if (!canUpdate) {
+      const { data: relation } = await supabase
+        .from("parent_child_relations")
+        .select("parent_id")
+        .eq("child_id", childId)
+        .eq("parent_id", user.id)
+        .maybeSingle();
+
+      canUpdate = Boolean(relation);
+    }
+
+    if (!canUpdate) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     // Update existing child
     const { error } = await supabase
       .from("child_profiles")
@@ -52,8 +79,7 @@ export async function POST(req: NextRequest) {
         medical_notes: medicalNotes,
         image_consent: imageConsent,
       })
-      .eq("id", childId)
-      .eq("parent_id", user.id);
+      .eq("id", childId);
 
     if (error) {
       console.error("Error updating child:", error);

@@ -18,9 +18,17 @@
   --color-jdav-green: #76a355;
   --color-jdav-green-light: #94b97a;
   --color-jdav-green-dark: #5a8040;
+
+  /* Global Component Radiuses based on TourCard (1rem = 16px = rounded-2xl) */
+  --radius-card: var(--radius);
+  --radius-button: var(--radius);
+  --radius-input: calc(var(--radius) - 4px);
 }
 
 :root {
+  /* Global border radius reference derived from TourCards (1rem = rounded-2xl) */
+  --radius: 1rem;
+
   --background: #f8fafc; /* light slate/gray as default bg */
   --foreground: #0f172a;
 
