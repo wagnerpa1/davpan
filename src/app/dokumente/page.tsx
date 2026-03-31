@@ -1,29 +1,60 @@
+import { Download, File, Settings } from "lucide-react";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { getCurrentUserProfile } from "@/lib/auth";
 import { createClient } from "@/utils/supabase/server";
-import { format } from "date-fns";
-import { de } from "date-fns/locale";
-import { File, Download } from "lucide-react";
+
+interface DocumentItem {
+  id: string;
+  title: string;
+  file_url: string;
+  category: string;
+}
 
 export default async function DokumentePage() {
   const supabase = await createClient();
+
+  const authContext = await getCurrentUserProfile();
+
+  if (!authContext.user) {
+    redirect("/login");
+  }
 
   const { data: documents } = await supabase
     .from("documents")
     .select("*")
     .order("category", { ascending: true });
-    
-  // Group documents by category
-  const groupedDocs = documents?.reduce((acc: any, doc: any) => {
-    (acc[doc.category] = acc[doc.category] || []).push(doc);
-    return acc;
-  }, {});
+
+  const groupedDocs = documents?.reduce<Record<string, DocumentItem[]>>(
+    (acc, doc) => {
+      const typedDoc = doc as DocumentItem;
+      const categoryDocs = acc[typedDoc.category] || [];
+      categoryDocs.push(typedDoc);
+      acc[typedDoc.category] = categoryDocs;
+      return acc;
+    },
+    {},
+  );
 
   return (
     <div className="container mx-auto max-w-3xl px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-          Dokumente & Downloads
-        </h1>
-        <p className="mt-2 text-slate-600">Wichtige Formulare und Leitfäden der Sektion.</p>
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+            Dokumente & Downloads
+          </h1>
+          <p className="mt-2 text-slate-600">
+            Wichtige Formulare und Leitfäden der Sektion.
+          </p>
+        </div>
+        {authContext.role === "admin" && (
+          <Link
+            href="/admin/dokumente"
+            className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-4 py-2 rounded-xl flex items-center gap-2 transition shadow-sm border border-slate-200"
+          >
+            <Settings className="h-4 w-4 text-jdav-green" /> Verwalten
+          </Link>
+        )}
       </div>
 
       <div className="space-y-10">
@@ -34,7 +65,7 @@ export default async function DokumentePage() {
                 {category}
               </h2>
               <div className="grid gap-4 sm:grid-cols-2">
-                {groupedDocs[category].map((doc: any) => (
+                {groupedDocs[category].map((doc) => (
                   <a
                     key={doc.id}
                     href={doc.file_url}
@@ -47,7 +78,9 @@ export default async function DokumentePage() {
                         <File className="h-5 w-5" />
                       </div>
                       <div>
-                        <p className="font-medium text-slate-900 line-clamp-1">{doc.title}</p>
+                        <p className="font-medium text-slate-900 line-clamp-1">
+                          {doc.title}
+                        </p>
                       </div>
                     </div>
                     <Download className="h-5 w-5 shrink-0 text-slate-400 group-hover:text-jdav-green" />

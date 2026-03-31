@@ -3,19 +3,16 @@
 
 /* noinspection CssUnknownAtRule */
 @plugin "tailwindcss-animate";
+@plugin "@tailwindcss/typography";
 
 /* noinspection CssUnknownAtRule */
 @custom-variant dark (&:is(.dark *));
 
 /* noinspection CssUnknownAtRule */
 @theme {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
+  --font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
 
   /* JDAV PAN Colors */
   --color-jdav-green: #76a355;
@@ -29,6 +26,10 @@
 
   --primary: #76a355;
   --primary-foreground: #ffffff;
+
+  --font-geist-sans:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu",
+    "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
 }
 
 .dark {
@@ -37,6 +38,10 @@
 
   --primary: #76a355;
   --primary-foreground: #ffffff;
+
+  --font-geist-sans:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu",
+    "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
 }
 
 html,
@@ -49,6 +54,124 @@ body {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
   -webkit-tap-highlight-color: transparent; /* Youtube advice */
+}
+
+/* Subtle motion helpers for a smoother, app-like feel */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  @keyframes ui-fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .motion-enter {
+    animation: ui-fade-up 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .motion-card {
+    transition:
+      transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 180ms cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 180ms ease;
+    will-change: transform;
+  }
+
+  .motion-card:hover {
+    transform: translateY(-2px);
+  }
+
+  .motion-press {
+    transition: transform 120ms ease;
+  }
+
+  .motion-press:active {
+    transform: scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion-enter,
+  .motion-card,
+  .motion-press {
+    animation: none;
+    transition: none;
+    transform: none;
+  }
+}
+
+@media print {
+  /* Hide UI elements */
+  nav,
+  header,
+  footer,
+  button,
+  .print\:hidden,
+  .print-hidden,
+  [role="navigation"],
+  [role="banner"] {
+    display: none;
+  }
+
+  body {
+    background: white;
+    color: black;
+    margin: 0;
+    padding: 0;
+    width: 210mm; /* A4 width */
+  }
+
+  .container {
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  main {
+    padding: 0;
+  }
+
+  /* Specific participant management print styles */
+  .participant-management-print {
+    background: white;
+    border: none;
+    box-shadow: none;
+    width: 100%;
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  th,
+  td {
+    border: 1px solid #e2e8f0;
+    padding: 8px 12px;
+    font-size: 10pt;
+  }
+
+  thead {
+    display: table-header-group;
+    background-color: #f8fafc;
+  }
+
+  tr {
+    page-break-inside: avoid;
+  }
+
+  /* Force display of hidden desktop table for print */
+  .md\:table {
+    display: table;
+  }
 }

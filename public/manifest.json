@@ -1,7 +1,16 @@
 {
   "theme_color": "#5a8040",
   "background_color": "#f8fafc",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
   "icons": [
+    {
+      "purpose": "any",
+      "sizes": "192x192",
+      "src": "/android-chrome-192x192.png",
+      "type": "image/png"
+    },
     {
       "purpose": "maskable",
       "sizes": "512x512",
@@ -15,14 +24,13 @@
       "type": "image/png"
     }
   ],
-  "orientation": "any",
+  "orientation": "portrait",
   "display": "standalone",
   "dir": "auto",
   "lang": "de-DE",
   "name": "JDAV Pfarrkirchen",
   "short_name": "JDAV PAN",
   "description": "JDAV Pfarrkirchen Touren-Portal",
-  "start_url": "/",
   "shortcuts": [
     {
       "name": "Touren",
@@ -33,6 +41,18 @@
         {
           "sizes": "96x96",
           "src": "/compass.svg"
+        }
+      ]
+    },
+    {
+      "name": "Material",
+      "short_name": "Material",
+      "description": "Materialausleihe",
+      "url": "/material",
+      "icons": [
+        {
+          "sizes": "96x96",
+          "src": "/pickaxe.svg"
         }
       ]
     },

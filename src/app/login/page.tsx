@@ -13,11 +13,11 @@ export default function LoginPage() {
           </p>
         </div>
         <LoginForm />
-        
+
         <div className="mt-8 text-center text-sm text-slate-500">
           <p>Du bist noch kein Mitglied oder möchtest nur stöbern?</p>
           <a
-            href="/touren"
+            href="/oeffentlich/touren"
             className="mt-2 inline-block font-medium text-jdav-green hover:text-jdav-green-dark hover:underline"
           >
             Zu den öffentlichen Touren &rarr;

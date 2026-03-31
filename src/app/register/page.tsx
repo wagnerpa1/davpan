@@ -12,7 +12,7 @@ export default function RegisterPage() {
             Erstelle ein Konto für dich oder deine Kinder
           </p>
         </div>
-        
+
         <RegisterForm />
       </div>
     </div>
