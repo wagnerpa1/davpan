@@ -122,7 +122,7 @@ const runtimeCaching: import("serwist").RuntimeCaching[] = [
       ],
     }),
   },
-  
+
   {
     matcher: ({ request, url }: { request: Request; url: URL }) =>
       request.mode === "navigate" &&
@@ -203,11 +203,7 @@ self.addEventListener("message", (event) => {
         Promise.all(
           cacheNames
             .filter((name) =>
-              [
-                "jdav-pages",
-                "jdav-touren",
-                "jdav-images",
-              ].includes(name),
+              ["jdav-pages", "jdav-touren", "jdav-images"].includes(name),
             )
             .map((name) => caches.delete(name)),
         ),
@@ -279,4 +275,3 @@ self.addEventListener("notificationclick", (event) => {
       }),
   );
 });
-

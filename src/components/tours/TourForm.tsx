@@ -30,7 +30,6 @@ interface TourFormInitialData {
   description?: string;
   start_date?: string;
   end_date?: string;
-  registration_deadline?: string | null;
   meeting_point?: string;
   meeting_time?: string;
   elevation?: number | null;
@@ -355,7 +354,7 @@ export function TourForm({
               return (
                 <label
                   key={material.id}
-                  className="flex items-start gap-3 p-3 rounded-xl border border-slate-200 cursor-pointer hover:border-jdav-green hover:bg-jdav-green/5 transition-colors has-checked:border-jdav-green has-checked:bg-jdav-green/10"
+                  className="flex items-start gap-3 p-3 rounded-xl border border-slate-200 cursor-pointer hover:border-jdav-green hover:bg-jdav-green/5 transition-colors has-[:checked]:border-jdav-green has-[:checked]:bg-jdav-green/10"
                 >
                   <input
                     type="checkbox"
@@ -460,18 +459,6 @@ export function TourForm({
               name="end_date"
               type="date"
               defaultValue={initialData?.end_date || initialData?.start_date}
-              className="mt-1"
-            />
-          </div>
-          <div>
-            <Label htmlFor="registration_deadline">
-              Anmeldefrist (optional)
-            </Label>
-            <Input
-              id="registration_deadline"
-              name="registration_deadline"
-              type="date"
-              defaultValue={initialData?.registration_deadline?.split("T")[0]}
               className="mt-1"
             />
           </div>

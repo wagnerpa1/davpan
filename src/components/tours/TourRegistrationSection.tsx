@@ -9,10 +9,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useState, useTransition } from "react";
-import {
-  cancelRegistration,
-  confirmWaitlistSpot,
-} from "@/app/actions/tour-registration";
+import { cancelRegistration } from "@/app/actions/tour-registration";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { TourRegistrationModal } from "./TourRegistrationModal";
@@ -61,11 +58,6 @@ const statusConfig = {
     label: "Offen",
     icon: Clock,
     className: "text-amber-700 bg-amber-50 border-amber-200",
-  },
-  pending_confirmation: {
-    label: "Aktion erforderlich: Nachrücker-Platz bestätigen!",
-    icon: AlertCircle,
-    className: "text-orange-700 bg-orange-50 border-orange-200",
   },
   waitlist: {
     label: "Auf der Warteliste",
@@ -212,34 +204,27 @@ export function TourRegistrationSection({
 
   // Mindestalter-Check
   let ageTooYoung = false;
-  if (minAge && userBirthdate) {
+  if (minAge && userBirthdate && tourStartDate) {
     const birthDate = new Date(userBirthdate);
-    const currentDate = new Date(); // Alter am Tag der Anmeldung
-    let ageToday = currentDate.getFullYear() - birthDate.getFullYear();
-    const monthDiff = currentDate.getMonth() - birthDate.getMonth();
+    const startDate = new Date(tourStartDate);
+    let ageAtStart = startDate.getFullYear() - birthDate.getFullYear();
+    const monthDiff = startDate.getMonth() - birthDate.getMonth();
     if (
       monthDiff < 0 ||
-      (monthDiff === 0 && currentDate.getDate() < birthDate.getDate())
+      (monthDiff === 0 && startDate.getDate() < birthDate.getDate())
     ) {
-      ageToday -= 1;
+      ageAtStart -= 1;
     }
-    ageTooYoung = ageToday < minAge;
+    ageTooYoung = ageAtStart < minAge;
   }
 
-  const _handleConfirmWaitlist = (participantId: string) => {
-    startTransition(async () => {
-      await confirmWaitlistSpot(participantId, tourId);
-    });
-  };
+  const isRegistrationClosedByDeadline =
+    !!registrationDeadline && new Date(registrationDeadline) < new Date();
 
-  const hasDeadlinePassed = registrationDeadline
-    ? new Date() > new Date(registrationDeadline)
-    : false;
   const cannotRegister =
     tourStatus === "planning" ||
     tourStatus === "completed" ||
-    tourStatus === "canceled" ||
-    hasDeadlinePassed;
+    isRegistrationClosedByDeadline;
   const selfReg = userRegistrations.find((r) => r.child_profile_id === null);
   const childRegs = userRegistrations.filter(
     (r) => r.child_profile_id !== null,
@@ -270,23 +255,25 @@ export function TourRegistrationSection({
           <div>
             <p className="font-bold text-slate-900 text-lg">
               {cannotRegister
-                ? "Keine Anmeldung möglich"
+                ? isRegistrationClosedByDeadline
+                  ? "Anmeldung geschlossen"
+                  : "Keine Anmeldung möglich"
                 : tourStatus === "full"
                   ? "Warteliste aktiv"
                   : "Anmeldung geöffnet"}
             </p>
             <p className="text-sm text-slate-500 mt-0.5">
               Teilnehmerlimit: {maxParticipants ?? "Unbegrenzt"}
-              {registrationDeadline && (
-                <span className="ml-3">
-                  � Frist:{" "}
-                  {new Date(registrationDeadline).toLocaleDateString("de-DE")}
-                </span>
-              )}
               {minAge && (
                 <span className="ml-3">• Mindestalter: {minAge} Jahre</span>
               )}
             </p>
+            {registrationDeadline && (
+              <p className="mt-1 text-xs text-slate-400">
+                Anmeldeschluss:{" "}
+                {new Date(registrationDeadline).toLocaleString("de-DE")}
+              </p>
+            )}
           </div>
 
           {!cannotRegister && !ageTooYoung && !selfReg && (

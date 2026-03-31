@@ -1,4 +1,4 @@
-import { format } from "date-fns";
+import { format, isBefore, startOfDay } from "date-fns";
 import { Euro, Package, Ruler, Settings } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -117,6 +117,37 @@ export default async function MaterialPage() {
       ).data || []
     : [];
 
+  const todayStart = startOfDay(new Date());
+  const reservations = privateReservations as PrivateReservationRow[];
+
+  function isLoanDateInPast(loanDate: string | null) {
+    if (!loanDate) {
+      return false;
+    }
+    return isBefore(startOfDay(new Date(loanDate)), todayStart);
+  }
+
+  const visibleReservations = reservations.filter((reservation) => {
+    if (reservation.status === "cancelled" && isLoanDateInPast(reservation.loan_date)) {
+      return false;
+    }
+    return true;
+  });
+
+  const activeReservations = visibleReservations.filter((reservation) => {
+    return (
+      reservation.status === "requested" ||
+      reservation.status === "reserved" ||
+      reservation.status === "on loan"
+    );
+  });
+
+  const archivedReservations = visibleReservations.filter((reservation) => {
+    return reservation.status === "returned" || reservation.status === "cancelled";
+  });
+
+  const hasAnyVisibleReservations = visibleReservations.length > 0;
+
   // Hole das gesamte Material
   const { data: materials, error } = await supabase
     .from("material_types")
@@ -225,65 +256,119 @@ export default async function MaterialPage() {
           </p>
 
           <div className="mt-4 space-y-3">
-            {(privateReservations as PrivateReservationRow[]).length > 0 ? (
-              (privateReservations as PrivateReservationRow[]).map(
-                (reservation) => (
-                  <div
-                    key={reservation.id}
-                    className="rounded-xl border border-slate-100 bg-slate-50 p-4"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="font-semibold text-slate-900">
-                        {reservation.material_inventory?.material_types?.name ||
-                          "Unbekanntes Material"}
-                        {reservation.material_inventory?.size && (
-                          <span className="ml-2 text-xs text-slate-500">
-                            ({reservation.material_inventory.size})
-                          </span>
-                        )}
-                      </div>
-                      <span
-                        className={`inline-flex rounded-full px-2 py-0.5 text-xs font-bold uppercase ${reservationStatusClasses(
-                          reservation.status,
-                        )}`}
-                      >
-                        {reservationStatusLabel(reservation.status)}
-                      </span>
-                    </div>
-                    <div className="mt-2 text-xs text-slate-600">
-                      Von{" "}
-                      {reservation.loan_date
-                        ? format(new Date(reservation.loan_date), "dd.MM.yyyy")
-                        : "-"}{" "}
-                      bis{" "}
-                      {reservation.return_date
-                        ? format(
-                            new Date(reservation.return_date),
-                            "dd.MM.yyyy",
-                          )
-                        : "-"}
-                    </div>
-
-                    {(reservation.status === "requested" ||
-                      reservation.status === "reserved") && (
-                      <form
-                        action={cancelOwnPrivateMaterialReservation.bind(
-                          null,
-                          reservation.id,
-                        )}
-                        className="mt-3"
-                      >
-                        <button
-                          type="submit"
-                          className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-50"
+            {hasAnyVisibleReservations ? (
+              <>
+                {activeReservations.length > 0 ? (
+                  activeReservations.map((reservation) => (
+                    <div
+                      key={reservation.id}
+                      className="rounded-xl border border-slate-100 bg-slate-50 p-4"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="font-semibold text-slate-900">
+                          {reservation.material_inventory?.material_types?.name ||
+                            "Unbekanntes Material"}
+                          {reservation.material_inventory?.size && (
+                            <span className="ml-2 text-xs text-slate-500">
+                              ({reservation.material_inventory.size})
+                            </span>
+                          )}
+                        </div>
+                        <span
+                          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-bold uppercase ${reservationStatusClasses(
+                            reservation.status,
+                          )}`}
                         >
-                          Reservierung stornieren
-                        </button>
-                      </form>
-                    )}
-                  </div>
-                ),
-              )
+                          {reservationStatusLabel(reservation.status)}
+                        </span>
+                      </div>
+                      <div className="mt-2 text-xs text-slate-600">
+                        Von{" "}
+                        {reservation.loan_date
+                          ? format(new Date(reservation.loan_date), "dd.MM.yyyy")
+                          : "-"}{" "}
+                        bis{" "}
+                        {reservation.return_date
+                          ? format(
+                              new Date(reservation.return_date),
+                              "dd.MM.yyyy",
+                            )
+                          : "-"}
+                      </div>
+
+                      {(reservation.status === "requested" ||
+                        reservation.status === "reserved") && (
+                        <form
+                          action={cancelOwnPrivateMaterialReservation.bind(
+                            null,
+                            reservation.id,
+                          )}
+                          className="mt-3"
+                        >
+                          <button
+                            type="submit"
+                            className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-50"
+                          >
+                            Reservierung stornieren
+                          </button>
+                        </form>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-slate-500 italic">
+                    Du hast aktuell keine offenen privaten Reservierungen.
+                  </p>
+                )}
+
+                {archivedReservations.length > 0 && (
+                  <details className="mt-2 rounded-xl border border-slate-200 bg-white">
+                    <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-slate-700">
+                      Archiv ({archivedReservations.length})
+                    </summary>
+                    <div className="space-y-3 border-t border-slate-100 p-4">
+                      {archivedReservations.map((reservation) => (
+                        <div
+                          key={reservation.id}
+                          className="rounded-xl border border-slate-100 bg-slate-50 p-4"
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="font-semibold text-slate-900">
+                              {reservation.material_inventory?.material_types?.name ||
+                                "Unbekanntes Material"}
+                              {reservation.material_inventory?.size && (
+                                <span className="ml-2 text-xs text-slate-500">
+                                  ({reservation.material_inventory.size})
+                                </span>
+                              )}
+                            </div>
+                            <span
+                              className={`inline-flex rounded-full px-2 py-0.5 text-xs font-bold uppercase ${reservationStatusClasses(
+                                reservation.status,
+                              )}`}
+                            >
+                              {reservationStatusLabel(reservation.status)}
+                            </span>
+                          </div>
+                          <div className="mt-2 text-xs text-slate-600">
+                            Von{" "}
+                            {reservation.loan_date
+                              ? format(new Date(reservation.loan_date), "dd.MM.yyyy")
+                              : "-"}{" "}
+                            bis{" "}
+                            {reservation.return_date
+                              ? format(
+                                  new Date(reservation.return_date),
+                                  "dd.MM.yyyy",
+                                )
+                              : "-"}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                )}
+              </>
             ) : (
               <p className="text-sm text-slate-500 italic">
                 Du hast aktuell keine privaten Reservierungen.

@@ -184,7 +184,11 @@ export async function updateReservationStatus(id: string, newStatus: string) {
   }
   return { success: true };
 }
-export async function bulkUpdateTourReservations(tourId: string, currentStatus: string, newStatus: string) {
+export async function bulkUpdateTourReservations(
+  tourId: string,
+  currentStatus: string,
+  newStatus: string,
+) {
   const supabase = await createClient();
 
   const {
@@ -238,15 +242,19 @@ export async function bulkUpdateTourReservations(tourId: string, currentStatus: 
         p_reservation_id: res.id,
         p_expected_status: currentStatus,
         p_new_status: newStatus,
-        p_idempotency_key: buildIdempotencyKey("bulk-material-status", [res.id, currentStatus, newStatus]),
-      }
+        p_idempotency_key: buildIdempotencyKey("bulk-material-status", [
+          res.id,
+          currentStatus,
+          newStatus,
+        ]),
+      },
     );
     if (!rpcError) successCount++;
   }
 
-  revalidatePath(/admin/material/reservations);
-  revalidatePath(/touren/ + tourId);
-  revalidatePath(/guide/dashboard);
+  revalidatePath("/admin/material/reservations");
+  revalidatePath(`/touren/${tourId}`);
+  revalidatePath("/guide/dashboard");
 
   return { success: true, count: successCount };
 }

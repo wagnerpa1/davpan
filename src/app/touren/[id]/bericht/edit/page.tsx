@@ -3,9 +3,9 @@ import { de } from "date-fns/locale";
 import { Calendar, MapPin, Mountain, MoveLeft } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getTourParticipantsForListing } from "@/app/actions/reports";
 import { ParticipantPopup } from "@/components/reports/ParticipantPopup";
 import { ReportForm } from "@/components/reports/ReportForm";
-import { getTourParticipantsForListing } from "@/lib/reports/participants";
 import { createClient } from "@/utils/supabase/server";
 
 interface Props {
@@ -68,11 +68,7 @@ export default async function EditReportPage({ params, searchParams }: Props) {
     redirect("/guide/dashboard");
   }
 
-  const participants = await getTourParticipantsForListing(
-    supabase,
-    tourId,
-    user.id,
-  );
+  const participants = await getTourParticipantsForListing(tourId);
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8">
