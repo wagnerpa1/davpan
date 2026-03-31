@@ -21,11 +21,13 @@ export class DomainError extends Error {
 /**
  * Maps Postgres exceptions and custom RPC exceptions to standard DomainError.
  */
-export function mapPostgresError(error: any): DomainError {
-  if (!error) return new DomainError("unknown_error", "Unknown error occurred");
+export function mapPostgresError(error: unknown): DomainError {
+  if (!error || typeof error !== "object")
+    return new DomainError("unknown_error", "Unknown error occurred");
 
-  const code = error.code;
-  const message = error.message || "";
+  const err = error as Record<string, unknown>;
+  const code = typeof err.code === "string" ? err.code : "";
+  const message = typeof err.message === "string" ? err.message : "";
 
   // 08000 is used in our custom RPCs (material, resources)
   if (code === "08000") {
@@ -51,7 +53,11 @@ export function mapPostgresError(error: any): DomainError {
   // Optimistic Concurrency Control (Version Mismatch)
   // Let's adopt 40001 serialization_failure for logical lock/stale write
   if (code === "40001" || message.includes("stale_write")) {
-    return new DomainError("stale_write", "The data has been modified by someone else recently.", true);
+    return new DomainError(
+      "stale_write",
+      "The data has been modified by someone else recently.",
+      true,
+    );
   }
 
   return new DomainError("unknown_error", message, false);

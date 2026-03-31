@@ -51,7 +51,9 @@ Es enthält:
 - P2.3: abgeschlossen
 - P2.4: abgeschlossen
 - P2.5: abgeschlossen
-- P3.1: abgeschlossen`nP3.2: abgeschlossen`nP3.3: abgeschlossen
+- P3.1: abgeschlossen
+- P3.2: abgeschlossen
+- P3.3: abgeschlossen
 
 ---
 
@@ -394,12 +396,11 @@ P2 gilt als abgeschlossen, wenn alle Punkte erfuellt sind:
 
 ---
 
-## Kurzpriorisierung ab jetzt
+## Master-Roadmap Abschluss
+Alle P-Stufen (P0 bis P3.3) wurden erfolgreich konzeptioniert, implementiert und abgesichert. Das System verfuegt nun ueber eine transaktionale Schreibarchitektur mit RPCs, ein asynchrones Notification Outbox Pattern sowie robuste Cross-Domain Constraints im Datenbank Core. Offline-faehigkeiten ueber den Service Worker behandeln Netzwerk-Drops zuverlaessig bei gleichbleibender Payload Idempotenz.
 
-1. P2.3 (Outbox + Ordering) umsetzen
-2. P2.4 (Cross-Domain Guardrails) abschliessen
-3. P2.5 (Offline-Konflikte) integrieren
-4. P3 Hardening-Zyklus starten
+
+
 
 
 

@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import type React from "react";
 import { useRef, useState } from "react";
 import { registerForTour } from "@/app/actions/tour-registration";
-import { runClientAction } from "@/lib/client-action-runner";
 import { Button } from "@/components/ui/button";
+import { runClientAction } from "@/lib/client-action-runner";
 
 interface Material {
   id: string; // material_type_id
@@ -102,7 +102,9 @@ export function TourRegistrationForm({
     setIsPending(false);
 
     if ("offlineQueued" in result && result.offlineQueued) {
-      setSuccess("Du bist offline. Deine Anmeldung wurde gespeichert und wird synchronisiert, sobald Du wieder verbunden bist.");
+      setSuccess(
+        "Du bist offline. Deine Anmeldung wurde gespeichert und wird synchronisiert, sobald Du wieder verbunden bist.",
+      );
       setTimeout(() => {
         router.refresh();
         if (onSuccess) onSuccess();

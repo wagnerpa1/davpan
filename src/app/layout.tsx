@@ -298,7 +298,8 @@ export default async function RootLayout({
           options={{ scope: "/" }}
         >
           {user && <Header userRole={userRole} />}
-          {user && <PushNotificationInit />}            {user && <OfflineIndicator />}          <main className="flex-1 pb-16 md:pb-0">{children}</main>
+          {user && <PushNotificationInit />} {user && <OfflineIndicator />}{" "}
+          <main className="flex-1 pb-16 md:pb-0">{children}</main>
           {user && <BottomNavigation userRole={userRole} />}
         </SerwistProvider>
       </body>

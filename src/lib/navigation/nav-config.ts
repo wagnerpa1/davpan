@@ -113,4 +113,3 @@ export function buildNavigation(userRole?: string | null): AppNavigation {
     groups,
   };
 }
-

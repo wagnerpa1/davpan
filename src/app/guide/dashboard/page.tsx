@@ -25,7 +25,10 @@ interface GuideDashboardTour {
   tour_categorys?: { category: string | null } | null;
 }
 
-type RawGuideDashboardTour = Omit<GuideDashboardTour, "tour_categorys" | "tour_reports"> & {
+type RawGuideDashboardTour = Omit<
+  GuideDashboardTour,
+  "tour_categorys" | "tour_reports"
+> & {
   tour_categorys?:
     | { category: string | null }
     | { category: string | null }[]
@@ -111,7 +114,8 @@ export default async function GuideDashboardPage() {
   const activeTours = tours.filter(
     (t) =>
       t.status !== "completed" ||
-      (!t.tour_reports || t.tour_reports.length === 0),
+      !t.tour_reports ||
+      t.tour_reports.length === 0,
   );
 
   const archivedTours = tours.filter(

@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, CheckCircle2, Wifi, WifiOff } from "lucide-react";
+import { CheckCircle2, Wifi, WifiOff } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export function OfflineIndicator() {

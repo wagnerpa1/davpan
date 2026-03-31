@@ -1,6 +1,6 @@
 import { DomainError, mapPostgresError } from "./errors";
 
-export interface ActionState<T = any> {
+export interface ActionState<T = unknown> {
   success: boolean;
   data?: T;
   error?: {
@@ -14,12 +14,12 @@ export interface ActionState<T = any> {
  * Wraps a server action to uniformly handle errors and return a standardized ActionState.
  */
 export async function runAction<T>(
-  action: () => Promise<T>
+  action: () => Promise<T>,
 ): Promise<ActionState<T>> {
   try {
     const data = await action();
     return { success: true, data };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Action Error]", error);
 
     // If it's already a DomainError (e.g. manually thrown)
