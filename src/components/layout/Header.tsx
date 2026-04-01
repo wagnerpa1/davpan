@@ -4,14 +4,17 @@ import { ChevronDown } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { MemberBarcodePopup } from "@/components/layout/MemberBarcodePopup";
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
 import { buildNavigation } from "@/lib/navigation/nav-config";
 
 interface HeaderProps {
+  birthdate: string | null;
+  membershipNumber: string | null;
   userRole?: string | null;
 }
 
-export function Header({ userRole }: HeaderProps) {
+export function Header({ birthdate, membershipNumber, userRole }: HeaderProps) {
   const isParent = userRole === "parent";
   const [isMoreOpen, setIsMoreOpen] = useState(false);
 
@@ -83,6 +86,10 @@ export function Header({ userRole }: HeaderProps) {
           </div>
         </nav>
         <div className="ml-auto flex items-center space-x-4">
+          <MemberBarcodePopup
+            membershipNumber={membershipNumber}
+            birthdate={birthdate}
+          />
           <NotificationCenter isParent={isParent} />
           <form
             action="/auth/signout"

@@ -14,6 +14,7 @@ export { canAccessMaterialAdmin, canManageMaterial, isAdminRole, isGuideRole };
 interface CurrentUserProfile {
   birthdate: string | null;
   fullName: string | null;
+  membershipNumber: string | null;
   role: AppUserRole | null;
   user: User | null;
 }
@@ -30,6 +31,7 @@ export const getCurrentUserProfile = cache(
       return {
         birthdate: null,
         fullName: null,
+        membershipNumber: null,
         role: null,
         user: null,
       };
@@ -37,13 +39,16 @@ export const getCurrentUserProfile = cache(
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("birthdate, full_name, role")
+      .select("birthdate, full_name, role, membership_number")
       .eq("id", user.id)
       .maybeSingle();
 
     return {
       birthdate: profile?.birthdate ?? null,
       fullName: profile?.full_name ?? null,
+      membershipNumber:
+        (profile as { membership_number?: string | null } | null)
+          ?.membership_number ?? null,
       role: (profile?.role as AppUserRole | null) ?? null,
       user,
     };

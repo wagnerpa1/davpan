@@ -285,7 +285,12 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const { role: userRole, user } = await getCurrentUserProfile();
+  const {
+    birthdate,
+    membershipNumber,
+    role: userRole,
+    user,
+  } = await getCurrentUserProfile();
 
   return (
     <html lang="de" data-scroll-behavior="smooth">
@@ -297,7 +302,13 @@ export default async function RootLayout({
           register={true}
           options={{ scope: "/" }}
         >
-          {user && <Header userRole={userRole} />}
+          {user && (
+            <Header
+              birthdate={birthdate}
+              membershipNumber={membershipNumber}
+              userRole={userRole}
+            />
+          )}
           {user && <PushNotificationInit />} {user && <OfflineIndicator />}{" "}
           <main className={`flex-1 pb-16 md:pb-0 ${user ? "pt-16" : ""}`}>
             {children}

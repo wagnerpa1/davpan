@@ -184,6 +184,29 @@ export default async function ProfilePage() {
 
           <div className="flex flex-col gap-1">
             <label
+              htmlFor="profile-membership-number"
+              className="block text-sm font-medium text-slate-700"
+            >
+              Mitgliedsnummer
+            </label>
+            <input
+              id="profile-membership-number"
+              type="text"
+              disabled
+              defaultValue={
+                profile?.membership_number
+                  ? `${profile.membership_number.slice(0, 3)}-${profile.membership_number.slice(3, 5)}-${profile.membership_number.slice(5)}`
+                  : "Nicht angegeben"
+              }
+              className="block w-full rounded-input border border-slate-300 bg-slate-50 px-3 py-1.5 text-sm text-slate-500 font-mono"
+            />
+            <p className="pt-0.5 text-xs text-slate-500">
+              Deine Mitgliedsnummer kann nicht geändert werden
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label
               htmlFor="profile-role"
               className="block text-sm font-medium text-slate-700"
             >

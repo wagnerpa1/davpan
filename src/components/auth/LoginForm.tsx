@@ -10,11 +10,14 @@ import { createClient } from "@/utils/supabase/client";
 export function LoginForm({ className }: { className?: string }) {
   const [supabase] = useState(() => createClient());
   const router = useRouter();
-  // Derived lazily to avoid hydration mismatch (window is undefined on server)
+  // Use NEXT_PUBLIC_SITE_URL for consistent redirects across all environments
+  // Falls auf .env gesetzt, sonst nutze window.location.origin
   const [redirectTo, setRedirectTo] = useState<string>("");
 
   useEffect(() => {
-    setRedirectTo(`${window.location.origin}/auth/callback`);
+    // Priorität: NEXT_PUBLIC_SITE_URL (für Deployment) → window.location.origin (für Entwicklung)
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+    setRedirectTo(`${siteUrl}/auth/callback`);
 
     const {
       data: { subscription },
@@ -87,7 +90,13 @@ export function LoginForm({ className }: { className?: string }) {
               password_input_placeholder: "Dein Passwort",
             },
             forgotten_password: {
+              email_label: "E-Mail Adresse",
+              email_input_placeholder: "deine@email.com",
+              button_label: "Passwort-Reset senden",
+              loading_button_label: "Sende Reset-Link ...",
               link_text: "Passwort vergessen?",
+              confirmation_text:
+                "Überprüfe deine E-Mail für den Passwort-Reset-Link",
             },
           },
         }}
@@ -97,14 +106,24 @@ export function LoginForm({ className }: { className?: string }) {
         theme="light"
         redirectTo={redirectTo || undefined}
       />
-      <div className="text-center text-sm">
-        <span className="text-slate-500">Du hast noch kein Konto? </span>
-        <a
-          href="/register"
-          className="font-medium text-jdav-green-dark hover:underline"
-        >
-          Registrieren
-        </a>
+      <div className="space-y-3 text-center text-sm">
+        <div>
+          <a
+            href="/auth/reset-password"
+            className="text-slate-600 hover:text-jdav-green hover:underline"
+          >
+            Passwort vergessen?
+          </a>
+        </div>
+        <div className="pt-2">
+          <span className="text-slate-500">Du hast noch kein Konto? </span>
+          <a
+            href="/register"
+            className="font-medium text-jdav-green-dark hover:underline"
+          >
+            Registrieren
+          </a>
+        </div>
       </div>
     </div>
   );

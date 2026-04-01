@@ -2,7 +2,7 @@
 
 "use client";
 
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, User, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { ChangeEvent, FormEvent } from "react";
 import { useState } from "react";
@@ -23,6 +23,7 @@ export function RegisterForm({ className }: { className?: string }) {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [birthdate, setBirthdate] = useState("");
+  const [membershipNumber, setMembershipNumber] = useState("");
   const [isParent, setIsParent] = useState(false);
 
   const handleInputChange =
@@ -30,16 +31,42 @@ export function RegisterForm({ className }: { className?: string }) {
       setter(e.target.value);
     };
 
+  // Format membership number with automatic separation: XXX-XX-XXXXXX
+  const formatMembershipNumber = (input: string): string => {
+    // Remove all non-digits
+    const digitsOnly = input.replace(/\D/g, "");
+    // Limit to 11 digits
+    const limited = digitsOnly.slice(0, 11);
+    // Format: 3-2-6
+    if (limited.length <= 3) return limited;
+    if (limited.length <= 5)
+      return `${limited.slice(0, 3)}-${limited.slice(3)}`;
+    return `${limited.slice(0, 3)}-${limited.slice(3, 5)}-${limited.slice(5)}`;
+  };
+
+  const handleMembershipChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatMembershipNumber(e.target.value);
+    setMembershipNumber(formatted);
+  };
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+
+    // Validation
+    if (membershipNumber.replace(/-/g, "").length !== 11) {
+      setError("Mitgliedsnummer muss 11 Ziffern haben (Format: 789-00-001234)");
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const finalData = {
         full_name: name,
         role: isParent ? "parent" : "member",
         birthdate: birthdate || null,
+        membership_number: membershipNumber.replace(/-/g, ""),
       };
 
       const { error: signUpError } = await supabase.auth.signUp({
@@ -106,30 +133,81 @@ export function RegisterForm({ className }: { className?: string }) {
         )}
 
         <fieldset>
-          <legend className="block text-sm font-medium text-slate-700 mb-1">
-            Konto-Typ
+          <legend className="block text-sm font-semibold text-slate-900 mb-3">
+            Was ist dein Konto-Typ?
           </legend>
-          <div className="flex gap-4 mt-2">
-            <label className="flex items-center gap-2 text-sm text-slate-600">
-              <input
-                type="radio"
-                name="account_type"
-                checked={!isParent}
-                onChange={() => setIsParent(false)}
-                className="text-jdav-green focus:ring-jdav-green"
-              />
-              Eigener Zugang (Mitglied)
-            </label>
-            <label className="flex items-center gap-2 text-sm text-slate-600">
-              <input
-                type="radio"
-                name="account_type"
-                checked={isParent}
-                onChange={() => setIsParent(true)}
-                className="text-jdav-green focus:ring-jdav-green"
-              />
-              Für mein Kind (Elternteil)
-            </label>
+          <div className="grid grid-cols-2 gap-3">
+            {/* Member Card */}
+            <button
+              type="button"
+              onClick={() => setIsParent(false)}
+              className={cn(
+                "relative p-4 rounded-lg border-2 transition-all duration-200 hover:shadow-md",
+                !isParent
+                  ? "border-jdav-green bg-green-50 shadow-md shadow-green-200"
+                  : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm",
+              )}
+            >
+              <div className="flex flex-col items-center text-center gap-2">
+                <div
+                  className={cn(
+                    "p-2 rounded-lg transition-all duration-200",
+                    !isParent
+                      ? "bg-jdav-green text-white"
+                      : "bg-slate-100 text-slate-600",
+                  )}
+                >
+                  <User className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">
+                    Eigenes Konto
+                  </p>
+                  <p className="text-xs text-slate-600">Für mich</p>
+                </div>
+              </div>
+              {!isParent && (
+                <div className="absolute top-2 right-2 w-5 h-5 bg-jdav-green rounded-full flex items-center justify-center">
+                  <div className="w-2 h-2 bg-white rounded-full" />
+                </div>
+              )}
+            </button>
+
+            {/* Parent Card */}
+            <button
+              type="button"
+              onClick={() => setIsParent(true)}
+              className={cn(
+                "relative p-4 rounded-lg border-2 transition-all duration-200 hover:shadow-md",
+                isParent
+                  ? "border-jdav-green bg-green-50 shadow-md shadow-green-200"
+                  : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm",
+              )}
+            >
+              <div className="flex flex-col items-center text-center gap-2">
+                <div
+                  className={cn(
+                    "p-2 rounded-lg transition-all duration-200",
+                    isParent
+                      ? "bg-jdav-green text-white"
+                      : "bg-slate-100 text-slate-600",
+                  )}
+                >
+                  <Users className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">
+                    Eltern-Konto
+                  </p>
+                  <p className="text-xs text-slate-600">Für Kinder</p>
+                </div>
+              </div>
+              {isParent && (
+                <div className="absolute top-2 right-2 w-5 h-5 bg-jdav-green rounded-full flex items-center justify-center">
+                  <div className="w-2 h-2 bg-white rounded-full" />
+                </div>
+              )}
+            </button>
           </div>
         </fieldset>
 
@@ -150,24 +228,47 @@ export function RegisterForm({ className }: { className?: string }) {
           />
         </div>
 
-        {!isParent && (
-          <div>
-            <label
-              htmlFor="register-birthdate"
-              className="block text-sm font-medium text-slate-700"
-            >
-              Geburtsdatum
-            </label>
-            <input
-              id="register-birthdate"
-              type="date"
-              required={!isParent}
-              value={birthdate}
-              onChange={handleInputChange(setBirthdate)}
-              className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
-            />
-          </div>
-        )}
+        <div>
+          <label
+            htmlFor="register-membership"
+            className="block text-sm font-medium text-slate-700"
+          >
+            Mitgliedsnummer{" "}
+            <span className="text-xs text-slate-500">
+              (Sektions-Orts-Nummer)
+            </span>
+          </label>
+          <input
+            id="register-membership"
+            type="text"
+            placeholder="789-00-001234"
+            required
+            value={membershipNumber}
+            onChange={handleMembershipChange}
+            maxLength={14}
+            className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm font-mono shadow-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
+          />
+          <p className="mt-1 text-xs text-slate-500">
+            Format: 3-stellig - 2-stellig - 6-stellig (z.B. 789-00-001234)
+          </p>
+        </div>
+
+        <div>
+          <label
+            htmlFor="register-birthdate"
+            className="block text-sm font-medium text-slate-700"
+          >
+            Geburtsdatum
+          </label>
+          <input
+            id="register-birthdate"
+            type="date"
+            required
+            value={birthdate}
+            onChange={handleInputChange(setBirthdate)}
+            className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
+          />
+        </div>
 
         <div>
           <label
@@ -204,7 +305,11 @@ export function RegisterForm({ className }: { className?: string }) {
           />
         </div>
 
-        <Button type="submit" className="w-full mt-6" disabled={isLoading}>
+        <Button
+          type="submit"
+          className="w-full mt-6 bg-jdav-green hover:bg-jdav-green-dark text-white shadow-md hover:shadow-lg transition-all duration-200"
+          disabled={isLoading}
+        >
           {isLoading ? "Registriere..." : "Konto erstellen"}
         </Button>
       </form>
