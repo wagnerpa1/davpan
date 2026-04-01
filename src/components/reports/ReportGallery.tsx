@@ -98,7 +98,7 @@ export function ReportGallery({ images }: ReportGalleryProps) {
             key={img.id}
             type="button"
             onClick={() => setSelectedIdx(idx)}
-            className="relative flex-none w-[70%] sm:w-[35%] lg:w-[22%] aspect-[4/3] snap-start rounded-2xl overflow-hidden cursor-pointer group border border-slate-100 bg-slate-50 transition-all hover:border-jdav-green/40"
+            className="relative flex-none w-[70%] sm:w-[35%] lg:w-[22%] aspect-4/3 snap-start rounded-2xl overflow-hidden cursor-pointer group border border-slate-100 bg-slate-50 transition-all hover:border-jdav-green/40"
             aria-label={`Bild ${idx + 1} vergrössern`}
           >
             <Image
@@ -108,14 +108,14 @@ export function ReportGallery({ images }: ReportGalleryProps) {
               sizes="(max-width: 640px) 70vw, (max-width: 1024px) 35vw, 22vw"
               className="object-cover transition-transform duration-500 group-hover:scale-105"
             />
-            <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="absolute inset-x-0 bottom-0 h-1/3 bg-linear-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           </button>
         ))}
       </div>
 
       {/* Lightbox / Enlarged View */}
       {selectedIdx !== null && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/95 backdrop-blur-sm animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/95 backdrop-blur-sm animate-in fade-in duration-300">
           <button
             type="button"
             onClick={() => setSelectedIdx(null)}

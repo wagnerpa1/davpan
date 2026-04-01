@@ -33,12 +33,10 @@ export default async function AdminExportPage() {
       <div className="grid gap-6 md:grid-cols-2">
         {/* Touren & Teilnehmer Export */}
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="mb-2 text-xl font-bold text-slate-900">
-            Touren & Teilnehmer
-          </h2>
+          <h2 className="mb-2 text-xl font-bold text-slate-900">Tourenliste</h2>
           <p className="mb-6 text-sm text-slate-600">
-            Exportiert alle geplanten Touren inklusive Startdatum, Guide und
-            allen bestätigten Teilnehmern. Ideal für die Jahresplanung.
+            Exportiert nur geplante Touren des Jahres (ohne Teilnehmer) mit
+            lesbaren Tourdetails, benötigten Ressourcen und Material.
           </p>
           <div className="flex flex-col gap-4 sm:flex-row">
             <form action="/api/admin/export" method="GET">
@@ -50,6 +48,34 @@ export default async function AdminExportPage() {
             </form>
             <form action="/api/admin/export" method="GET">
               <input type="hidden" name="type" value="tours-next" />
+              <Button
+                type="submit"
+                className="w-full bg-jdav-green text-white hover:bg-jdav-green-800"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Folgejahr ({nextYear})
+              </Button>
+            </form>
+          </div>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="mb-2 text-xl font-bold text-slate-900">
+            Teilnehmerliste
+          </h2>
+          <p className="mb-6 text-sm text-slate-600">
+            Separater Teilnehmer-Export mit Tourname, Tourengruppe, Name,
+            Geburtsdatum und Mitgliedsnummer.
+          </p>
+          <div className="flex flex-col gap-4 sm:flex-row">
+            <form action="/api/admin/export" method="GET">
+              <input type="hidden" name="type" value="participants-current" />
+              <Button type="submit" variant="outline" className="w-full">
+                <Download className="mr-2 h-4 w-4" />
+                Aktuelles Jahr
+              </Button>
+            </form>
+            <form action="/api/admin/export" method="GET">
+              <input type="hidden" name="type" value="participants-next" />
               <Button
                 type="submit"
                 className="w-full bg-jdav-green text-white hover:bg-jdav-green-800"

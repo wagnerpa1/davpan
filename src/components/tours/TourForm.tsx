@@ -354,7 +354,7 @@ export function TourForm({
               return (
                 <label
                   key={material.id}
-                  className="flex items-start gap-3 p-3 rounded-xl border border-slate-200 cursor-pointer hover:border-jdav-green hover:bg-jdav-green/5 transition-colors has-[:checked]:border-jdav-green has-[:checked]:bg-jdav-green/10"
+                  className="flex items-start gap-3 p-3 rounded-xl border border-slate-200 cursor-pointer hover:border-jdav-green hover:bg-jdav-green/5 transition-colors has-checked:border-jdav-green has-checked:bg-jdav-green/10"
                 >
                   <input
                     type="checkbox"

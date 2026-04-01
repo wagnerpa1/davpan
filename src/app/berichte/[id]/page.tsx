@@ -117,7 +117,7 @@ export default async function ReportDetailPage({ params }: Props) {
       <div className="overflow-hidden rounded-3xl bg-white shadow-xl ring-1 ring-slate-200">
         {/* Banner Section */}
         {bannerImage ? (
-          <div className="relative aspect-[21/9] w-full overflow-hidden bg-slate-900">
+          <div className="relative aspect-21/9 w-full overflow-hidden bg-slate-900">
             <Image
               src={bannerImage.image_url}
               alt={report.title}
@@ -125,10 +125,10 @@ export default async function ReportDetailPage({ params }: Props) {
               priority
               className="object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+            <div className="absolute inset-0 bg-linear-to-t from-black/40 to-transparent" />
           </div>
         ) : (
-          <div className="flex aspect-[21/9] w-full items-center justify-center bg-jdav-green text-white">
+          <div className="flex aspect-21/9 w-full items-center justify-center bg-jdav-green text-white">
             <Mountain className="h-16 w-16 opacity-20" />
           </div>
         )}

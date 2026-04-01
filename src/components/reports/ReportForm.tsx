@@ -405,7 +405,7 @@ export function ReportForm({
               />
             </div>
           ) : (
-            <div className="min-h-[300px] rounded-xl border border-slate-200 bg-slate-50 p-4 prose prose-slate prose-jdav max-w-none">
+            <div className="min-h-75 rounded-xl border border-slate-200 bg-slate-50 p-4 prose prose-slate prose-jdav max-w-none">
               <ReactMarkdown>
                 {text || "_Noch kein Text eingegeben..._"}
               </ReactMarkdown>
@@ -431,7 +431,7 @@ export function ReportForm({
                   fill
                   className="object-cover"
                 />
-                <div className="absolute inset-x-0 bottom-0 flex h-1/2 flex-col justify-end bg-gradient-to-t from-black/60 to-transparent p-2 text-white opacity-0 transition-opacity group-hover:opacity-100">
+                <div className="absolute inset-x-0 bottom-0 flex h-1/2 flex-col justify-end bg-linear-to-t from-black/60 to-transparent p-2 text-white opacity-0 transition-opacity group-hover:opacity-100">
                   <div className="flex items-center justify-between">
                     <div className="flex gap-1">
                       <button

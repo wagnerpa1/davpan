@@ -235,7 +235,7 @@ export function RegisterForm({ className }: { className?: string }) {
           >
             Mitgliedsnummer{" "}
             <span className="text-xs text-slate-500">
-              (Sektions-Orts-Nummer)
+              (Sektion-Ortsgruppe-Nummer)
             </span>
           </label>
           <input

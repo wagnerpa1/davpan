@@ -75,13 +75,13 @@ export default async function AdminResourcesPage() {
                   key={res.id}
                   className="border border-slate-100 rounded-xl p-4 hover:border-jdav-green transition-colors group"
                 >
-                  <div className="flex justify-between items-start mb-1">
+                  <div className="mb-1 flex items-start justify-between gap-3">
                     <h3 className="font-bold text-slate-900">{res.name}</h3>
                     {authContext.role === "admin" && (
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex shrink-0 items-center gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
                         <Link
                           href={`/admin/resources/${res.id}/edit`}
-                          className="text-xs text-blue-600 font-medium px-2 hover:underline"
+                          className="rounded-md px-2 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-50"
                         >
                           Edit
                         </Link>
@@ -112,7 +112,7 @@ export default async function AdminResourcesPage() {
           </div>
         </div>
 
-        <div className="lg:col-span-3 border border-slate-200 bg-white rounded-2xl shadow-sm p-6 overflow-x-auto min-h-[600px]">
+        <div className="min-h-150 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6 lg:col-span-3">
           <h2 className="text-lg font-bold text-slate-800 mb-6">
             Buchungs-Kalender
           </h2>

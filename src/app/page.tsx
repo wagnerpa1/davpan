@@ -181,7 +181,7 @@ export default async function Home() {
                     className="group block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:border-jdav-green hover:shadow-md"
                   >
                     <div className="flex flex-col sm:flex-row">
-                      <div className="relative aspect-[16/9] w-full sm:w-40 sm:aspect-square shrink-0 overflow-hidden bg-slate-100">
+                      <div className="relative aspect-video w-full sm:w-40 sm:aspect-square shrink-0 overflow-hidden bg-slate-100">
                         {previewImage ? (
                           <Image
                             src={previewImage}
