@@ -38,7 +38,7 @@ export default async function AdminExportPage() {
           </h2>
           <p className="mb-6 text-sm text-slate-600">
             Exportiert alle geplanten Touren inklusive Startdatum, Guide und
-            allen bestaetigten Teilnehmern. Ideal fuer die Jahresplanung.
+            allen bestätigten Teilnehmern. Ideal für die Jahresplanung.
           </p>
           <div className="flex flex-col gap-4 sm:flex-row">
             <form action="/api/admin/export" method="GET">

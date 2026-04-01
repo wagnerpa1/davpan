@@ -58,8 +58,8 @@ export async function deleteMyAccount() {
   );
 
   if (deleteError) {
-    console.error("Account konnte nicht geloescht werden:", deleteError);
-    throw new Error("Fehler beim Loeschen des Accounts.");
+    console.error("Account konnte nicht gelöscht werden:", deleteError);
+    throw new Error("Fehler beim Löschen des Accounts.");
   }
 
   await supabase.auth.signOut();

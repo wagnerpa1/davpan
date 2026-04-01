@@ -43,7 +43,7 @@ const bgSyncPlugin = new BackgroundSyncPlugin("offline-mutations-queue", {
               text.includes("Material") ||
               text.includes("inventory_exceeded")
             )
-              conflictType = "Material nicht mehr verfuegbar";
+              conflictType = "Material nicht mehr verfügbar";
             else if (
               text.includes("ausgebucht") ||
               text.includes("capacity_exceeded")
@@ -55,7 +55,7 @@ const bgSyncPlugin = new BackgroundSyncPlugin("offline-mutations-queue", {
             // If the server explicitly rejected the logical request as an error,
             // infinite retry won't fix it. We drop it and inform the user locally.
             self.registration.showNotification("Offline-Aktion verweigert", {
-              body: `Eine deiner Offline-Aenderungen konnte nicht synchronisiert werden: ${conflictType}. Bitte ueberpruefe den Stand.`,
+              body: `Eine deiner Offline-änderungen konnte nicht synchronisiert werden: ${conflictType}. Bitte überprüfe den Stand.`,
               icon: "/android-chrome-192x192.png",
               badge: "/favicon-32x32.png",
               tag: "offline-conflict",

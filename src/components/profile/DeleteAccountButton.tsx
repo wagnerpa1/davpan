@@ -10,14 +10,14 @@ export function DeleteAccountButton() {
   const handleDelete = () => {
     if (
       confirm(
-        "Bist du sicher, dass du deinen Account komplett loeschen willst? Dieser Vorgang kann nicht rueckgaengig gemacht werden!",
+        "Bist du sicher, dass du deinen Account komplett löschen willst? Dieser Vorgang kann nicht rückgängig gemacht werden!",
       )
     ) {
       startTransition(async () => {
         try {
           await deleteMyAccount();
         } catch (error) {
-          alert("Fehler beim Loeschen des Accounts.");
+          alert("Fehler beim Löschen des Accounts.");
           console.error(error);
         }
       });
@@ -34,10 +34,10 @@ export function DeleteAccountButton() {
       {isPending ? (
         <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Loesche Account...
+          Lösche Account...
         </>
       ) : (
-        "Account endgueltig loeschen"
+        "Account endgültig löschen"
       )}
     </button>
   );

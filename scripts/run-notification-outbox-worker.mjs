@@ -18,7 +18,7 @@ const consumer = process.env.OUTBOX_WORKER_CONSUMER || "push_dispatcher";
 
 if (!secret) {
   console.error(
-    "INTERNAL_CRON_SECRET fehlt. Worker-Aufruf wird aus Sicherheitsgruenden abgebrochen.",
+    "INTERNAL_CRON_SECRET fehlt. Worker-Aufruf wird aus Sicherheitsgründen abgebrochen.",
   );
   process.exit(1);
 }

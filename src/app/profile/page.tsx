@@ -587,15 +587,15 @@ export default async function ProfilePage() {
           </div>
         </div>
       )}
-      {/* Gefahrenzone: Konto loeschen */}
+      {/* Gefahrenzone: Konto löschen */}
       <div className="mt-8 flex flex-col gap-3 rounded-card border border-red-200 bg-red-50 p-6 shadow-sm">
         <div>
           <h2 className="text-xl font-semibold text-red-700">
-            Account loeschen
+            Account löschen
           </h2>
           <p className="mt-1 text-sm text-red-600">
-            Hier kannst du dein Benutzerkonto endgueltig loeschen. Dein Profil
-            wird in der Historie und auf vergangenen Touren als "Geloeschter
+            Hier kannst du dein Benutzerkonto endgültig löschen. Dein Profil
+            wird in der Historie und auf vergangenen Touren als "Gelöschter
             Nutzer" anonymisiert. Wir entfernen alle erfassten Notfalldaten und
             Kontaktdetails unwiderruflich.
           </p>

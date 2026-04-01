@@ -8,7 +8,7 @@ Stand: 2026-03-31
 2. `IMPLEMENTATION_SUMMARY.md`
    - Technische Umsetzung je Phase mit Key-Files
 3. `README.md`
-   - Setup, Betrieb, Rollenueberblick, PWA-Hinweise
+   - Setup, Betrieb, Rollenüberblick, PWA-Hinweise
 4. `sicherheit.md`
    - Aktueller Sicherheitsstatus und Release-Checkliste
 
@@ -21,6 +21,6 @@ Stand: 2026-03-31
    - Automatisierte Validierung
 
 ## Roadmap-Abgrenzung
-- P0-P3.3 Architektur- und Integritaetsfixes: abgeschlossen.
+- P0-P3.3 Architektur- und Integritätsfixes: abgeschlossen.
 - Business-Phasen 1-5: abgeschlossen.
-- Offenes Spaeter-Thema: datumsgenaue Materialverfuegbarkeit.
+- Offenes Später-Thema: datumsgenaue Materialverfügbarkeit.

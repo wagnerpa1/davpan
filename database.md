@@ -336,7 +336,7 @@ material_size
 S, M, L, 39, 40, 41, 42, 43, 44, 45
 
 materal_typ
-Klettergurt/Sitz– u.Brustgurt, Klettersteigset, Steinschlaghelm, Steigeisen, Eispickel/Eisbeil, Groedel, Biwaksack, LVS-Set, Schneeschuhe, Kraxn fuer Zwergerl
+Klettergurt/Sitz– u.Brustgurt, Klettersteigset, Steinschlaghelm, Steigeisen, Eispickel/Eisbeil, Groedel, Biwaksack, LVS-Set, Schneeschuhe, Kraxn für Zwergerl
 
 Foreign Keys:
 

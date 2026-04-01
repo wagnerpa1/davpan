@@ -217,8 +217,8 @@ Runtime-Caching (Serwist):
 - JS/CSS/Worker: `StaleWhileRevalidate`
 - Bilder: `CacheFirst` mit Ablaufregeln
 - Sensible Pfade (`/api`, `/auth`, `/admin`, `/guide`, `/profile`) werden nicht als Seiten gecacht
-- Cache-Groessen sind bewusst begrenzt (Touren: 20, Berichte: 5)
-- Service Worker unterstuetzt Cache-Bereinigung via Client-Nachricht `CLEAR_AUTH_CACHES`
+- Cache-Grössen sind bewusst begrenzt (Touren: 20, Berichte: 5)
+- Service Worker unterstützt Cache-Bereinigung via Client-Nachricht `CLEAR_AUTH_CACHES`
 
 Aktuell ist ein Offline-Fallback auf `"/~offline"` definiert.  
 Precache umfasst `"/login"`, `"/oeffentlich/touren"` und `"/~offline"`.
@@ -242,7 +242,7 @@ Alle kritischen Findings sind behoben:
 - Next.js auf gepatchte Version aktualisiert (`16.2.1`)
 
 Hinweis zum Auth-Setup:
-> ⚠️ **Leaked Password Protection** ist im Supabase Free Plan nicht verfuegbar.  
+> ⚠️ **Leaked Password Protection** ist im Supabase Free Plan nicht verfügbar.  
 > Die App kompensiert mit bestehenden Schutzmassnahmen (RLS-Hardening, serverseitige Auth-Checks, Monitoring).
 
 Produktentscheidung Berichte:

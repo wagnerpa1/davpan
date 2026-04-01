@@ -99,7 +99,7 @@ export async function registerForTour(formData: FormData) {
 
       const isUnderMinAge = age < tour.min_age;
       if (isUnderMinAge) {
-        // Registrierung bleibt bewusst m�glich (Guide kann Ausnahme manuell pr�fen/best�tigen).
+        // Registrierung bleibt bewusst möglich (Guide kann Ausnahme manuell prüfen/bestätigen).
       }
 
       // We allow the registration even if too young, but it will be pending/waitlisted

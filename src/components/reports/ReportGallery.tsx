@@ -99,7 +99,7 @@ export function ReportGallery({ images }: ReportGalleryProps) {
             type="button"
             onClick={() => setSelectedIdx(idx)}
             className="relative flex-none w-[70%] sm:w-[35%] lg:w-[22%] aspect-[4/3] snap-start rounded-2xl overflow-hidden cursor-pointer group border border-slate-100 bg-slate-50 transition-all hover:border-jdav-green/40"
-            aria-label={`Bild ${idx + 1} vergroessern`}
+            aria-label={`Bild ${idx + 1} vergrössern`}
           >
             <Image
               src={img.image_url}

@@ -70,7 +70,7 @@ Use this exact structure in responses:
 3. Fix-Plan
 - Minimal steps and why each step is needed.
 
-4. Durchgefuehrte Aenderungen
+4. Durchgefuehrte änderungen
 - Files changed and key logic updates.
 
 5. Validierung

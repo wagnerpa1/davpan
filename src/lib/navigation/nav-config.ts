@@ -30,7 +30,7 @@ export function buildNavigation(userRole?: string | null): AppNavigation {
       {
         label: "Profil",
         href: "/profile",
-        description: "Persoenliche Daten und Einstellungen",
+        description: "Persönliche Daten und Einstellungen",
       },
       {
         label: "Dokumente",
@@ -76,7 +76,7 @@ export function buildNavigation(userRole?: string | null): AppNavigation {
         {
           label: "Ressourcen",
           href: "/admin/resources",
-          description: "Vereinsbus, Raeume und Planung",
+          description: "Vereinsbus, Räume und Planung",
         },
       ],
     });
@@ -89,7 +89,7 @@ export function buildNavigation(userRole?: string | null): AppNavigation {
         {
           label: "Vereinsnews",
           href: "/admin/news",
-          description: "News erstellen und veroefentlichen",
+          description: "News erstellen und veröfentlichen",
         },
         {
           label: "Observability",

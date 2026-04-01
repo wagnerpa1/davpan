@@ -61,7 +61,7 @@ Key files:
 
 ## Phase 5: Export and History
 - Added admin export endpoint/page for planned follow-up year tours including participants.
-- Implemented account deletion masking to `Geloeschter Nutzer` without breaking history references.
+- Implemented account deletion masking to `Gelöschter Nutzer` without breaking history references.
 - Emergency info sourced from user settings and visible to guide context.
 
 Key files:

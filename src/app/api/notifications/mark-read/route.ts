@@ -120,5 +120,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true });
   }
 
-  return NextResponse.json({ error: "Ungueltige Anfrage" }, { status: 400 });
+  return NextResponse.json({ error: "Ungültige Anfrage" }, { status: 400 });
 }

@@ -270,7 +270,7 @@ export async function bulkUpdateTourReservations(
       .maybeSingle();
 
     if (!guideAssignment) {
-      return { error: "Keine Berechtigung fuer diese Tour." };
+      return { error: "Keine Berechtigung für diese Tour." };
     }
   }
 
