@@ -23,7 +23,7 @@ Quelle der Mitgliedsdaten ist CSV-Import.
 Gast ist eigene Rolle guest.
 Fremdsektion im Mitgliedsweg wird abgelehnt.
 Gasttyp wird gespeichert als other_section oder no_membership.
-Lokales Sektionspräfix für Mitgliedsweg ist 789.
+Lokales Sektionspräfix für Mitgliedsweg ist über env varialbe definiert (bsp 209).
 4. Architektur-Workstreams
 Produkt- und Datenmodell.
 Datenimport und Datenqualität.
@@ -49,7 +49,7 @@ Rolle guest
 Feld guest_type
 Constraints einführen:
 Mitgliedsnummer nur 11 Ziffern
-Präfix 789 für member und parent
+Präfix über env varialbe definiert (bsp 209) für member und parent
 Konsistenzregeln für guest
 Indizes:
 Eindeutiger Index auf membership_number

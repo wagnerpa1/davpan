@@ -56,7 +56,7 @@ export function RegisterForm({ className }: { className?: string }) {
 
     // Validation
     if (membershipNumber.replace(/-/g, "").length !== 11) {
-      setError("Mitgliedsnummer muss 11 Ziffern haben (Format: 789-00-001234)");
+      setError("Mitgliedsnummer muss 11 Ziffern haben (Format: 209-00-001234)");
       setIsLoading(false);
       return;
     }
@@ -241,7 +241,7 @@ export function RegisterForm({ className }: { className?: string }) {
           <input
             id="register-membership"
             type="text"
-            placeholder="789-00-001234"
+            placeholder="209-00-001234"
             required
             value={membershipNumber}
             onChange={handleMembershipChange}
@@ -249,7 +249,7 @@ export function RegisterForm({ className }: { className?: string }) {
             className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm font-mono shadow-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
           />
           <p className="mt-1 text-xs text-slate-500">
-            Format: 3-stellig - 2-stellig - 6-stellig (z.B. 789-00-001234)
+            Format: 3-stellig - 2-stellig - 6-stellig (z.B. 209-00-001234)
           </p>
         </div>
 

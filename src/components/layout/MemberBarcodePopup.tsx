@@ -107,7 +107,7 @@ export function MemberBarcodePopup({
             <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-4 shadow-2xl">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-bold text-slate-900">
-                  Mein Barcode
+                  Mein Mitgliedscode
                 </h2>
                 <button
                   type="button"

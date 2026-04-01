@@ -36,7 +36,7 @@ Projektkontext und bestehende Referenzen:
 - Gast ist eigene Rolle: guest.
 - Fremdsektion im Mitgliedsweg: blockieren und auf Gastkonto verweisen.
 - Gasttypen werden persistiert: other_section und no_membership.
-- Sektionspräfix für lokale Mitglieder: 789.
+- Sektionspräfix für lokale Mitglieder: über env varialbe definiert (bsp 209).
 
 **Workstreams**
 1. Produkt- und Datenmodell
@@ -52,7 +52,7 @@ Ziel:
 
 Aufgaben:
 1. Validierungs-Matrix definieren:
-   - Mitglied: Nummer vorhanden, 11-stellig, Präfix 789, Geburtsdatum muss zur Mitgliederliste passen.
+   - Mitglied: Nummer vorhanden, 11-stellig, Präfix über env varialbe definiert (bsp 209), Geburtsdatum muss zur Mitgliederliste passen.
    - Eltern: identisch zu Mitglied, nur Rolle parent.
    - Gast: keine Mitgliedsnummerpflicht, Gasttyp Pflicht.
 2. Fehlermeldungskatalog festlegen:
@@ -80,7 +80,7 @@ Aufgaben:
    - guest_type mit erlaubten Werten other_section | no_membership.
 3. Constraints ergänzen:
    - membership_number nur Ziffern und Länge 11.
-   - Präfixregel 789 für member und parent.
+   - Präfixregel über env varialbe definiert (bsp 209) für member und parent.
    - Konsistenzregel: guest darf Nummer leer haben; bei gesetzter Nummer nur nach erfolgreicher Verifikation.
 4. Indizes hinzufügen:
    - section_members.membership_number eindeutig indiziert.
@@ -127,7 +127,7 @@ Aufgaben:
    - Zentrale Action/Route statt reinem client auth.signUp.
 2. Mitglied/Eltern-Flow:
    - membership_number normalisieren.
-   - Präfix 789 prüfen.
+   - Präfix über env varialbe definiert (bsp 209) prüfen.
    - section_members Lookup auf Nummer + birthdate.
    - full_name aus section_members übernehmen.
 3. Gast-Flow:
@@ -296,7 +296,7 @@ Ergebnis:
 
 **Verifikation (konkrete Prüffälle)**
 1. Mitglied positiv:
-   - Eingabe 789-Präfix, korrektes Geburtsdatum, Treffer in section_members.
+   - Eingabe über env varialbe definiert (bsp 209)-Präfix, korrektes Geburtsdatum, Treffer in section_members.
    - Erwartung: Konto erstellt, Name aus Mitgliederquelle.
 2. Mitglied negativ, falsches Geburtsdatum:
    - Erwartung: Ablehnung mit zielgenauer Meldung.
@@ -357,7 +357,7 @@ Backlog-Tickets:
    - Inhalte: erlaubte Werte `other_section | no_membership`, Konsistenzregeln.
    - Akzeptanz: Feldmodell mit Check-Constraints ist definiert.
 5. DB-004 Validierungs-Constraints spezifizieren
-   - Inhalte: Nummernformat, Präfixregel 789, Konsistenz member/parent/guest.
+   - Inhalte: Nummernformat, Präfixregel über env varialbe definiert (bsp 209), Konsistenz member/parent/guest.
    - Akzeptanz: Constraint-Set vollständig dokumentiert.
 
 Lieferobjekte:
@@ -412,7 +412,7 @@ Backlog-Tickets:
    - Inhalte: zentrale Orchestrierung statt direkter Client-SignUp-Pfade.
    - Akzeptanz: Alle Registrierungen laufen durch den neuen Serverpfad.
 2. REG-102 Mitglied/Eltern-Validierung implementieren
-   - Inhalte: Nummer normalisieren, Präfixcheck 789, Lookup Nummer+Geburtsdatum.
+   - Inhalte: Nummer normalisieren, Präfixcheck (über env variable bsp 209), Lookup Nummer+Geburtsdatum.
    - Akzeptanz: Nur valide Treffer führen zu Kontoerstellung.
 3. REG-103 Namensübernahme aus Mitgliederquelle erzwingen
    - Inhalte: Clientname ignorieren, `full_name` aus `section_members`.
