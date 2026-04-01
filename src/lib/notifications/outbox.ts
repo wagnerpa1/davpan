@@ -144,8 +144,21 @@ function parseDeliveryMode(raw: string | undefined): DeliveryMode {
   return "direct";
 }
 
+function isOutboxRuntimeConfigured() {
+  return Boolean(process.env.INTERNAL_CRON_SECRET?.trim());
+}
+
 export function getNotificationDeliveryMode(): DeliveryMode {
-  return parseDeliveryMode(process.env.NOTIFICATION_DELIVERY_MODE);
+  const mode = parseDeliveryMode(process.env.NOTIFICATION_DELIVERY_MODE);
+
+  if (mode === "outbox" && !isOutboxRuntimeConfigured()) {
+    console.warn(
+      "[Outbox] INTERNAL_CRON_SECRET is missing. Falling back to direct push delivery.",
+    );
+    return "direct";
+  }
+
+  return mode;
 }
 
 export async function enqueueNotificationCreatedEvent(
