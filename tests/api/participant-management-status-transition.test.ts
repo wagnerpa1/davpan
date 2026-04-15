@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
 const { createClientSpy, dispatchNotificationSpy, revalidatePathSpy } =
   vi.hoisted(() => ({
     createClientSpy: vi.fn(),
@@ -27,10 +28,9 @@ type MockResponse = {
 
 function createSupabaseMockForCancelWithFallback() {
   const rpcSpy = vi
-    .fn<(
-      query: string,
-      args: Record<string, unknown>,
-    ) => Promise<MockResponse>>()
+    .fn<
+      (query: string, args: Record<string, unknown>) => Promise<MockResponse>
+    >()
     .mockResolvedValueOnce({
       data: null,
       error: {
