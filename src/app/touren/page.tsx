@@ -269,16 +269,26 @@ export default async function TourenPage({
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
           Tourenprogramm
         </h1>
-        {canCreate && (
-          <Link href="/touren/neu" className="w-full xs:w-auto">
+        <div className="flex w-full flex-col gap-2 xs:w-auto xs:flex-row">
+          <Link href="/touren/meine" className="w-full xs:w-auto">
             <button
               type="button"
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-jdav-green-dark px-4 py-2 text-sm font-bold text-white shadow-sm transition-colors hover:bg-jdav-green"
             >
-              Tour erstellen
+              Meine Touren
             </button>
           </Link>
-        )}
+          {canCreate && (
+            <Link href="/touren/neu" className="w-full xs:w-auto">
+              <button
+                type="button"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-jdav-green-dark px-4 py-2 text-sm font-bold text-white shadow-sm transition-colors hover:bg-jdav-green"
+              >
+                Tour erstellen
+              </button>
+            </Link>
+          )}
+        </div>
       </div>
 
       <TourFilters

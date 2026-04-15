@@ -11,6 +11,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { TourCard } from "@/components/tours/TourCard";
 import { getCurrentUserProfile } from "@/lib/auth";
+import {
+  getNextConfirmedRegistration,
+  loadTourRegistrationOverview,
+} from "@/lib/tours/registration-overview";
 import { createClient } from "@/utils/supabase/server";
 
 interface ReportImage {
@@ -31,7 +35,7 @@ interface TourParticipantCountRow {
 }
 
 export default async function Home() {
-  const [{ fullName, user }, supabase] = await Promise.all([
+  const [{ fullName, role, user }, supabase] = await Promise.all([
     getCurrentUserProfile(),
     createClient(),
   ]);
@@ -41,6 +45,14 @@ export default async function Home() {
   }
 
   const displayName = fullName || user.email?.split("@")[0];
+  const registrationOverview = await loadTourRegistrationOverview(
+    supabase,
+    user.id,
+    role === "parent",
+  );
+  const nextConfirmedRegistration = getNextConfirmedRegistration(
+    registrationOverview.tabs,
+  );
 
   // Fetch only the single next upcoming or currently running tour
   const today = new Date().toISOString().split("T")[0];
@@ -78,6 +90,12 @@ export default async function Home() {
       confirmed_participants_count: row?.confirmed_count || 0,
     };
   }
+
+  const featuredTour = nextConfirmedRegistration?.tour ?? nextTourWithCount;
+  const featuredTitle = nextConfirmedRegistration
+    ? "Deine nächste bestätigte Tour"
+    : "Deine nächste Tour";
+  const featuredLink = nextConfirmedRegistration ? "/touren/meine" : "/touren";
 
   // Fetch recent reports (max 5, max 2 months old)
   const twoMonthsAgo = subMonths(new Date(), 2).toISOString();
@@ -117,14 +135,25 @@ export default async function Home() {
         {/* Next Tour Section */}
         <section>
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+            <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900">
               <Calendar className="h-5 w-5 text-jdav-green" /> Deine nächste
               Tour
             </h2>
+            <Link
+              href={featuredLink}
+              className="text-xs font-bold text-jdav-green uppercase tracking-wider hover:underline"
+            >
+              Zu meinen Touren
+            </Link>
           </div>
 
-          {nextTour ? (
-            <TourCard tour={nextTourWithCount} />
+          {featuredTour ? (
+            <div className="space-y-3">
+              <div className="text-xs font-bold uppercase tracking-wider text-jdav-green-dark">
+                {featuredTitle}
+              </div>
+              <TourCard tour={featuredTour} />
+            </div>
           ) : (
             <div className="rounded-2xl border border-slate-200 border-dashed p-8 text-center bg-slate-50/50">
               <p className="text-sm text-slate-400 italic">
