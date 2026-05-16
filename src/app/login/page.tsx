@@ -2,13 +2,13 @@ import { LoginForm } from "@/components/auth/LoginForm";
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-[calc(100vh-8rem)] flex-col items-center justify-center bg-green-50/50 p-4">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-green-100 p-4">
       <div className="w-full max-w-md space-y-8 rounded-2xl bg-white p-8 shadow-xl">
         <div className="mb-8 text-center">
-          <h2 className="text-3xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-4xl font-extrabold tracking-tight text-slate-900">
             Willkommen zurück
-          </h2>
-          <p className="mt-2 text-sm text-slate-600">
+          </h1>
+          <p className="mt-2 text-base text-slate-700">
             Bitte melde dich an, um Fortzufahren
           </p>
         </div>
