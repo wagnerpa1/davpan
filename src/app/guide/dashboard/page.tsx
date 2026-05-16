@@ -226,26 +226,26 @@ export default async function GuideDashboardPage() {
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8">
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8 fmb-8 flex flex-col gap-4 xs:flex-row xs:items-center xs:justify-betweenlex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="rounded-xl bg-jdav-green p-2 text-white shadow-sm">
             <LayoutDashboard className="h-6 w-6" />
           </div>
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-              {isAdmin ? "Admin Dashboard" : "Guide Dashboard"}
+              {isAdmin ? "Guide Dashboard - Admin" : "Guide Dashboard"}
             </h1>
             <p className="text-sm text-slate-500">
               {isAdmin
-                ? "Vollständige Tourenverwaltung"
+                ? "Vollständige Tourenverwaltung - Admin Zugang"
                 : "Deine Planung und Teilnehmer."}
             </p>
           </div>
         </div>
-        <Link href="/touren/neu">
+        <Link href="/touren/neu" className="w-full xs:w-auto">
           <button
             type="button"
-            className="flex items-center gap-1.5 rounded-xl bg-jdav-green-dark px-4 py-2 text-sm font-bold text-white shadow-sm transition-all hover:bg-jdav-green"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-jdav-green-dark px-4 py-2 text-sm font-bold text-white shadow-sm transition-colors hover:bg-jdav-green"
           >
             <PlusCircle className="h-4 w-4" /> Tour planen
           </button>
