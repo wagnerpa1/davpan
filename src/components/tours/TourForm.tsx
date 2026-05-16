@@ -57,6 +57,11 @@ interface TourFormProps {
   tourCategories?: { id: string; category: string }[];
 }
 
+/**
+ * A comprehensive form for creating or editing a tour.
+ * Manages complex state including multiple guides, resources, materials, and tour metadata.
+ * Uses native HTML form submission handling combined with React state for dynamic selections.
+ */
 export function TourForm({
   initialData,
   onSubmit,

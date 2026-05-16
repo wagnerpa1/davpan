@@ -14,6 +14,14 @@ Webanwendung zur Verwaltung von Touren, Teilnehmern, Eltern-/Kind-Profilen, Doku
 
 ## Changelog (letzter Stand 2026-05-17)
 
+### Clean Code & Architektur-Refactoring (2026-05-16)
+
+- **Umfassende Codebase-Bereinigung**: Alle Dateien in `src/app`, `src/components`, `src/lib`, `src/hooks`, und `src/utils` analysiert und bereinigt.
+- **Dokumentation & TSDoc**: Umfangreiche TSDoc- und JSDoc-Kommentare für alle wichtigen Funktionen, Interfaces und komplexen Komponenten (wie `TourForm` und `ParticipantManagement`) hinzugefügt. Der Fokus lag dabei auf der "Warum"-Dokumentation der Business-Logik.
+- **Toter Code**: Ungenutzte Variablen, redundante Importe und veraltete Helfer-Fragmente entfernt, ohne die bestehende Funktionalität der App zu verändern.
+- **Formatierung**: Die gesamte Codebasis wurde konsistent mit Biome (`npm run format`) neu formatiert, um höchste Lesbarkeit zu gewährleisten.
+- **Build & Typ-Sicherheit**: Die strikten Typisierungsvorgaben (`tsc --noEmit`) wurden auf das gesamte Projekt angewandt und die Build-Pipeline validiert.
+
 ### Finalqualität (2026-05-17)
 
 - **Lint**: Alle 153 Dateien erfolgreich formatiert und linted (0 Fehler)

@@ -34,6 +34,11 @@ interface TourParticipantCountRow {
   confirmed_count: number;
 }
 
+/**
+ * The main Dashboard / Startseite of the application.
+ * Displays the user's next confirmed tour (or the next upcoming open tour),
+ * recent club news, and the latest tour reports.
+ */
 export default async function Home() {
   const [{ fullName, role, user }, supabase] = await Promise.all([
     getCurrentUserProfile(),

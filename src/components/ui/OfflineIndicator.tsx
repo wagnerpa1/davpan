@@ -3,6 +3,11 @@
 import { CheckCircle2, Wifi, WifiOff } from "lucide-react";
 import { useEffect, useState } from "react";
 
+/**
+ * A floating indicator that displays the network connection status.
+ * It shows "Offline" when the user loses connection and a temporary "Syncing"
+ * notification when the connection is restored and the Service Worker processes the queue.
+ */
 export function OfflineIndicator() {
   const [isOffline, setIsOffline] = useState(false);
   const [syncing, setSyncing] = useState(false);

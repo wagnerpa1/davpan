@@ -52,9 +52,9 @@ export default async function ObservabilityDashboard() {
   const auditRows = (audits ?? []) as AuditLogEntry[];
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-8 pb-32">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-800">
+    <div className="max-w-7xl mx-auto px-4 py-8 pb-32">
+      <div className="mb-10 lg:mb-12">
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
           Observability & Betriebsmetriken
         </h1>
         <p className="text-slate-600 mt-2">

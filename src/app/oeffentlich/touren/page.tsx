@@ -230,8 +230,8 @@ export default async function PublicToursPage({
 
   return (
     <div className="container mx-auto max-w-3xl px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+      <div className="mb-10 lg:mb-12">
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
           Öffentliche Touren
         </h1>
         <p className="mt-2 text-sm text-slate-600">

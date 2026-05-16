@@ -20,8 +20,8 @@ export default async function AdminExportPage() {
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
+      <div className="mb-10 lg:mb-12">
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
           Datenexport
         </h1>
         <p className="mt-4 text-lg text-slate-600">

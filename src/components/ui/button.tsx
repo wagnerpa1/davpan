@@ -40,6 +40,11 @@ export interface ButtonProps
   asChild?: boolean;
 }
 
+/**
+ * A standard, highly customizable Button component based on Radix UI's Slot and Class-Variance-Authority.
+ * Supports different variants (default, outline, ghost) and sizes.
+ * Use `asChild` to wrap a Link or other custom component while retaining button styles.
+ */
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
     const Comp = asChild ? Slot : "button";

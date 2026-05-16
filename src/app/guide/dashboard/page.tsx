@@ -226,13 +226,13 @@ export default async function GuideDashboardPage() {
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8">
-      <div className="mb-8 fmb-8 flex flex-col gap-4 xs:flex-row xs:items-center xs:justify-betweenlex items-center justify-between">
+      <div className="mb-10 flex flex-col gap-4 xs:flex-row xs:items-center xs:justify-between lg:mb-12">
         <div className="flex items-center gap-3">
           <div className="rounded-xl bg-jdav-green p-2 text-white shadow-sm">
             <LayoutDashboard className="h-6 w-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
               {isAdmin ? "Guide Dashboard - Admin" : "Guide Dashboard"}
             </h1>
             <p className="text-sm text-slate-500">

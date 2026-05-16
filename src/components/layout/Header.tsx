@@ -14,6 +14,11 @@ interface HeaderProps {
   userRole?: string | null;
 }
 
+/**
+ * The main application header for desktop and tablet views.
+ * Displays the JDAV logo, primary navigation links, a "More" dropdown for secondary links,
+ * and user-specific actions (barcode popup, notifications, logout).
+ */
 export function Header({ birthdate, membershipNumber, userRole }: HeaderProps) {
   const isParent = userRole === "parent";
   const [isMoreOpen, setIsMoreOpen] = useState(false);

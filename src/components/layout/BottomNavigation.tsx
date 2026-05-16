@@ -25,6 +25,11 @@ interface BottomNavigationProps {
   userRole?: string | null;
 }
 
+/**
+ * The mobile-first bottom navigation bar.
+ * Replaces the Header navigation on small screens. Includes a floating "Mehr" (More)
+ * popup menu for secondary navigation items and the logout action.
+ */
 export function BottomNavigation({ userRole }: BottomNavigationProps) {
   const pathname = usePathname();
   const [isMoreOpen, setIsMoreOpen] = useState(false);

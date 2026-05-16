@@ -142,10 +142,11 @@ export default async function ProfilePage() {
   }));
 
   return (
-    <div className="container mx-auto max-w-2xl px-4 py-6">
-      <h1 className="mb-6 text-3xl font-bold tracking-tight text-slate-900">
-        Profil & Einstellungen
-      </h1>
+    <div className="container mx-auto max-w-2xl px-4 py-8">
+      <div className="mb-10 lg:mb-12">
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+          Profil & Einstellungen
+        </h1>
 
       <div className="flex flex-col gap-3 rounded-card bg-white p-6 shadow-sm border border-slate-200">
         <div>

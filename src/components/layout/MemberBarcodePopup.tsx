@@ -17,6 +17,10 @@ function toDigits(input: string | null | undefined): string {
   return input.replace(/\D/g, "");
 }
 
+/**
+ * Normalizes a date string into DDMMYYYY format.
+ * Supports ISO (YYYY-MM-DD), German dotted (DD.MM.YYYY), or raw 8 digits.
+ */
 function toDdMmYyyy(input: string | null | undefined): string {
   if (!input) {
     return "";
@@ -42,6 +46,10 @@ function toDdMmYyyy(input: string | null | undefined): string {
   return "";
 }
 
+/**
+ * Displays a popup containing a barcode generated from the user's membership number and birthdate.
+ * Uses CODE128 barcode format. Only renders on mobile devices (hidden via Tailwind `md:hidden`).
+ */
 export function MemberBarcodePopup({
   membershipNumber,
   birthdate,

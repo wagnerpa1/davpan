@@ -24,7 +24,7 @@ export default async function CreateMaterialPage() {
         </Link>
       </div>
       <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10">
-        <h1 className="mb-8 text-2xl font-black text-slate-900 sm:text-3xl">
+        <h1 className="mb-8 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
           Neues Material anlegen
         </h1>
         <MaterialForm />

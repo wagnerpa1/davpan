@@ -2,6 +2,11 @@
 
 import { useEffect } from "react";
 
+/**
+ * Hook to automatically synchronize an existing push notification subscription with the backend.
+ * This runs once on mount. It only synchronizes if a subscription already exists,
+ * preventing unexpected permission prompts for the user.
+ */
 export function usePushNotifications() {
   useEffect(() => {
     const registerPushNotifications = async () => {

@@ -15,6 +15,11 @@ interface AsyncFormProps
   onSubmit?: (event: FormEvent<HTMLFormElement>) => void;
 }
 
+/**
+ * A form component that submits its data asynchronously via `fetch`.
+ * It manages the loading state automatically, disabling child inputs during submission.
+ * Emits a custom `profile:form-success` event to the window upon successful submission.
+ */
 export function AsyncForm({
   action,
   method = "POST",

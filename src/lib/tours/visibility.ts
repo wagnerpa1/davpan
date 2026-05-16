@@ -1,5 +1,9 @@
 const DEFAULT_CUTOFF = "12-01";
 
+/**
+ * Parses the cutoff date from environment variables.
+ * Defaults to December 1st if missing or invalid.
+ */
 function getVisibilityCutoffMonthDay(): { month: number; day: number } {
   const rawValue = process.env.TOUR_VISIBILITY_NEXT_YEAR_UNLOCK_AT;
   const normalized = (rawValue || DEFAULT_CUTOFF).trim();
@@ -19,6 +23,11 @@ function getVisibilityCutoffMonthDay(): { month: number; day: number } {
   return { month, day };
 }
 
+/**
+ * Calculates the maximum visibility date for a normal user.
+ * Tours starting after this date are hidden.
+ * Typically hides tours of the next year until the cutoff date is reached.
+ */
 export function getTourVisibilityDateLimit(currentDate: Date): string {
   const currentYear = currentDate.getUTCFullYear();
   const currentMonth = currentDate.getUTCMonth() + 1;
@@ -36,6 +45,10 @@ export function getTourVisibilityDateLimit(currentDate: Date): string {
   return `${currentYear + 1}-01-01`;
 }
 
+/**
+ * Determines whether a user's role requires them to be restricted by the visibility limit.
+ * Admins and Guides can see all tours regardless of the date.
+ */
 export function shouldApplyTourVisibilityLimit(role: string | null): boolean {
   return role !== "admin" && role !== "guide";
 }

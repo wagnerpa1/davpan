@@ -139,7 +139,7 @@ export default async function ReportDetailPage({ params }: Props) {
                 {formatReportDate(report.tours?.start_date)}
               </span>
             </div>
-            <h1 className="text-3xl font-black tracking-tight text-slate-900 sm:text-5xl mb-4">
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl mb-4">
               {report.title}
             </h1>
             <div className="flex items-center gap-2 text-sm text-slate-500 font-medium">

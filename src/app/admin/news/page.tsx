@@ -92,9 +92,9 @@ export default async function AdminNewsPage() {
   );
 
   return (
-    <div className="container mx-auto max-w-4xl space-y-10 px-4 py-8">
-      <div>
-        <h1 className="text-3xl font-black tracking-tight text-slate-900">
+    <div className="container mx-auto max-w-4xl px-4 py-8">
+      <div className="mb-10 lg:mb-12">
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
           Vereinsnews verwalten
         </h1>
         <p className="mt-1 text-slate-600">

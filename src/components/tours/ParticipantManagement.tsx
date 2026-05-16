@@ -66,10 +66,19 @@ interface ParticipantManagementProps {
   reservations: Reservation[];
 }
 
+/**
+ * Generates a stable composite key for a participant's reservation.
+ * Distinguishes between self-registration and child-registration.
+ */
 function getParticipantKey(userId: string, childProfileId: string | null) {
   return `${userId}:${childProfileId ?? "self"}`;
 }
 
+/**
+ * A complex UI component for guides to manage tour participants.
+ * Includes features for filtering by status, viewing detailed medical/contact info,
+ * handling age exceptions, tracking material reservations, and printing lists.
+ */
 export function ParticipantManagement({
   tourId,
   tourTitle,

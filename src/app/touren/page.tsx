@@ -143,6 +143,11 @@ function normalizeTourRows(rows: RawTourCardItem[] | null): TourCardItem[] {
   }));
 }
 
+/**
+ * The main Tour overview page.
+ * Displays all active and recently cancelled tours, supports filtering by category, difficulty, guide, and group.
+ * Server Component: fetches data and filters mostly via Supabase query, with some in-memory fallback for complex calculations (e.g. capacity).
+ */
 export default async function TourenPage({
   searchParams,
 }: {
@@ -312,8 +317,8 @@ export default async function TourenPage({
 
   return (
     <div className="container mx-auto max-w-3xl px-4 py-8">
-      <div className="mb-8 flex flex-col gap-4 xs:flex-row xs:items-center xs:justify-between">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+      <div className="mb-10 flex flex-col gap-4 xs:flex-row xs:items-center xs:justify-between lg:mb-12">
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
           Tourenprogramm
         </h1>
         <div className="flex w-full flex-col gap-2 xs:w-auto xs:flex-row">

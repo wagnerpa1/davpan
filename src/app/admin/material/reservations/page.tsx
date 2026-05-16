@@ -185,7 +185,7 @@ export default async function AdminMaterialReservationsPage({
   const tourBulkRows = buildTourBulkRows(sortedReservations);
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto px-4 py-8 pb-32">
+    <div className="max-w-7xl mx-auto px-4 py-8 pb-32">
       <div className="mb-4 flex items-center justify-between text-sm">
         <Link
           href="/admin/material"
@@ -195,8 +195,8 @@ export default async function AdminMaterialReservationsPage({
         </Link>
       </div>
 
-      <div>
-        <h1 className="text-3xl font-black text-slate-900 tracking-tight">
+      <div className="mb-10 lg:mb-12">
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
           Reservierungen & Verleih
         </h1>
         <p className="text-slate-600 mt-1">

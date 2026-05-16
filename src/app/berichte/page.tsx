@@ -61,6 +61,11 @@ function normalizeCategoryFilter(
   return categoryByLabel.get(categoryFilter.toLowerCase()) ?? categoryFilter;
 }
 
+/**
+ * The Tour Reports (Berichte) overview page.
+ * Displays all published tour reports, allows filtering by category, group, year, and sorting.
+ * Server Component: Fetches directly from Supabase.
+ */
 export default async function BerichtePage({ searchParams }: Props) {
   const supabase = await createClient();
   const params = await searchParams;

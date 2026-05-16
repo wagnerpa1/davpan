@@ -353,7 +353,7 @@ export default async function TourDetailPage({
       <div className="overflow-hidden rounded-3xl bg-white shadow-xl ring-1 ring-slate-200 print:shadow-none print:ring-0">
         {/* HERO */}
         <div className="bg-jdav-green p-8 sm:p-12 text-center text-white relative print:hidden">
-          <h1 className="mb-2 text-3xl font-black tracking-tight sm:text-5xl">
+          <h1 className="mb-2 text-3xl font-bold tracking-tight sm:text-4xl">
             {tour.title}
           </h1>
           <p className="text-lg font-medium opacity-90">

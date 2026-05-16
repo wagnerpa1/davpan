@@ -38,9 +38,9 @@ export default async function DokumentePage() {
 
   return (
     <div className="container mx-auto max-w-3xl px-4 py-8">
-      <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 lg:mb-12">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
             Dokumente & Downloads
           </h1>
           <p className="mt-2 text-slate-600">
