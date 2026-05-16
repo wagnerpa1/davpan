@@ -10,6 +10,7 @@ export interface IcsEventOptions {
   endDate?: string | null;
   meetingPoint?: string | null;
   meetingTime?: string | null;
+  durationHours?: number | null;
   url?: string;
 }
 
@@ -21,18 +22,21 @@ export function generateTourIcs(options: IcsEventOptions): string {
     title,
     description,
     startDate,
-    endDate,
     meetingPoint,
     meetingTime,
+    durationHours,
     url,
   } = options;
 
   // ICS dates must be in UTC format: YYYYMMDDTHHMMSSZ
   const formatIcsDate = (date: Date) => {
-    return date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+    return `${date.toISOString().replace(/[-:]/g, "").split(".")[0]}Z`;
   };
 
   const start = new Date(startDate);
+  const duration = durationHours || 5;
+  const isEstimatedEnd = !durationHours;
+
   if (meetingTime) {
     const [hours, minutes] = meetingTime.split(":").map(Number);
     // Use local time from the database and convert to UTC for the ICS
@@ -42,21 +46,18 @@ export function generateTourIcs(options: IcsEventOptions): string {
     start.setHours(8, 0, 0);
   }
 
-  const end = endDate ? new Date(endDate) : new Date(start);
-  if (endDate) {
-    if (meetingTime) {
-      const [hours, minutes] = meetingTime.split(":").map(Number);
-      end.setHours(hours + 2, minutes, 0); // Default 2h duration
-    } else {
-      end.setHours(17, 0, 0); // End of day
-    }
-  } else {
-    // Single day
-    end.setHours(start.getHours() + 4); // Default 4h duration for single day if time is known
-  }
+  const end = new Date(start);
+  end.setHours(start.getHours() + duration);
+
+  const finalDescription = [
+    description,
+    isEstimatedEnd ? "Hinweis: Das Ende der Tour ist nicht festgesetzt." : null,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 
   // Escape special characters for ICS
-  const escape = (str: string) =>
+  const escapeIcs = (str: string) =>
     str
       .replace(/\\/g, "\\\\")
       .replace(/;/g, "\\;")
@@ -69,19 +70,19 @@ export function generateTourIcs(options: IcsEventOptions): string {
     "PRODID:-//JDAV Pfarrkirchen//Tour Management//DE",
     "CALSCALE:GREGORIAN",
     "BEGIN:VEVENT",
-    `SUMMARY:${escape(title)}`,
+    `SUMMARY:${escapeIcs(title)}`,
     `DTSTART:${formatIcsDate(start)}`,
     `DTEND:${formatIcsDate(end)}`,
     `DTSTAMP:${formatIcsDate(new Date())}`,
     `UID:${Math.random().toString(36).substring(2)}@jdav-pan.de`,
   ];
 
-  if (description) {
-    lines.push(`DESCRIPTION:${escape(description)}`);
+  if (finalDescription) {
+    lines.push(`DESCRIPTION:${escapeIcs(finalDescription)}`);
   }
 
   if (meetingPoint) {
-    lines.push(`LOCATION:${escape(meetingPoint)}`);
+    lines.push(`LOCATION:${escapeIcs(meetingPoint)}`);
   }
 
   if (url) {

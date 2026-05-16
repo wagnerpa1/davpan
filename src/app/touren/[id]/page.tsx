@@ -343,9 +343,9 @@ export default async function TourDetailPage({
             title={tour.title}
             description={tour.description}
             startDate={tour.start_date}
-            endDate={tour.end_date}
             startTime={tour.meeting_time}
-            location={tour.meeting_point}
+            meetingPoint={tour.meeting_point}
+            durationHours={tour.duration_hours}
           />
           {canManageTour && (
             <div className="flex gap-2">

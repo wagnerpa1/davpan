@@ -8,9 +8,9 @@ interface CalendarExportProps {
   title: string;
   description?: string | null;
   startDate: string;
-  endDate?: string | null;
   startTime?: string | null;
-  location?: string | null;
+  meetingPoint?: string | null;
+  durationHours?: number | null;
 }
 
 /**
@@ -21,9 +21,9 @@ export function CalendarExport({
   title,
   description,
   startDate,
-  endDate,
   startTime,
-  location,
+  meetingPoint,
+  durationHours,
 }: CalendarExportProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -42,12 +42,22 @@ export function CalendarExport({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const eventDuration = durationHours || 5;
+  const isEstimatedEnd = !durationHours;
+
+  const eventDescription = [
+    description,
+    isEstimatedEnd ? "Hinweis: Das Ende der Tour ist nicht festgesetzt." : null,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+
   const event = {
     title,
-    description: description || "",
+    description: eventDescription,
     start: startTime ? `${startDate} ${startTime}` : startDate,
-    end: endDate || startDate,
-    location: location || "",
+    duration: [eventDuration, "hours"] as [number, "hours"],
+    location: meetingPoint || "",
   };
 
   const options = [
