@@ -80,6 +80,12 @@ Eigenschaften:
 * verwalten Material
 * erstellen Tourberichte
 
+## Materialwart
+
+* verwaltet Materialstammdaten und Bestand
+* verwaltet Materialreservierungen (tourgebunden und privat)
+* hat sonst nur Mitgliedsrechte
+
 ## Admin
 
 * vollständige Systemverwaltung
@@ -125,6 +131,22 @@ Rechte:
 * Beiträge moderieren
 
 Guides dürfen **nur Touren bearbeiten, bei denen sie als Guide eingetragen sind**.
+
+---
+
+## Materialwart
+
+Rechte:
+
+* Materialbestand einsehen und bearbeiten
+* Materialreservierungen einsehen und verwalten
+
+Abgrenzung:
+
+* keine Benutzerverwaltung
+* keine Dokumente-Adminrechte
+* keine Ressourcen-Adminrechte
+* keine Tour-Adminrechte außerhalb normaler Mitgliedsfunktionen
 
 ---
 
@@ -442,7 +464,20 @@ Material wird erst beim tatsächlichen Ausleihen aus dem Bestand abgezogen.
 
 ---
 
-# 20. Teilnehmerliste (Guide)
+# 20. Vereinsressourcen
+
+Neben Material gibt es auch **Vereinsressourcen** (z. B. den Vereinsbus, Beamer, Räume).
+
+## Ressourcen-Reservierung
+Ressourcen können von Guides und Admins direkt bei der Erstellung oder Bearbeitung einer Tour reserviert werden.
+
+Eigenschaften:
+* Ressourcen können **nicht doppelt** reserviert werden (Konfliktprüfung).
+* Eine grafische Kalenderansicht (Ressourcen-Dashboard) zeigt, wer wann welche Ressource benötigt.
+
+---
+
+# 21. Teilnehmerliste (Guide)
 
 Guides können eine Teilnehmerliste sehen.
 
@@ -466,7 +501,7 @@ Zum Ausdrucken für die Tour.
 
 ---
 
-# 21. Notfallkontakt
+# 22. Notfallkontakt
 
 Jedes Mitglied kann eine Notfallnummer hinterlegen.
 
@@ -474,7 +509,7 @@ Diese ist für Guides sichtbar.
 
 ---
 
-# 22. Tourberichte
+# 23. Tourberichte
 
 Nach Abschluss kann ein Tourbericht erstellt werden.
 
@@ -498,7 +533,7 @@ Teilnehmerlisten werden **nicht veröffentlicht**.
 
 ---
 
-# 23. Archiv
+# 24. Archiv
 
 Tourberichte werden im Archiv gespeichert.
 
@@ -510,7 +545,7 @@ Filter:
 
 ---
 
-# 24. Community Feed
+# 25. Community Feed
 
 Der Feed zeigt:
 
@@ -529,7 +564,7 @@ Beiträge können gelöscht werden durch:
 
 ---
 
-# 25. Dokumentenbereich
+# 26. Dokumentenbereich
 
 Bereitstellung wichtiger Vereinsdokumente.
 
@@ -541,7 +576,7 @@ Kategorien:
 
 ---
 
-# 26. Push-Benachrichtigungen
+# 27. Push-Benachrichtigungen
 
 Push-Events:
 
@@ -552,7 +587,7 @@ Push-Events:
 
 ---
 
-# 27. Offlinefähigkeit (PWA)
+# 28. Offlinefähigkeit (PWA)
 
 Offline verfügbar:
 
@@ -564,7 +599,7 @@ Synchronisation erfolgt automatisch.
 
 ---
 
-# 28. Datenbankstruktur
+# 29. Datenbankstruktur
 
 ## Users
 
@@ -613,6 +648,18 @@ requirements
 cost_info
 max_participants
 status
+group
+min_age
+```
+
+---
+
+## TourGroups
+
+```
+id
+group_name
+created_at
 ```
 
 ---
@@ -717,7 +764,35 @@ category
 
 ---
 
-# 29. Sicherheitskonzept
+## Resources
+
+```
+id
+name
+description
+type
+capacity
+created_at
+```
+
+---
+
+## ResourceBookings
+
+```
+id
+resource_id
+tour_id
+start_date
+end_date
+status
+created_by
+created_at
+```
+
+---
+
+# 30. Sicherheitskonzept
 
 Datenschutz:
 
@@ -727,7 +802,7 @@ Datenschutz:
 
 ---
 
-# 30. Erweiterungsmöglichkeiten
+# 31. Erweiterungsmöglichkeiten
 
 Mögliche spätere Erweiterungen:
 
@@ -739,7 +814,7 @@ Mögliche spätere Erweiterungen:
 
 ---
 
-# 31. Zusammenfassung
+# 32. Zusammenfassung
 
 Die Plattform bildet alle zentralen Vereinsprozesse digital ab:
 
@@ -747,6 +822,7 @@ Die Plattform bildet alle zentralen Vereinsprozesse digital ab:
 * Teilnehmerverwaltung
 * Wartelistenlogik
 * Materialverwaltung
+* Ressourcenverwaltung (z. B. Vereinsbus)
 * Tourberichte
 * Dokumente
 * Vereinsfeed
@@ -774,8 +850,9 @@ The project is a Progressive Web App (PWA) built with Next.js (App Router), Tail
 
 # Functional Core Logic (Strict Adherence)
 1. **Roles & Permissions**:
-   - Roles: `Member`, `Parent`, `Guide`, `Admin`.
+   - Roles: `Member`, `Parent`, `Guide`, `Materialwart`, `Admin`.
    - Guides can only edit tours where they are assigned as `TourGuide`.
+   - `Materialwart` can manage `material_types`, `material_inventory`, `material_pricing` and `material_reservations`, but has otherwise only `Member` rights.
    - `Parent` can manage `ChildProfiles` and register them for tours.
    - Private data (phone numbers, medical notes, emergency contacts) is ONLY visible to Guides/Admins.
 
