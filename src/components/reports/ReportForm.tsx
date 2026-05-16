@@ -429,6 +429,7 @@ export function ReportForm({
                   src={img.image_url}
                   alt={`Vorschau ${idx + 1}`}
                   fill
+                  sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
                   className="object-cover"
                 />
                 <div className="absolute inset-x-0 bottom-0 flex h-1/2 flex-col justify-end bg-linear-to-t from-black/60 to-transparent p-2 text-white opacity-0 transition-opacity group-hover:opacity-100">

@@ -119,6 +119,7 @@ export default async function ReportDetailPage({ params }: Props) {
               alt={report.title}
               fill
               priority
+              sizes="100vw"
               className="object-cover"
             />
             <div className="absolute inset-0 bg-linear-to-t from-black/40 to-transparent" />
@@ -191,7 +192,7 @@ export default async function ReportDetailPage({ params }: Props) {
             <div className="mb-12 rounded-2xl border border-slate-100 bg-slate-50 p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div>
                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">
-                  Passende Tour
+                  Zugehörige Tour
                 </h4>
                 <p className="font-bold text-slate-900">{report.tours.title}</p>
               </div>

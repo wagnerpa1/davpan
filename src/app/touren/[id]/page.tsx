@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { CalendarExport } from "@/components/tours/CalendarExport";
 import { DeleteTourButton } from "@/components/tours/DeleteTourButton";
 import { ParticipantManagement } from "@/components/tours/ParticipantManagement";
 import { TourRegistrationSection } from "@/components/tours/TourRegistrationSection";
@@ -337,17 +338,27 @@ export default async function TourDetailPage({
         <Link href="/touren" className="text-slate-500 hover:text-jdav-green">
           &larr; Zurück
         </Link>
-        {canManageTour && (
-          <div className="flex gap-2">
-            <Link
-              href={`/touren/${id}/edit`}
-              className="flex items-center gap-1 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200"
-            >
-              <Edit className="h-3.5 w-3.5" /> Bearbeiten
-            </Link>
-            <DeleteTourButton tourId={id} />
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <CalendarExport
+            title={tour.title}
+            description={tour.description}
+            startDate={tour.start_date}
+            endDate={tour.end_date}
+            startTime={tour.meeting_time}
+            location={tour.meeting_point}
+          />
+          {canManageTour && (
+            <div className="flex gap-2">
+              <Link
+                href={`/touren/${id}/edit`}
+                className="flex items-center gap-1 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200"
+              >
+                <Edit className="h-3.5 w-3.5" /> Bearbeiten
+              </Link>
+              <DeleteTourButton tourId={id} />
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="overflow-hidden rounded-3xl bg-white shadow-xl ring-1 ring-slate-200 print:shadow-none print:ring-0">
@@ -537,7 +548,7 @@ export default async function TourDetailPage({
             </section>
 
             {/* Guide Management - Interactive Client Component */}
-            {tourData.canManage && (
+            {canManageTour && (
               <section className="pt-10 border-t border-slate-100 space-y-6">
                 <div className="flex items-center justify-between">
                   <h3 className="text-2xl font-black text-slate-900">

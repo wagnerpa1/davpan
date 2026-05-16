@@ -147,6 +147,7 @@ export default async function ProfilePage() {
         <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
           Profil & Einstellungen
         </h1>
+      </div>
 
       <div className="flex flex-col gap-3 rounded-card bg-white p-6 shadow-sm border border-slate-200">
         <div>

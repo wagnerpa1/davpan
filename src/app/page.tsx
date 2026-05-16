@@ -217,12 +217,13 @@ export default async function Home() {
                     <div className="flex flex-col sm:flex-row">
                       <div className="relative aspect-video w-full sm:w-40 sm:aspect-square shrink-0 overflow-hidden bg-slate-100">
                         {previewImage ? (
-                          <Image
-                            src={previewImage}
-                            alt={report.title}
-                            fill
-                            className="object-cover transition-transform duration-500 group-hover:scale-105"
-                          />
+                            <Image
+                              src={previewImage}
+                              alt={report.title}
+                              fill
+                              sizes="(max-width: 640px) 100vw, 160px"
+                              className="object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center text-slate-300">
                             <Mountain className="h-8 w-8" />
