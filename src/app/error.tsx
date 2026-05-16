@@ -1,20 +1,13 @@
 "use client";
 
 import { AlertTriangle } from "lucide-react";
-import { useEffect } from "react";
 
 export default function AppErrorPage({
-  error,
   reset,
 }: {
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  useEffect(() => {
-    // Log the error to an error reporting service
-    console.error(error);
-  }, [error]);
-
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-green-100 p-4">
       <section className="mx-auto max-w-xl rounded-2xl border border-amber-200 bg-white p-6 text-center shadow-sm">
