@@ -45,10 +45,78 @@ interface TourParticipantCountRow {
   confirmed_count: number;
 }
 
+type TourSearchParams = Record<string, string | string[] | undefined>;
+
+function getSearchParam(
+  params: TourSearchParams,
+  key: string,
+  fallback = "",
+) {
+  const value = params[key];
+  if (Array.isArray(value)) {
+    return value[0] ?? fallback;
+  }
+
+  return value ?? fallback;
+}
+
 function toTimestamp(value: string | null | undefined) {
   if (!value) return 0;
   const ts = Date.parse(value);
   return Number.isNaN(ts) ? 0 : ts;
+}
+
+function normalizeCategoryFilter(
+  categoryFilter: string,
+  categories: TourCategoryOption[],
+) {
+  if (!categoryFilter) return categoryFilter;
+
+  // Shared URLs may still contain the human-readable label, so resolve both forms.
+  const categoryByLabel = new Map(
+    categories.map((category) => [category.category.toLowerCase(), category.id]),
+  );
+
+  return categoryByLabel.get(categoryFilter.toLowerCase()) ?? categoryFilter;
+}
+
+function getConfirmedCount(
+  tour: Pick<TourCardItem, "confirmed_participants_count" | "tour_participants">,
+) {
+  return (
+    tour.confirmed_participants_count ??
+    tour.tour_participants?.filter((participant) => participant.status === "confirmed").length ??
+    0
+  );
+}
+
+function isCancelledTourVisible(
+  tour: Pick<TourCardItem, "status" | "start_date" | "end_date">,
+  todayIso: string,
+) {
+  if (tour.status !== "cancelled") {
+    return true;
+  }
+
+  // Cancelled tours remain listed until their end date so users still see recent changes.
+  const relevantEndDate = tour.end_date || tour.start_date;
+
+  return Boolean(relevantEndDate && relevantEndDate >= todayIso);
+}
+
+function getCapacityRatio(
+  tour: Pick<TourCardItem, "max_participants" | "confirmed_participants_count" | "tour_participants">,
+) {
+  const confirmedCount = getConfirmedCount(tour);
+  const maxParticipants = tour.max_participants || 999;
+
+  return confirmedCount / maxParticipants;
+}
+
+function sortByCapacity(a: TourCardItem, b: TourCardItem, sortBy: string) {
+  return sortBy === "capacity_low"
+    ? getCapacityRatio(b) - getCapacityRatio(a)
+    : getCapacityRatio(a) - getCapacityRatio(b);
 }
 
 function normalizeTourRows(rows: RawTourCardItem[] | null): TourCardItem[] {
@@ -72,7 +140,7 @@ function normalizeTourRows(rows: RawTourCardItem[] | null): TourCardItem[] {
 export default async function TourenPage({
   searchParams,
 }: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
+  searchParams: Promise<TourSearchParams>;
 }) {
   const [supabase, params, authContext] = await Promise.all([
     createClient(),
@@ -87,12 +155,12 @@ export default async function TourenPage({
     redirect("/login");
   }
 
-  const categoryFilter = params.category as string;
-  const difficultyFilter = params.difficulty as string;
-  const guideFilter = params.guide as string;
-  const groupFilter = params.group as string;
-  const availableOnly = params.available === "true";
-  const sortBy = (params.sort as string) || "date_asc";
+  const categoryFilter = getSearchParam(params, "category");
+  const difficultyFilter = getSearchParam(params, "difficulty");
+  const guideFilter = getSearchParam(params, "guide");
+  const groupFilter = getSearchParam(params, "group");
+  const availableOnly = getSearchParam(params, "available") === "true";
+  const sortBy = getSearchParam(params, "sort", "date_asc");
 
   // Fetch unique data for filters (only for active tours)
   const { data: categoryData } = await supabase
@@ -102,13 +170,10 @@ export default async function TourenPage({
   const categories = ((categoryData || []) as TourCategoryOption[]).filter(
     (c): c is { id: string; category: string } => Boolean(c.category),
   );
-  const categoryByLabel = new Map(
-    categories.map((c) => [c.category.toLowerCase(), c.id]),
+  const normalizedCategoryFilter = normalizeCategoryFilter(
+    categoryFilter,
+    categories,
   );
-  const normalizedCategoryFilter =
-    categoryFilter && categoryByLabel.has(categoryFilter.toLowerCase())
-      ? (categoryByLabel.get(categoryFilter.toLowerCase()) as string)
-      : categoryFilter;
 
   const { data: allToursData } = await supabase
     .from("tours")
@@ -204,7 +269,6 @@ export default async function TourenPage({
   const userRole = authContext.role;
   const canCreate = userRole === "guide" || userRole === "admin";
 
-  // Apply in-memory filters (Guide & Availability) and Sorting (Capacity)
   let filteredTours: TourCardItem[] = normalizeTourRows(
     tours as RawTourCardItem[] | null,
   ).map((tour) => ({
@@ -213,24 +277,10 @@ export default async function TourenPage({
   }));
 
   const todayIso = new Date().toISOString().split("T")[0];
-  filteredTours = filteredTours.filter((tour) => {
-    if (tour.status !== "cancelled") {
-      return true;
-    }
 
-    // Cancelled tours remain visible up to and including their end date.
-    const relevantEndDate = tour.end_date || tour.start_date;
-    if (!relevantEndDate) {
-      return false;
-    }
-
-    return relevantEndDate >= todayIso;
-  });
-
-  const getConfirmedCount = (tour: TourCardItem) =>
-    tour.confirmed_participants_count ??
-    tour.tour_participants?.filter((p) => p.status === "confirmed").length ??
-    0;
+  filteredTours = filteredTours.filter((tour) =>
+    isCancelledTourVisible(tour, todayIso),
+  );
 
   if (guideFilter) {
     filteredTours = filteredTours.filter((tour) =>
@@ -247,16 +297,7 @@ export default async function TourenPage({
   }
 
   if (sortBy.startsWith("capacity")) {
-    filteredTours.sort((a, b) => {
-      const getCapacity = (t: TourCardItem) => {
-        const conf = getConfirmedCount(t);
-        const max = t.max_participants || 999;
-        return conf / max;
-      };
-      return sortBy === "capacity_low"
-        ? getCapacity(b) - getCapacity(a)
-        : getCapacity(a) - getCapacity(b);
-    });
+    filteredTours.sort((a, b) => sortByCapacity(a, b, sortBy));
   } else if (sortBy === "date_desc") {
     filteredTours.sort(
       (a, b) => toTimestamp(b.start_date) - toTimestamp(a.start_date),
@@ -270,22 +311,18 @@ export default async function TourenPage({
           Tourenprogramm
         </h1>
         <div className="flex w-full flex-col gap-2 xs:w-auto xs:flex-row">
-          <Link href="/touren/meine" className="w-full xs:w-auto">
-            <button
-              type="button"
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-jdav-green-dark px-4 py-2 text-sm font-bold text-white shadow-sm transition-colors hover:bg-jdav-green"
-            >
-              Meine Touren
-            </button>
+          <Link
+            href="/touren/meine"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-jdav-green-dark px-4 py-2 text-sm font-bold text-white shadow-sm transition-colors hover:bg-jdav-green xs:w-auto"
+          >
+            Meine Touren
           </Link>
           {canCreate && (
-            <Link href="/touren/neu" className="w-full xs:w-auto">
-              <button
-                type="button"
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-jdav-green-dark px-4 py-2 text-sm font-bold text-white shadow-sm transition-colors hover:bg-jdav-green"
-              >
-                Tour erstellen
-              </button>
+            <Link
+              href="/touren/neu"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-jdav-green-dark px-4 py-2 text-sm font-bold text-white shadow-sm transition-colors hover:bg-jdav-green xs:w-auto"
+            >
+              Tour erstellen
             </Link>
           )}
         </div>
@@ -301,10 +338,7 @@ export default async function TourenPage({
       <div className="space-y-4">
         {filteredTours.length > 0 ? (
           filteredTours.map((tour) => (
-            <TourCard
-              key={tour.id}
-              tour={tour as ComponentProps<typeof TourCard>["tour"]}
-            />
+            <TourCard key={tour.id} tour={tour} />
           ))
         ) : (
           <div className="rounded-2xl border border-slate-200 border-dashed p-12 text-center">

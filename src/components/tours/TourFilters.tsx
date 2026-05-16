@@ -24,13 +24,12 @@ export function TourFilters({
   const searchParams = useSearchParams();
   const [isOpen, setIsOpen] = useState(false);
 
-  // Current filter values from URL
-  const currentCategory = searchParams.get("category") || "";
-  const currentDifficulty = searchParams.get("difficulty") || "";
-  const currentGuide = searchParams.get("guide") || "";
-  const currentGroup = searchParams.get("group") || "";
-  const currentAvailability = searchParams.get("available") || "";
-  const currentSort = searchParams.get("sort") || "date_asc";
+  const currentCategory = searchParams.get("category") ?? "";
+  const currentDifficulty = searchParams.get("difficulty") ?? "";
+  const currentGuide = searchParams.get("guide") ?? "";
+  const currentGroup = searchParams.get("group") ?? "";
+  const currentAvailability = searchParams.get("available") ?? "";
+  const currentSort = searchParams.get("sort") ?? "date_asc";
 
   const updateFilters = (updates: Record<string, string | null>) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -51,16 +50,17 @@ export function TourFilters({
     router.push(basePath, { scroll: false });
   };
 
-  const hasActiveFilters =
+  const hasActiveFilters = Boolean(
     currentCategory ||
-    currentDifficulty ||
-    currentGuide ||
-    currentGroup ||
-    currentAvailability;
+      currentDifficulty ||
+      currentGuide ||
+      currentGroup ||
+      currentAvailability,
+  );
 
   return (
     <div className="mb-6 space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
@@ -80,7 +80,7 @@ export function TourFilters({
           )}
         </button>
 
-        <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto overflow-hidden">
+        <div className="flex w-full items-center justify-between gap-3 overflow-hidden sm:w-auto sm:justify-end">
           <label
             htmlFor="tour-sort"
             className="text-[10px] font-bold text-slate-600 uppercase tracking-wider whitespace-nowrap"
@@ -105,7 +105,6 @@ export function TourFilters({
       {isOpen && (
         <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-xl animate-in fade-in slide-in-from-top-2 duration-300">
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {/* Category */}
             <div className="space-y-2">
               <label
                 htmlFor="filter-category"
@@ -129,7 +128,6 @@ export function TourFilters({
               </select>
             </div>
 
-            {/* Difficulty */}
             <div className="space-y-2">
               <label
                 htmlFor="filter-difficulty"
@@ -153,7 +151,6 @@ export function TourFilters({
               </select>
             </div>
 
-            {/* Guide */}
             <div className="space-y-2">
               <label
                 htmlFor="filter-guide"
@@ -177,7 +174,6 @@ export function TourFilters({
               </select>
             </div>
 
-            {/* Group */}
             <div className="space-y-2">
               <label
                 htmlFor="filter-group"
@@ -201,7 +197,6 @@ export function TourFilters({
               </select>
             </div>
 
-            {/* Availability */}
             <div className="space-y-2">
               <p className="text-xs font-black uppercase tracking-widest text-slate-600">
                 Verfügbarkeit

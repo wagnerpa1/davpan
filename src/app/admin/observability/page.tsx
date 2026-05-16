@@ -3,10 +3,23 @@ import { redirect } from "next/navigation";
 import { getNotificationDeliveryMode } from "@/lib/notifications/outbox";
 import { createClient } from "@/utils/supabase/server";
 
+interface AuditLogEntry {
+  id: string;
+  created_at: string;
+  entity_type: string;
+  action: string;
+  actor?: { name?: string | null; email?: string | null } | null;
+  old_payload?: { status?: string | null } | null;
+  new_payload?: { status?: string | null } | null;
+}
+
+function formatAuditTimestamp(value: string) {
+  return new Date(value).toLocaleString("de-DE");
+}
+
 export default async function ObservabilityDashboard() {
   const supabase = await createClient();
 
-  // Authorization check
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -25,18 +38,18 @@ export default async function ObservabilityDashboard() {
 
   const deliveryMode = getNotificationDeliveryMode();
 
-  // 1. Fetch system metrics
   const { data: metrics, error: metricsError } = await supabase
     .from("system_metrics_outbox")
     .select("*")
     .maybeSingle();
 
-  // 2. Fetch recent audit logs
   const { data: audits } = await supabase
     .from("audit_logs")
     .select("*, actor:profiles(name, email)")
     .order("created_at", { ascending: false })
     .limit(50);
+
+  const auditRows = (audits ?? []) as AuditLogEntry[];
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8 pb-32">
@@ -133,10 +146,10 @@ export default async function ObservabilityDashboard() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {audits?.map((audit) => (
+              {auditRows.map((audit) => (
                 <tr key={audit.id} className="hover:bg-slate-50">
                   <td className="p-4 text-slate-600">
-                    {new Date(audit.created_at).toLocaleString("de-DE")}
+                    {formatAuditTimestamp(audit.created_at)}
                   </td>
                   <td className="p-4">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
@@ -147,11 +160,9 @@ export default async function ObservabilityDashboard() {
                     {audit.action}
                   </td>
                   <td className="p-4 text-slate-600">
-                    {/* @ts-ignore */}
                     {audit.actor?.name || "System / Unbekannt"}
                   </td>
                   <td className="p-4 text-slate-500 font-mono text-xs">
-                    {/* @ts-ignore */}
                     {audit.old_payload?.status} &rarr;{" "}
                     {audit.new_payload?.status}
                   </td>

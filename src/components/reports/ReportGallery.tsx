@@ -2,7 +2,7 @@
 
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import Image from "next/image";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface ReportImage {
@@ -17,9 +17,7 @@ interface ReportGalleryProps {
 
 export function ReportGallery({ images }: ReportGalleryProps) {
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Keyboard navigation for lightbox
   useEffect(() => {
     if (selectedIdx === null) return;
 
@@ -46,19 +44,18 @@ export function ReportGallery({ images }: ReportGalleryProps) {
     };
   }, [selectedIdx, images.length]);
 
-  const nextImage = useCallback(() => {
+  const nextImage = () => {
     setSelectedIdx((prev) =>
       prev !== null ? (prev + 1) % images.length : null,
     );
-  }, [images.length]);
+  };
 
-  const prevImage = useCallback(() => {
+  const prevImage = () => {
     setSelectedIdx((prev) =>
       prev !== null ? (prev - 1 + images.length) % images.length : null,
     );
-  }, [images.length]);
+  };
 
-  // Handle swipe on mobile
   const touchStartX = useRef<number | null>(null);
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
@@ -90,7 +87,6 @@ export function ReportGallery({ images }: ReportGalleryProps) {
 
       {/* Carousel */}
       <div
-        ref={scrollRef}
         className="flex overflow-x-auto scrollbar-hide snap-x snap-mandatory gap-3 pb-4 -mx-4 px-4 sm:mx-0 sm:px-0"
       >
         {images.map((img, idx) => (

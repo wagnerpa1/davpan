@@ -120,14 +120,16 @@ export function ParticipantManagement({
     return grouped;
   }, [reservations]);
 
-  const filteredParticipants = participants.filter((p) => {
-    if (filter === "all") return p.status !== "cancelled";
-    return p.status === filter;
-  });
+  const filteredParticipants = useMemo(() => {
+    return participants.filter((participant) => {
+      if (filter === "all") return participant.status !== "cancelled";
+      return participant.status === filter;
+    });
+  }, [participants, filter]);
 
-  const cancelledParticipants = participants.filter(
-    (p) => p.status === "cancelled",
-  );
+  const cancelledParticipants = useMemo(() => {
+    return participants.filter((participant) => participant.status === "cancelled");
+  }, [participants]);
 
   const handleStatusUpdate = async (
     regId: string,

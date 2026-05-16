@@ -74,29 +74,19 @@ export function NotificationCenter({ isParent }: NotificationCenterProps) {
   const [tabs, setTabs] = useState<NotificationTab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string>("self");
 
-  const totalUnread = useMemo(
-    () => tabs.reduce((sum, tab) => sum + tab.unreadCount, 0),
-    [tabs],
-  );
+  const totalUnread = tabs.reduce((sum, tab) => sum + tab.unreadCount, 0);
 
-  const activeTab = useMemo(
-    () => tabs.find((tab) => tab.id === activeTabId) ?? tabs[0] ?? null,
-    [tabs, activeTabId],
-  );
+  const activeTab = tabs.find((tab) => tab.id === activeTabId) ?? tabs[0] ?? null;
 
   const hasTabNavigation = isParent && tabs.length > 1;
 
-  const realtimeFilters = useMemo(
-    () =>
-      tabs
-        .map((tab) =>
-          tab.targetType === "self"
-            ? `recipient_user_id=eq.${tab.targetId}`
-            : `recipient_child_id=eq.${tab.targetId}`,
-        )
-        .filter(Boolean),
-    [tabs],
-  );
+  const realtimeFilters = tabs
+    .map((tab) =>
+      tab.targetType === "self"
+        ? `recipient_user_id=eq.${tab.targetId}`
+        : `recipient_child_id=eq.${tab.targetId}`,
+    )
+    .filter(Boolean);
 
   const loadNotifications = useCallback(async () => {
     setIsLoading(true);

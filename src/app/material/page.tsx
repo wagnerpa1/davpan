@@ -21,7 +21,7 @@ interface MaterialRow {
   price_day: number | null;
   price_extraday: number | null;
   price_week: number | null;
-  availableItems: number; // berechneter wert
+  availableItems: number;
   availableSizes: { id: string; size: string }[];
 }
 
@@ -91,6 +91,27 @@ function reservationStatusClasses(status: string | null) {
   }
 }
 
+function isLoanDateInPast(loanDate: string | null) {
+  if (!loanDate) {
+    return false;
+  }
+
+  return isBefore(startOfDay(new Date(loanDate)), startOfDay(new Date()));
+}
+
+function formatPriceRow(
+  day: number | null,
+  extra: number | null,
+  week: number | null,
+) {
+  const parts: string[] = [];
+  if (day !== null) parts.push(`${day}€/Tag`);
+  if (extra !== null) parts.push(`${extra}€ ab 2. Tag`);
+  if (week !== null) parts.push(`${week}€/Woche`);
+
+  return parts.length === 0 ? "Kostenlos" : parts.join(" • ");
+}
+
 export default async function MaterialPage() {
   const supabase = await createClient();
   const authContext = await getCurrentUserProfile();
@@ -117,15 +138,7 @@ export default async function MaterialPage() {
       ).data || []
     : [];
 
-  const todayStart = startOfDay(new Date());
   const reservations = privateReservations as PrivateReservationRow[];
-
-  function isLoanDateInPast(loanDate: string | null) {
-    if (!loanDate) {
-      return false;
-    }
-    return isBefore(startOfDay(new Date(loanDate)), todayStart);
-  }
 
   const visibleReservations = reservations.filter((reservation) => {
     if (
@@ -171,8 +184,6 @@ export default async function MaterialPage() {
     );
   }
 
-  // TODO: Verfeinerte Logik "verfügbare Menge" auf Basis aktueller Datumsbereiche
-  // Für das UI zeigen wir vorerst den Gesamtbestand an, echte Validierung beim Buchen/im Admin Panel
   const displayMaterials = (materials as MaterialTypeRow[]).map((m) => {
     const totalQty = m.inventory
       ? m.inventory.reduce((acc, cur) => acc + (cur.quantity_total || 0), 0)
@@ -200,19 +211,6 @@ export default async function MaterialPage() {
       availableItems: totalQty,
     };
   }) as MaterialRow[];
-
-  function formatPriceRow(
-    day: number | null,
-    extra: number | null,
-    week: number | null,
-  ) {
-    const parts = [];
-    if (day !== null) parts.push(`${day}€/Tag`);
-    if (extra !== null) parts.push(`${extra}€ ab 2. Tag`);
-    if (week !== null) parts.push(`${week}€/Woche`);
-    if (parts.length === 0) return "Kostenlos";
-    return parts.join(" • ");
-  }
 
   return (
     <div className="container mx-auto max-w-5xl px-4 py-8 pb-32">

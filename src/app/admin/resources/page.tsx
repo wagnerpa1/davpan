@@ -24,8 +24,10 @@ interface ResourceListItem {
 
 export default async function AdminResourcesPage() {
   const authContext = await getCurrentUserProfile();
+  const isAdmin = authContext.role === "admin";
+  const canManageResources = isAdmin || authContext.role === "guide";
 
-  if (authContext.role !== "admin" && authContext.role !== "guide") {
+  if (!canManageResources) {
     redirect("/");
   }
 
@@ -33,6 +35,7 @@ export default async function AdminResourcesPage() {
     getResources(),
     getResourceBookings(),
   ]);
+  const resourceRows = (resources as ResourceListItem[]) || [];
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto px-4 py-8">
@@ -47,7 +50,7 @@ export default async function AdminResourcesPage() {
             oder Beamer.
           </p>
         </div>
-        {authContext.role === "admin" && (
+        {isAdmin && (
           <div className="flex gap-2">
             <Link
               href="/admin/resources/create"
@@ -65,19 +68,19 @@ export default async function AdminResourcesPage() {
             Verfügbare Ressourcen
           </div>
           <div className="p-4 space-y-4">
-            {resources.length === 0 ? (
+            {resourceRows.length === 0 ? (
               <div className="text-sm text-slate-500 text-center py-4">
                 Noch keine Ressourcen angelegt.
               </div>
             ) : (
-              (resources as ResourceListItem[]).map((res) => (
+              resourceRows.map((res) => (
                 <div
                   key={res.id}
                   className="border border-slate-100 rounded-xl p-4 hover:border-jdav-green transition-colors group"
                 >
                   <div className="mb-1 flex items-start justify-between gap-3">
                     <h3 className="font-bold text-slate-900">{res.name}</h3>
-                    {authContext.role === "admin" && (
+                    {isAdmin && (
                       <div className="flex shrink-0 items-center gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
                         <Link
                           href={`/admin/resources/${res.id}/edit`}

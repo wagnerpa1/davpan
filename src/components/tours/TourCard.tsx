@@ -37,6 +37,64 @@ interface TourCardProps {
   tour: TourCardData;
 }
 
+function getTourDateLabel(startDate?: string | null, endDate?: string | null) {
+  if (!startDate) {
+    return "TBA";
+  }
+
+  if (endDate && startDate !== endDate) {
+    return `${format(new Date(startDate), "dd.MM.")} - ${format(new Date(endDate), "dd.MM.yy")}`;
+  }
+
+  return format(new Date(startDate), "dd.MM.yyyy");
+}
+
+function getTourStatusLabel(status: string) {
+  switch (status) {
+    case "open":
+      return "Anmeldung offen";
+    case "full":
+      return "Ausgebucht";
+    case "cancelled":
+      return "Abgesagt";
+    case "completed":
+      return "Abgeschlossen";
+    case "planning":
+      return "In Planung";
+    default:
+      return status;
+  }
+}
+
+function getTourStatusClass(status: string, isCancelled: boolean) {
+  if (isCancelled) {
+    return "bg-red-100 text-red-700 ring-red-600/20";
+  }
+
+  switch (status) {
+    case "open":
+      return "bg-green-100 text-green-800 ring-green-700/20";
+    case "full":
+      return "bg-amber-50 text-amber-800 ring-amber-600/20";
+    case "completed":
+      return "bg-slate-50 text-slate-600 ring-slate-600/20";
+    default:
+      return "bg-blue-50 text-blue-700 ring-blue-700/10";
+  }
+}
+
+function getTourCapacityBarClass(
+  isCancelled: boolean,
+  isFull: boolean,
+  isLow: boolean,
+) {
+  if (isCancelled) return "bg-slate-300";
+  if (isFull) return "bg-red-500";
+  if (isLow) return "bg-orange-400";
+
+  return "bg-jdav-green";
+}
+
 export function TourCard({ tour }: TourCardProps) {
   const isCancelled = tour.status === "cancelled";
   const confirmedCount =
@@ -47,18 +105,14 @@ export function TourCard({ tour }: TourCardProps) {
   const isFull = maxParticipants > 0 && confirmedCount >= maxParticipants;
   const isLow =
     maxParticipants > 0 && maxParticipants - confirmedCount <= 2 && !isFull;
-
-  let barColor = "bg-jdav-green";
-  if (isCancelled) barColor = "bg-slate-300";
-  else if (isFull) barColor = "bg-red-500";
-  else if (isLow) barColor = "bg-orange-400";
+  const barColor = getTourCapacityBarClass(isCancelled, isFull, isLow);
+  const statusClass = getTourStatusClass(tour.status, isCancelled);
+  const statusLabel = getTourStatusLabel(tour.status);
+  const dateLabel = getTourDateLabel(tour.start_date, tour.end_date);
+  const guideNames = tour.tour_guides?.map((guide) => guide.profiles?.full_name) ?? [];
 
   return (
-    <Link
-      key={tour.id}
-      href={`/touren/${tour.id}`}
-      className="motion-press block"
-    >
+    <Link href={`/touren/${tour.id}`} className="motion-press block">
       <div
         className={cn(
           "motion-card motion-enter group relative overflow-hidden rounded-2xl border shadow-sm transition-all",
@@ -74,7 +128,6 @@ export function TourCard({ tour }: TourCardProps) {
           <div className="mb-3 flex items-start justify-between">
             <div>
               <div className="mb-2 flex flex-wrap gap-2">
-                {/* Group comes FIRST */}
                 {tour.tour_groups?.group_name && (
                   <span
                     className={cn(
@@ -87,7 +140,6 @@ export function TourCard({ tour }: TourCardProps) {
                     {tour.tour_groups.group_name}
                   </span>
                 )}
-                {/* Category */}
                 <span
                   className={cn(
                     "inline-block rounded-full px-2.5 py-0.5 text-xs font-medium capitalize",
@@ -137,11 +189,7 @@ export function TourCard({ tour }: TourCardProps) {
                 )}
               />
               <span className="truncate">
-                {tour.start_date
-                  ? tour.end_date && tour.start_date !== tour.end_date
-                    ? `${format(new Date(tour.start_date), "dd.MM.")} - ${format(new Date(tour.end_date), "dd.MM.yy")}`
-                    : format(new Date(tour.start_date), "dd.MM.yyyy")
-                  : "TBA"}
+                {dateLabel}
               </span>
             </div>
             <div className="flex items-center gap-2 min-w-0">
@@ -181,38 +229,17 @@ export function TourCard({ tour }: TourCardProps) {
               >
                 Leitung:
               </span>
-              {tour.tour_guides.map((tg) => (
-                <span key={tg.user_id}>{tg.profiles?.full_name}</span>
+              {guideNames.map((guideName, index) => (
+                <span key={`${tour.id}-guide-${index}`}>{guideName}</span>
               ))}
             </div>
           )}
 
           <div className="mt-4 flex flex-wrap gap-2">
             <div
-              className={cn(
-                "inline-flex rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset",
-                tour.status === "open"
-                  ? "bg-green-100 text-green-800 ring-green-700/20"
-                  : tour.status === "full"
-                    ? "bg-amber-50 text-amber-800 ring-amber-600/20"
-                    : tour.status === "cancelled"
-                      ? "bg-red-100 text-red-700 ring-red-600/20"
-                      : tour.status === "completed"
-                        ? "bg-slate-50 text-slate-600 ring-slate-600/20"
-                        : "bg-blue-50 text-blue-700 ring-blue-700/10",
-              )}
+              className={cn("inline-flex rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset", statusClass)}
             >
-              {tour.status === "open"
-                ? "Anmeldung offen"
-                : tour.status === "full"
-                  ? "Ausgebucht"
-                  : tour.status === "cancelled"
-                    ? "Abgesagt"
-                    : tour.status === "completed"
-                      ? "Abgeschlossen"
-                      : tour.status === "planning"
-                        ? "In Planung"
-                        : tour.status}
+              {statusLabel}
             </div>
             {tour.difficulty && (
               <div className="inline-flex rounded-md bg-stone-100 px-2 py-1 text-xs font-bold text-stone-700 ring-1 ring-inset ring-stone-200">

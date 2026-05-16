@@ -11,6 +11,14 @@ import { createClient } from "@/utils/supabase/server";
 
 export { canAccessMaterialAdmin, canManageMaterial, isAdminRole, isGuideRole };
 
+export function getAuthCallbackUrl(path = "/auth/callback") {
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    (typeof window !== "undefined" ? window.location.origin : "");
+
+  return `${siteUrl}${path}`;
+}
+
 interface CurrentUserProfile {
   birthdate: string | null;
   fullName: string | null;

@@ -2,7 +2,7 @@
 
 import JsBarcode from "jsbarcode";
 import { Barcode } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface MemberBarcodePopupProps {
   membershipNumber: string | null;
@@ -49,19 +49,9 @@ export function MemberBarcodePopup({
   const [isOpen, setIsOpen] = useState(false);
   const svgRef = useRef<SVGSVGElement | null>(null);
 
-  const memberDigits = useMemo(
-    () => toDigits(membershipNumber),
-    [membershipNumber],
-  );
-  const birthdateDdMmYyyy = useMemo(() => toDdMmYyyy(birthdate), [birthdate]);
-
-  const barcodePayload = useMemo(() => {
-    if (!memberDigits || !birthdateDdMmYyyy) {
-      return "";
-    }
-
-    return `${memberDigits}${birthdateDdMmYyyy}`;
-  }, [memberDigits, birthdateDdMmYyyy]);
+  const memberDigits = toDigits(membershipNumber);
+  const birthdateDdMmYyyy = toDdMmYyyy(birthdate);
+  const barcodePayload = memberDigits && birthdateDdMmYyyy ? `${memberDigits}${birthdateDdMmYyyy}` : "";
 
   const canRenderBarcode = barcodePayload.length > 0;
   const missingMembershipNumber = memberDigits.length === 0;

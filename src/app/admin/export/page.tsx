@@ -15,8 +15,8 @@ export default async function AdminExportPage() {
     redirect("/");
   }
 
-  // Für das Folgejahr
-  const nextYear = new Date().getFullYear() + 1;
+  const currentYear = new Date().getFullYear();
+  const nextYear = currentYear + 1;
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8">
@@ -31,7 +31,6 @@ export default async function AdminExportPage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Touren & Teilnehmer Export */}
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="mb-2 text-xl font-bold text-slate-900">Tourenliste</h2>
           <p className="mb-6 text-sm text-slate-600">

@@ -77,12 +77,8 @@ interface TourParticipant {
 interface TourDetailUiState {
   created_by: string;
   max_participants?: number | null;
-  group?: string | null;
-  status: string;
   tour_guides?: TourGuide[];
   tour_participants?: TourParticipant[];
-  canManage?: boolean;
-  userRole?: string | null;
 }
 
 interface TourMaterialInventory {
@@ -146,6 +142,18 @@ const statusLabel = (status: string) => {
       return status;
   }
 };
+
+function formatTourDate(startDate?: string | null, endDate?: string | null) {
+  if (!startDate) {
+    return "TBA";
+  }
+
+  if (endDate && startDate !== endDate) {
+    return `${format(new Date(startDate), "dd.MM.")} – ${format(new Date(endDate), "dd.MM.yy")}`;
+  }
+
+  return format(new Date(startDate), "dd.MM.yy");
+}
 
 export default async function TourDetailPage({
   params,
@@ -271,6 +279,7 @@ export default async function TourDetailPage({
   let childrenProfiles: ChildProfileOption[] = [];
   let userRegistrations: UserRegistration[] = [];
   let userBirthdate: string | null = null;
+  let canManageTour = false;
 
   if (authContext.user) {
     userBirthdate = authContext.birthdate;
@@ -294,11 +303,8 @@ export default async function TourDetailPage({
     const isLead = tourData.tour_guides?.some(
       (tg: TourGuide) => tg.user_id === authContext.user?.id,
     );
-    tourData.canManage =
-      userRole === "admin" ||
-      isLead ||
-      tourData.created_by === authContext.user.id;
-    tourData.userRole = userRole;
+    canManageTour =
+      userRole === "admin" || isLead || tourData.created_by === authContext.user.id;
   }
 
   const guides = (tour.tour_guides || []).map(
@@ -329,15 +335,13 @@ export default async function TourDetailPage({
         <Link href="/touren" className="text-slate-500 hover:text-jdav-green">
           &larr; Zurück
         </Link>
-        {tourData.canManage && (
+        {canManageTour && (
           <div className="flex gap-2">
-            <Link href={`/touren/${id}/edit`}>
-              <button
-                type="button"
-                className="flex items-center gap-1 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200"
-              >
-                <Edit className="h-3.5 w-3.5" /> Bearbeiten
-              </button>
+            <Link
+              href={`/touren/${id}/edit`}
+              className="flex items-center gap-1 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200"
+            >
+              <Edit className="h-3.5 w-3.5" /> Bearbeiten
             </Link>
             <DeleteTourButton tourId={id} />
           </div>
@@ -359,7 +363,7 @@ export default async function TourDetailPage({
             <div className="mt-4 flex flex-wrap justify-center gap-4 text-sm font-medium">
               <div className="flex items-center gap-1.5 text-white/90">
                 <span className="opacity-70 font-normal">Leitung:</span>
-                {tour.tour_guides.map((tg: TourGuide, idx: number) => (
+                  {tour.tour_guides.map((tg: TourGuide, idx: number) => (
                   <span
                     key={
                       tg.user_id ||
@@ -402,11 +406,7 @@ export default async function TourDetailPage({
                 Datum
               </span>
               <span className="mt-1 font-medium text-sm">
-                {tour.start_date
-                  ? tour.end_date && tour.start_date !== tour.end_date
-                    ? `${format(new Date(tour.start_date), "dd.MM.")} – ${format(new Date(tour.end_date), "dd.MM.yy")}`
-                    : format(new Date(tour.start_date), "dd.MM.yy")
-                  : "TBA"}
+                {formatTourDate(tour.start_date, tour.end_date)}
               </span>
             </div>
             <div className="flex flex-col items-center justify-center rounded-2xl bg-slate-50 p-4 text-center">

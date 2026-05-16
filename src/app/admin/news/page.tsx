@@ -31,6 +31,10 @@ interface SystemAuditEntry {
   created_at: string;
 }
 
+function formatTimestamp(value: string) {
+  return new Date(value).toLocaleString("de-DE");
+}
+
 export const metadata: Metadata = {
   title: "Admin - Vereinsnews | JDAV Pfarrkirchen",
 };
@@ -41,7 +45,9 @@ export default async function AdminNewsPage() {
     createClient(),
   ]);
 
-  if (authContext.role !== "admin") {
+  const isAdmin = authContext.role === "admin";
+
+  if (!isAdmin) {
     redirect("/");
   }
 
@@ -357,7 +363,7 @@ export default async function AdminNewsPage() {
                 </a>
               ) : null}
               <p className="mt-3 text-xs text-slate-500">
-                {new Date(news.published_at).toLocaleString("de-DE")}
+                {formatTimestamp(news.published_at)}
               </p>
             </article>
           ))

@@ -26,6 +26,12 @@ interface AdminMaterial {
   pricing: MaterialPricingItem[] | null;
 }
 
+function getTotalStock(inventory: MaterialInventoryItem[] | null) {
+  return inventory
+    ? inventory.reduce((acc, current) => acc + (current.quantity_total || 0), 0)
+    : 0;
+}
+
 export const metadata: Metadata = {
   title: "Admin - Material verwalten | JDAV Pfarrkirchen",
 };
@@ -54,6 +60,8 @@ export default async function AdminMaterialPage() {
       <div className="p-8 text-red-500">Fehler beim Laden des Inventars.</div>
     );
   }
+
+  const materialRows = (materials as AdminMaterial[] | null) || [];
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto px-4 py-8">
@@ -86,15 +94,8 @@ export default async function AdminMaterialPage() {
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="divide-y divide-slate-100 md:hidden">
-          {(materials as AdminMaterial[] | null)?.length ? (
-            (materials as AdminMaterial[]).map((mat) => {
-              const totalStock = mat.inventory
-                ? mat.inventory.reduce(
-                    (acc, cur) => acc + (cur.quantity_total || 0),
-                    0,
-                  )
-                : 0;
-
+          {materialRows.length ? (
+            materialRows.map((mat) => {
               return (
                 <div key={mat.id} className="space-y-3 p-4">
                   <div className="flex items-start justify-between gap-3">
@@ -135,7 +136,7 @@ export default async function AdminMaterialPage() {
                           Gesamtbestand
                         </p>
                         <p className="mt-1 font-medium text-slate-900">
-                          {totalStock} Stk.
+                          {getTotalStock(mat.inventory)} Stk.
                         </p>
                       </div>
                       <div>

@@ -3,6 +3,7 @@
 import { Auth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { useEffect, useState } from "react";
+import { getAuthCallbackUrl } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/client";
 
@@ -11,9 +12,7 @@ export function ResetPasswordForm({ className }: { className?: string }) {
   const [redirectTo, setRedirectTo] = useState<string>("");
 
   useEffect(() => {
-    // Use NEXT_PUBLIC_SITE_URL for consistent redirects across all environments
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
-    setRedirectTo(`${siteUrl}/auth/callback`);
+    setRedirectTo(getAuthCallbackUrl());
   }, []);
 
   return (

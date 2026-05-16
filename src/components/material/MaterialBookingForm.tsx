@@ -1,7 +1,7 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
-import type React from "react";
+import type { FormEvent } from "react";
 import { useState } from "react";
 import { createIndependentMaterialReservation } from "@/app/actions/material";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,12 @@ interface MaterialBookingFormProps {
   materialName: string;
   availableSizes: { id: string; size: string }[];
   isLoggedIn: boolean;
+}
+
+function getRelativeIsoDate(daysAhead: number) {
+  const date = new Date();
+  date.setDate(date.getDate() + daysAhead);
+  return date.toISOString().split("T")[0];
 }
 
 export function MaterialBookingForm({
@@ -27,19 +33,13 @@ export function MaterialBookingForm({
     availableSizes[0]?.id || "",
   );
 
-  // Quick hack: Tomorrow as default loan date
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const defaultLoan = tomorrow.toISOString().split("T")[0];
-
-  const in3Days = new Date();
-  in3Days.setDate(in3Days.getDate() + 3);
-  const defaultReturn = in3Days.toISOString().split("T")[0];
+  const defaultLoan = getRelativeIsoDate(1);
+  const defaultReturn = getRelativeIsoDate(3);
 
   const [loanDate, setLoanDate] = useState(defaultLoan);
   const [returnDate, setReturnDate] = useState(defaultReturn);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!isLoggedIn) return;
     setIsPending(true);

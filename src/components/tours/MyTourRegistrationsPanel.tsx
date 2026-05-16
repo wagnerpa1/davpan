@@ -303,10 +303,7 @@ export function MyTourRegistrationsPanel({
     return tabWithRegistrations?.id ?? tabs[0]?.id ?? "self";
   });
 
-  const activeTab = useMemo(
-    () => tabs.find((tab) => tab.id === activeTabId) ?? tabs[0] ?? null,
-    [activeTabId, tabs],
-  );
+  const activeTab = tabs.find((tab) => tab.id === activeTabId) ?? tabs[0] ?? null;
 
   const activeRegistrations = useMemo(
     () =>

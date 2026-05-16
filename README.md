@@ -14,6 +14,17 @@ Webanwendung zur Verwaltung von Touren, Teilnehmern, Eltern-/Kind-Profilen, Doku
 
 ## Changelog (letzter Stand 2026-03-28)
 
+### Qualität / Architektur (2026-05-16)
+
+- Touren-Seite und zugehörige Tour-Komponenten aufgeräumt, ohne Verhalten zu ändern
+- URL-Parameter werden zentral normalisiert, damit alte und neue Filter-Links gleich bleiben
+- Tour-CTA-Buttons in semantische `Link`-Elemente umgebaut
+- Status-, Datums- und Kapazitätslogik in [TourCard](src/components/tours/TourCard.tsx) lesbarer gemacht
+- Berichte-, Auth- und Material-Slices nach demselben Muster bereinigt und validiert
+- Profilseite von redundanten Rollen- und Mitgliederformatierungen befreit
+- Admin-Übersichten für Material, Ressourcen, News und Observability gestrafft
+- Gemeinsame Redirect- und Datums-Helfer zentralisiert, um Duplikate zu vermeiden
+
 ### Qualität / Sicherheit (2026-03-28)
 
 - `biome check` bereinigt (keine offenen Lint-Fehler mehr)

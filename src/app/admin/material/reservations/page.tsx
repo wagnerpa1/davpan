@@ -64,6 +64,62 @@ const statusColor = (status: string | null) => {
   }
 };
 
+function getReservationTimestamp(reservation: ReservationRow) {
+  if (reservation.created_at) {
+    return Date.parse(reservation.created_at);
+  }
+
+  if (reservation.loan_date) {
+    return Date.parse(reservation.loan_date);
+  }
+
+  return 0;
+}
+
+function isProblematicRequest(reservation: ReservationRow) {
+  return (
+    reservation.status === "requested" &&
+    (reservation.material_inventory?.quantity_available ?? 0) <= 0
+  );
+}
+
+function buildTourBulkRows(reservations: ReservationRow[]) {
+  const tourBulkMap = new Map<
+    string,
+    {
+      tourId: string;
+      tourTitle: string;
+      requested: number;
+      reserved: number;
+      onLoan: number;
+    }
+  >();
+
+  for (const reservation of reservations) {
+    if (!reservation.tour_id) {
+      continue;
+    }
+
+    const existing = tourBulkMap.get(reservation.tour_id) ?? {
+      tourId: reservation.tour_id,
+      tourTitle: reservation.tours?.title || "Tour",
+      requested: 0,
+      reserved: 0,
+      onLoan: 0,
+    };
+
+    if (reservation.status === "requested") existing.requested += 1;
+    if (reservation.status === "reserved") existing.reserved += 1;
+    if (reservation.status === "on loan") existing.onLoan += 1;
+
+    tourBulkMap.set(reservation.tour_id, existing);
+  }
+
+  return Array.from(tourBulkMap.values())
+    .filter((row) => row.requested > 0 || row.reserved > 0 || row.onLoan > 0)
+    .sort((a, b) => a.tourTitle.localeCompare(b.tourTitle, "de"));
+}
+
 export default async function AdminMaterialReservationsPage({
   searchParams,
 }: {
@@ -108,18 +164,10 @@ export default async function AdminMaterialReservationsPage({
     );
   }
 
-  const unavailableRequested =
-    (reservations as ReservationRow[] | null)?.filter(
-      (res) =>
-        res.status === "requested" &&
-        (res.material_inventory?.quantity_available ?? 0) <= 0,
-    ) || [];
+  const reservationRows = (reservations as ReservationRow[] | null) || [];
+  const unavailableRequested = reservationRows.filter(isProblematicRequest);
 
-  const isProblematicRequest = (res: ReservationRow) =>
-    res.status === "requested" &&
-    (res.material_inventory?.quantity_available ?? 0) <= 0;
-
-  const sortedReservations = ((reservations as ReservationRow[] | null) || [])
+  const sortedReservations = reservationRows
     .slice()
     .sort((a, b) => {
       const aProblematic = isProblematicRequest(a) ? 1 : 0;
@@ -128,17 +176,7 @@ export default async function AdminMaterialReservationsPage({
         return bProblematic - aProblematic;
       }
 
-      const aTs = a.created_at
-        ? Date.parse(a.created_at)
-        : a.loan_date
-          ? Date.parse(a.loan_date)
-          : 0;
-      const bTs = b.created_at
-        ? Date.parse(b.created_at)
-        : b.loan_date
-          ? Date.parse(b.loan_date)
-          : 0;
-      return bTs - aTs;
+      return getReservationTimestamp(b) - getReservationTimestamp(a);
     });
 
   const visibleReservations =
@@ -146,46 +184,7 @@ export default async function AdminMaterialReservationsPage({
       ? sortedReservations.filter(isProblematicRequest)
       : sortedReservations;
 
-  const tourBulkMap = new Map<
-    string,
-    {
-      tourId: string;
-      tourTitle: string;
-      requested: number;
-      reserved: number;
-      onLoan: number;
-    }
-  >();
-
-  for (const reservation of sortedReservations) {
-    if (!reservation.tour_id) {
-      continue;
-    }
-
-    const existing = tourBulkMap.get(reservation.tour_id) ?? {
-      tourId: reservation.tour_id,
-      tourTitle: reservation.tours?.title || "Tour",
-      requested: 0,
-      reserved: 0,
-      onLoan: 0,
-    };
-
-    if (reservation.status === "requested") {
-      existing.requested += 1;
-    }
-    if (reservation.status === "reserved") {
-      existing.reserved += 1;
-    }
-    if (reservation.status === "on loan") {
-      existing.onLoan += 1;
-    }
-
-    tourBulkMap.set(reservation.tour_id, existing);
-  }
-
-  const tourBulkRows = Array.from(tourBulkMap.values())
-    .filter((row) => row.requested > 0 || row.reserved > 0 || row.onLoan > 0)
-    .sort((a, b) => a.tourTitle.localeCompare(b.tourTitle, "de"));
+  const tourBulkRows = buildTourBulkRows(sortedReservations);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto px-4 py-8 pb-32">

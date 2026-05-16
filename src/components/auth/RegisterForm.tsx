@@ -1,5 +1,3 @@
-// noinspection GrazieInspection
-
 "use client";
 
 import { CheckCircle2, User, Users } from "lucide-react";
@@ -7,8 +5,19 @@ import { useRouter } from "next/navigation";
 import type { ChangeEvent, FormEvent } from "react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { getAuthCallbackUrl } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/client";
+
+function formatMembershipNumber(input: string) {
+  const digitsOnly = input.replace(/\D/g, "");
+  const limited = digitsOnly.slice(0, 11);
+
+  if (limited.length <= 3) return limited;
+  if (limited.length <= 5) return `${limited.slice(0, 3)}-${limited.slice(3)}`;
+
+  return `${limited.slice(0, 3)}-${limited.slice(3, 5)}-${limited.slice(5)}`;
+}
 
 export function RegisterForm({ className }: { className?: string }) {
   const [supabase] = useState(() => createClient());
@@ -31,19 +40,6 @@ export function RegisterForm({ className }: { className?: string }) {
       setter(e.target.value);
     };
 
-  // Format membership number with automatic separation: XXX-XX-XXXXXX
-  const formatMembershipNumber = (input: string): string => {
-    // Remove all non-digits
-    const digitsOnly = input.replace(/\D/g, "");
-    // Limit to 11 digits
-    const limited = digitsOnly.slice(0, 11);
-    // Format: 3-2-6
-    if (limited.length <= 3) return limited;
-    if (limited.length <= 5)
-      return `${limited.slice(0, 3)}-${limited.slice(3)}`;
-    return `${limited.slice(0, 3)}-${limited.slice(3, 5)}-${limited.slice(5)}`;
-  };
-
   const handleMembershipChange = (e: ChangeEvent<HTMLInputElement>) => {
     const formatted = formatMembershipNumber(e.target.value);
     setMembershipNumber(formatted);
@@ -54,7 +50,6 @@ export function RegisterForm({ className }: { className?: string }) {
     setIsLoading(true);
     setError(null);
 
-    // Validation
     if (membershipNumber.replace(/-/g, "").length !== 11) {
       setError("Mitgliedsnummer muss 11 Ziffern haben (Format: 209-00-001234)");
       setIsLoading(false);
@@ -74,7 +69,7 @@ export function RegisterForm({ className }: { className?: string }) {
         password,
         options: {
           data: finalData,
-          emailRedirectTo: `${typeof window !== "undefined" ? window.location.origin : ""}/auth/callback`,
+          emailRedirectTo: getAuthCallbackUrl(),
         },
       });
 
@@ -82,7 +77,6 @@ export function RegisterForm({ className }: { className?: string }) {
         throw signUpError;
       }
 
-      // If successful (and maybe requires email confirmation):
       setIsSuccess(true);
     } catch (err: unknown) {
       setError(
@@ -173,7 +167,6 @@ export function RegisterForm({ className }: { className?: string }) {
               )}
             </button>
 
-            {/* Parent Card */}
             <button
               type="button"
               onClick={() => setIsParent(true)}

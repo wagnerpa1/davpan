@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { PushSubscriptionControl } from "@/components/profile/PushSubscriptionControl";
 import { AnimatedSubmitButton } from "@/components/ui/AnimatedSubmitButton";
 import { AsyncForm } from "@/components/ui/AsyncForm";
@@ -133,15 +133,11 @@ export function NotificationPreferencesPanel({
 }: NotificationPreferencesPanelProps) {
   const hasChildTabs = childPreferences.length > 0;
   const [activeTab, setActiveTab] = useState<TabKey>("self");
-
-  const activeChild = useMemo(() => {
-    if (!activeTab.startsWith("child-")) {
-      return null;
-    }
-
-    const childId = activeTab.replace("child-", "");
-    return childPreferences.find((child) => child.id === childId) ?? null;
-  }, [activeTab, childPreferences]);
+  const activeChild = activeTab.startsWith("child-")
+    ? childPreferences.find(
+        (child) => child.id === activeTab.slice("child-".length),
+      ) ?? null
+    : null;
 
   return (
     <div className="mt-8 space-y-6 rounded-card border border-slate-200 bg-white p-6 shadow-sm">

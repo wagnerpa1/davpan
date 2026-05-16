@@ -21,6 +21,23 @@ interface ChildProfile {
   image_consent: boolean | null;
 }
 
+function formatMembershipNumber(value: string | null | undefined) {
+  if (!value) {
+    return "Nicht angegeben";
+  }
+
+  return `${value.slice(0, 3)}-${value.slice(3, 5)}-${value.slice(5)}`;
+}
+
+function isProtectedRole(role: string | null | undefined) {
+  return ["guide", "materialwart", "admin"].includes(role || "");
+}
+
+function mapChildProfileRow(row: ChildProfile & { parent_child_relations?: unknown }) {
+  const { parent_child_relations: _relations, ...rest } = row;
+  return rest as ChildProfile;
+}
+
 export default async function ProfilePage() {
   const supabase = await createClient();
 
@@ -32,23 +49,19 @@ export default async function ProfilePage() {
     return redirect("/login");
   }
 
-  // Fetch complete user profile from public.profiles table
   const { data: profile } = await supabase
     .from("profiles")
     .select("*")
     .eq("id", user.id)
     .single();
 
-  // If role is parent, fetch children
   let children: ChildProfile[] = [];
   if (profile?.role === "parent") {
-    // Legacy 1:N relations
     const { data: legacyChildren } = await supabase
       .from("child_profiles")
       .select("*")
       .eq("parent_id", user.id);
 
-    // New M:N relations
     const { data: relationChildren } = await supabase
       .from("child_profiles")
       .select("*, parent_child_relations!inner(parent_id)")
@@ -59,9 +72,7 @@ export default async function ProfilePage() {
       childrenMap.set(c.id, c);
     });
     relationChildren?.forEach((c) => {
-      // Remove relation property for cleaner mapping
-      const { parent_child_relations: _unused, ...rest } = c;
-      childrenMap.set(c.id, rest as ChildProfile);
+      childrenMap.set(c.id, mapChildProfileRow(c));
     });
 
     children = Array.from(childrenMap.values());
@@ -148,7 +159,6 @@ export default async function ProfilePage() {
           successKey="profile"
           className="flex flex-col gap-3"
         >
-          {/* In future steps: Add full edit form with emergency contact and medical info */}
           <div className="flex flex-col gap-1">
             <label
               htmlFor="profile-email"
@@ -193,11 +203,7 @@ export default async function ProfilePage() {
               id="profile-membership-number"
               type="text"
               disabled
-              defaultValue={
-                profile?.membership_number
-                  ? `${profile.membership_number.slice(0, 3)}-${profile.membership_number.slice(3, 5)}-${profile.membership_number.slice(5)}`
-                  : "Nicht angegeben"
-              }
+              defaultValue={formatMembershipNumber(profile?.membership_number)}
               className="block w-full rounded-input border border-slate-300 bg-slate-50 px-3 py-1.5 text-sm text-slate-500 font-mono"
             />
             <p className="pt-0.5 text-xs text-slate-500">
@@ -212,12 +218,9 @@ export default async function ProfilePage() {
             >
               Konto-Typ / Rolle
             </label>
-            {["guide", "materialwart", "admin"].includes(
-              profile?.role || "",
-            ) ? (
+            {isProtectedRole(profile?.role) ? (
               <input
                 id="profile-role-read-only"
-                type="text"
                 disabled
                 defaultValue={
                   profile?.role === "guide"
@@ -242,7 +245,7 @@ export default async function ProfilePage() {
               </select>
             )}
             <p className="pt-0.5 text-xs text-slate-500">
-              {["guide", "materialwart", "admin"].includes(profile?.role || "")
+              {isProtectedRole(profile?.role)
                 ? "Deine Rolle wird durch Administratoren verwaltet"
                 : "Wähle zwischen Mitgliedskonto und Elternkonto"}
             </p>
@@ -477,7 +480,7 @@ export default async function ProfilePage() {
                           </AnimatedSubmitButton>
                         </div>
                       </AsyncForm>{" "}
-                      <CreateChildInviteAction childId={child.id} />{" "}
+                      <CreateChildInviteAction childId={child.id} />
                     </div>
                   </details>
                 </div>

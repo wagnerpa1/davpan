@@ -4,7 +4,6 @@ import {
   type FormEvent,
   type FormHTMLAttributes,
   type ReactNode,
-  useCallback,
   useState,
 } from "react";
 
@@ -27,57 +26,54 @@ export function AsyncForm({
 }: AsyncFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = useCallback(
-    async (event: FormEvent<HTMLFormElement>) => {
-      onSubmit?.(event);
-      if (event.defaultPrevented) {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    onSubmit?.(event);
+    if (event.defaultPrevented) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const form = event.currentTarget;
+    const formAction =
+      typeof action === "string" && action.length > 0 ? action : form.action;
+
+    if (!formAction) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const response = await fetch(formAction, {
+        method: method.toUpperCase(),
+        body: new FormData(form),
+        credentials: "same-origin",
+        headers: {
+          "x-requested-with": "XMLHttpRequest",
+          accept: "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        console.error("Async form submit failed", text);
         return;
       }
 
-      event.preventDefault();
-
-      const form = event.currentTarget;
-      const formAction =
-        typeof action === "string" && action.length > 0 ? action : form.action;
-
-      if (!formAction) {
-        return;
-      }
-
-      setIsSubmitting(true);
-      try {
-        const response = await fetch(formAction, {
-          method: method.toUpperCase(),
-          body: new FormData(form),
-          credentials: "same-origin",
-          headers: {
-            "x-requested-with": "XMLHttpRequest",
-            accept: "application/json",
+      window.dispatchEvent(
+        new CustomEvent("profile:form-success", {
+          detail: {
+            successKey,
+            childId: successChildId ?? null,
           },
-        });
-
-        if (!response.ok) {
-          const text = await response.text();
-          console.error("Async form submit failed", text);
-          return;
-        }
-
-        window.dispatchEvent(
-          new CustomEvent("profile:form-success", {
-            detail: {
-              successKey,
-              childId: successChildId ?? null,
-            },
-          }),
-        );
-      } catch (error) {
-        console.error("Async form submit error", error);
-      } finally {
-        setIsSubmitting(false);
-      }
-    },
-    [action, method, onSubmit, successChildId, successKey],
-  );
+        }),
+      );
+    } catch (error) {
+      console.error("Async form submit error", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <form

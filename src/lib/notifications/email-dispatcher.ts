@@ -23,14 +23,12 @@ export async function dispatchEmailForNotification(
   }
 
   try {
-    const info = await transporter.sendMail({
+    await transporter.sendMail({
       from: `"JDAV / DAV Pfarrkirchen" <${process.env.SMTP_USER}>`,
       to: email,
       subject: title,
       text: body,
-      // You can add HTML formatting here later
     });
-    console.log("Email sent:", info.messageId);
   } catch (error) {
     console.error("Failed to send email:", error);
   }

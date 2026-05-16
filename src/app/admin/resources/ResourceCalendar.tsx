@@ -238,11 +238,9 @@ export function ResourceCalendar({ bookings }: ResourceCalendarProps) {
         />
       )}
 
-      {/* Detail Modal */}
       {selectedEvent && (
         <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl animate-in zoom-in-95 duration-200">
-            {/* Modal Header */}
             <div className="relative bg-slate-50 border-b border-slate-100 p-6 pt-8">
               <button
                 type="button"
@@ -265,9 +263,7 @@ export function ResourceCalendar({ bookings }: ResourceCalendarProps) {
               </p>
             </div>
 
-            {/* Modal Body */}
             <div className="p-6 space-y-6">
-              {/* Tour Context */}
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-slate-400">
                   <LinkIcon className="h-4 w-4" />
@@ -294,7 +290,6 @@ export function ResourceCalendar({ bookings }: ResourceCalendarProps) {
                 )}
               </div>
 
-              {/* Data Grid */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 text-slate-400">
@@ -321,7 +316,6 @@ export function ResourceCalendar({ bookings }: ResourceCalendarProps) {
                 </div>
               </div>
 
-              {/* Zeitraum */}
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-slate-400">
                   <Clock className="h-4 w-4" />
@@ -353,7 +347,6 @@ export function ResourceCalendar({ bookings }: ResourceCalendarProps) {
               </div>
             </div>
 
-            {/* Modal Footer */}
             <div className="p-6 pt-0 bg-white">
               <button
                 type="button"

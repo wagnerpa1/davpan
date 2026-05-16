@@ -20,14 +20,53 @@ interface ReportImage {
   order_index: number | null;
 }
 
+type ReportSearchParams = Record<string, string | string[] | undefined>;
+
+function getSearchParam(
+  params: ReportSearchParams,
+  key: string,
+  fallback = "",
+) {
+  const value = params[key];
+  if (Array.isArray(value)) {
+    return value[0] ?? fallback;
+  }
+
+  return value ?? fallback;
+}
+
+function getReportYear(startDate?: string | null) {
+  return startDate ? new Date(startDate).getFullYear() : null;
+}
+
+function getReportPreviewImage(images: ReportImage[] | null | undefined) {
+  return images?.sort(
+    (a, b) => (a.order_index ?? 0) - (b.order_index ?? 0),
+  )?.[0]?.image_url;
+}
+
+function normalizeCategoryFilter(
+  categoryFilter: string,
+  categories: TourCategoryOption[],
+) {
+  if (!categoryFilter) return categoryFilter;
+
+  // Older links may still carry the label, so keep both representations working.
+  const categoryByLabel = new Map(
+    categories.map((category) => [category.category.toLowerCase(), category.id]),
+  );
+
+  return categoryByLabel.get(categoryFilter.toLowerCase()) ?? categoryFilter;
+}
+
 export default async function BerichtePage({ searchParams }: Props) {
   const supabase = await createClient();
   const params = await searchParams;
 
-  const categoryFilter = params.category as string;
-  const yearFilter = params.year as string;
-  const groupFilter = params.group as string;
-  const sortFilter = (params.sort as string) || "newest";
+  const categoryFilter = getSearchParam(params, "category");
+  const yearFilter = getSearchParam(params, "year");
+  const groupFilter = getSearchParam(params, "group");
+  const sortFilter = getSearchParam(params, "sort", "newest");
 
   const {
     data: { user },
@@ -43,8 +82,11 @@ export default async function BerichtePage({ searchParams }: Props) {
   const categories = ((catData || []) as TourCategoryOption[]).filter(
     (c): c is { id: string; category: string } => Boolean(c.category),
   );
+  const normalizedCategoryFilter = normalizeCategoryFilter(
+    categoryFilter,
+    categories,
+  );
 
-  // Fetch data base
   let query = supabase.from("tour_reports").select(`
       *,
       profiles:created_by(full_name),
@@ -60,17 +102,15 @@ export default async function BerichtePage({ searchParams }: Props) {
       report_images(image_url, order_index)
     `);
 
-  // Sorting
-  if (sortFilter === "oldest") {
-    query = query.order("created_at", { ascending: true });
-  } else if (sortFilter === "title_asc") {
-    query = query.order("title", { ascending: true });
-  } else {
-    query = query.order("created_at", { ascending: false });
-  }
+  query =
+    sortFilter === "oldest"
+      ? query.order("created_at", { ascending: true })
+      : sortFilter === "title_asc"
+        ? query.order("title", { ascending: true })
+        : query.order("created_at", { ascending: false });
 
-  if (categoryFilter) {
-    query = query.eq("tours.category", categoryFilter);
+  if (normalizedCategoryFilter) {
+    query = query.eq("tours.category", normalizedCategoryFilter);
   }
 
   if (groupFilter) {
@@ -79,15 +119,12 @@ export default async function BerichtePage({ searchParams }: Props) {
 
   const { data: reports } = await query;
 
-  // JS Filter for year (since tours.start_date is an inner join but we filter by its year)
   const filteredReports = yearFilter
     ? reports?.filter(
-        (r) =>
-          new Date(r.tours.start_date).getFullYear().toString() === yearFilter,
+        (report) => getReportYear(report.tours.start_date)?.toString() === yearFilter,
       )
     : reports;
 
-  // Prepare metadata for filters
   const { data: groupsData } = await supabase
     .from("tour_groups")
     .select("id, group_name");
@@ -95,7 +132,9 @@ export default async function BerichtePage({ searchParams }: Props) {
 
   const years = Array.from(
     new Set(
-      reports?.map((r) => new Date(r.tours.start_date).getFullYear()) || [],
+      reports?.map((report) => getReportYear(report.tours.start_date)).filter(
+        (year): year is number => year !== null,
+      ) || [],
     ),
   ).sort((a, b) => b - a);
 
@@ -115,16 +154,16 @@ export default async function BerichtePage({ searchParams }: Props) {
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {filteredReports && filteredReports.length > 0 ? (
           filteredReports.map((report) => {
-            const previewImage = (report.report_images as ReportImage[])?.sort(
-              (a, b) => (a.order_index ?? 0) - (b.order_index ?? 0),
-            )?.[0]?.image_url;
+            const previewImage = getReportPreviewImage(
+              report.report_images as ReportImage[] | null | undefined,
+            );
             return (
               <Link
                 key={report.id}
                 href={`/berichte/${report.id}`}
                 className="group flex flex-col h-full bg-white rounded-2xl border border-slate-200 shadow-sm transition-all hover:border-jdav-green hover:shadow-md"
               >
-                <div className="relative aspect-[4/3] w-full overflow-hidden rounded-t-2xl">
+                <div className="relative aspect-4/3 w-full overflow-hidden rounded-t-2xl">
                   {previewImage ? (
                     <Image
                       src={previewImage}

@@ -5,19 +5,16 @@ import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { getAuthCallbackUrl } from "@/lib/auth";
 import { createClient } from "@/utils/supabase/client";
 
 export function LoginForm({ className }: { className?: string }) {
   const [supabase] = useState(() => createClient());
   const router = useRouter();
-  // Use NEXT_PUBLIC_SITE_URL for consistent redirects across all environments
-  // Falls auf .env gesetzt, sonst nutze window.location.origin
   const [redirectTo, setRedirectTo] = useState<string>("");
 
   useEffect(() => {
-    // Priorität: NEXT_PUBLIC_SITE_URL (für Deployment) → window.location.origin (für Entwicklung)
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
-    setRedirectTo(`${siteUrl}/auth/callback`);
+    setRedirectTo(getAuthCallbackUrl());
 
     const {
       data: { subscription },

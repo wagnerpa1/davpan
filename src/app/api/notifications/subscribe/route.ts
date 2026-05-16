@@ -28,7 +28,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if subscription already exists
     const { data: existingSubscription } = await supabase
       .from("push_subscriptions")
       .select("id")
@@ -37,7 +36,6 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     if (existingSubscription) {
-      // Update last used timestamp
       await supabase
         .from("push_subscriptions")
         .update({
@@ -49,7 +47,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, isNew: false });
     }
 
-    // Insert new subscription
     const { error } = await supabase.from("push_subscriptions").insert({
       user_id: user.id,
       endpoint: body.endpoint,
@@ -67,7 +64,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log(`[Push] New subscription saved for user ${user.id}`);
     return NextResponse.json({ success: true, isNew: true });
   } catch (error) {
     console.error("[Push] Error in subscribe endpoint:", error);

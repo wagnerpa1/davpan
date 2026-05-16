@@ -13,7 +13,6 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import { ReportGallery } from "@/components/reports/ReportGallery";
-import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/server";
 
 interface Props {
@@ -28,6 +27,10 @@ interface ReportImage {
 
 interface TourGuide {
   user_id: string | null;
+}
+
+function formatReportDate(value?: string | null) {
+  return value ? format(new Date(value), "dd.MM.yyyy") : "–";
 }
 
 export default async function ReportDetailPage({ params }: Props) {
@@ -89,7 +92,6 @@ export default async function ReportDetailPage({ params }: Props) {
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8">
-      {/* Top Navigation - Simple like Tour detail page */}
       <div className="mb-6 flex items-center justify-between text-sm">
         <Link
           href="/berichte"
@@ -101,21 +103,15 @@ export default async function ReportDetailPage({ params }: Props) {
           <div className="flex gap-2">
             <Link
               href={`/touren/${report.tours?.id}/bericht/edit?id=${report.id}`}
+              className="inline-flex h-9 items-center rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50"
             >
-              <Button
-                variant="outline"
-                size="sm"
-                className="rounded-lg h-9 border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-              >
-                <Edit3 className="mr-1.5 h-3.5 w-3.5" /> Bearbeiten
-              </Button>
+              <Edit3 className="mr-1.5 h-3.5 w-3.5" /> Bearbeiten
             </Link>
           </div>
         )}
       </div>
 
       <div className="overflow-hidden rounded-3xl bg-white shadow-xl ring-1 ring-slate-200">
-        {/* Banner Section */}
         {bannerImage ? (
           <div className="relative aspect-21/9 w-full overflow-hidden bg-slate-900">
             <Image
@@ -133,18 +129,14 @@ export default async function ReportDetailPage({ params }: Props) {
           </div>
         )}
 
-        {/* Content */}
         <div className="p-8 sm:p-12">
-          {/* Title & Meta */}
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-3">
               <span className="rounded-full bg-jdav-green/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-jdav-green">
                 {report.tours?.tour_categorys?.category || "Tour"}
               </span>
               <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                {report.tours?.start_date
-                  ? format(new Date(report.tours.start_date), "dd.MM.yyyy")
-                  : "–"}
+                {formatReportDate(report.tours?.start_date)}
               </span>
             </div>
             <h1 className="text-3xl font-black tracking-tight text-slate-900 sm:text-5xl mb-4">
@@ -161,7 +153,6 @@ export default async function ReportDetailPage({ params }: Props) {
             </div>
           </div>
 
-          {/* Info Grid - Standardized to Tour detail page style */}
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 mb-10">
             <div className="flex flex-col items-center justify-center rounded-2xl bg-slate-50 p-4 text-center border border-slate-100/50">
               <MapPin className="mb-2 h-5 w-5 text-jdav-green" />
@@ -192,12 +183,10 @@ export default async function ReportDetailPage({ params }: Props) {
             </div>
           </div>
 
-          {/* Report Content */}
           <div className="prose prose-slate prose-jdav max-w-none text-slate-600 leading-relaxed whitespace-pre-wrap mb-12">
             <ReactMarkdown>{report.report_text}</ReactMarkdown>
           </div>
 
-          {/* Related Tour Link */}
           {report.tours?.id && (
             <div className="mb-12 rounded-2xl border border-slate-100 bg-slate-50 p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div>
@@ -210,17 +199,13 @@ export default async function ReportDetailPage({ params }: Props) {
                 href={`/touren/${report.tours.id}`}
                 className="shrink-0 w-full sm:w-auto"
               >
-                <Button
-                  variant="outline"
-                  className="w-full sm:w-auto rounded-xl border-slate-200 text-xs font-bold hover:bg-slate-900 hover:text-white transition-all"
-                >
+                <span className="inline-flex w-full items-center justify-center rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold transition-all hover:bg-slate-900 hover:text-white sm:w-auto">
                   Tour ansehen <ArrowRight className="ml-2 h-3.5 w-3.5" />
-                </Button>
+                </span>
               </Link>
             </div>
           )}
 
-          {/* Gallery */}
           <div className="pt-10 border-t border-slate-100">
             <ReportGallery images={galleryImages} />
           </div>
