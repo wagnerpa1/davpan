@@ -134,9 +134,9 @@ export function NotificationPreferencesPanel({
   const hasChildTabs = childPreferences.length > 0;
   const [activeTab, setActiveTab] = useState<TabKey>("self");
   const activeChild = activeTab.startsWith("child-")
-    ? childPreferences.find(
+    ? (childPreferences.find(
         (child) => child.id === activeTab.slice("child-".length),
-      ) ?? null
+      ) ?? null)
     : null;
 
   return (

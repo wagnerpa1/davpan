@@ -4,8 +4,8 @@ import { Auth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { cn } from "@/lib/utils";
 import { getAuthCallbackUrl } from "@/lib/auth";
+import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/client";
 
 export function LoginForm({ className }: { className?: string }) {

@@ -33,7 +33,9 @@ function isProtectedRole(role: string | null | undefined) {
   return ["guide", "materialwart", "admin"].includes(role || "");
 }
 
-function mapChildProfileRow(row: ChildProfile & { parent_child_relations?: unknown }) {
+function mapChildProfileRow(
+  row: ChildProfile & { parent_child_relations?: unknown },
+) {
   const { parent_child_relations: _relations, ...rest } = row;
   return rest as ChildProfile;
 }

@@ -304,7 +304,9 @@ export default async function TourDetailPage({
       (tg: TourGuide) => tg.user_id === authContext.user?.id,
     );
     canManageTour =
-      userRole === "admin" || isLead || tourData.created_by === authContext.user.id;
+      userRole === "admin" ||
+      isLead ||
+      tourData.created_by === authContext.user.id;
   }
 
   const guides = (tour.tour_guides || []).map(
@@ -363,7 +365,7 @@ export default async function TourDetailPage({
             <div className="mt-4 flex flex-wrap justify-center gap-4 text-sm font-medium">
               <div className="flex items-center gap-1.5 text-white/90">
                 <span className="opacity-70 font-normal">Leitung:</span>
-                  {tour.tour_guides.map((tg: TourGuide, idx: number) => (
+                {tour.tour_guides.map((tg: TourGuide, idx: number) => (
                   <span
                     key={
                       tg.user_id ||

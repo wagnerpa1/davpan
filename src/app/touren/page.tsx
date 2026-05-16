@@ -47,11 +47,7 @@ interface TourParticipantCountRow {
 
 type TourSearchParams = Record<string, string | string[] | undefined>;
 
-function getSearchParam(
-  params: TourSearchParams,
-  key: string,
-  fallback = "",
-) {
+function getSearchParam(params: TourSearchParams, key: string, fallback = "") {
   const value = params[key];
   if (Array.isArray(value)) {
     return value[0] ?? fallback;
@@ -74,18 +70,25 @@ function normalizeCategoryFilter(
 
   // Shared URLs may still contain the human-readable label, so resolve both forms.
   const categoryByLabel = new Map(
-    categories.map((category) => [category.category.toLowerCase(), category.id]),
+    categories
+      .filter((category) => category.category !== null)
+      .map((category) => [category.category?.toLowerCase(), category.id]),
   );
 
   return categoryByLabel.get(categoryFilter.toLowerCase()) ?? categoryFilter;
 }
 
 function getConfirmedCount(
-  tour: Pick<TourCardItem, "confirmed_participants_count" | "tour_participants">,
+  tour: Pick<
+    TourCardItem,
+    "confirmed_participants_count" | "tour_participants"
+  >,
 ) {
   return (
     tour.confirmed_participants_count ??
-    tour.tour_participants?.filter((participant) => participant.status === "confirmed").length ??
+    tour.tour_participants?.filter(
+      (participant) => participant.status === "confirmed",
+    ).length ??
     0
   );
 }
@@ -105,7 +108,10 @@ function isCancelledTourVisible(
 }
 
 function getCapacityRatio(
-  tour: Pick<TourCardItem, "max_participants" | "confirmed_participants_count" | "tour_participants">,
+  tour: Pick<
+    TourCardItem,
+    "max_participants" | "confirmed_participants_count" | "tour_participants"
+  >,
 ) {
   const confirmedCount = getConfirmedCount(tour);
   const maxParticipants = tour.max_participants || 999;
@@ -337,9 +343,7 @@ export default async function TourenPage({
 
       <div className="space-y-4">
         {filteredTours.length > 0 ? (
-          filteredTours.map((tour) => (
-            <TourCard key={tour.id} tour={tour} />
-          ))
+          filteredTours.map((tour) => <TourCard key={tour.id} tour={tour} />)
         ) : (
           <div className="rounded-2xl border border-slate-200 border-dashed p-12 text-center">
             <Search className="mx-auto mb-4 h-12 w-12 text-slate-300" />

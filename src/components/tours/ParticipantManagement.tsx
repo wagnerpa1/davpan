@@ -66,6 +66,10 @@ interface ParticipantManagementProps {
   reservations: Reservation[];
 }
 
+function getParticipantKey(userId: string, childProfileId: string | null) {
+  return `${userId}:${childProfileId ?? "self"}`;
+}
+
 export function ParticipantManagement({
   tourId,
   tourTitle,
@@ -120,16 +124,26 @@ export function ParticipantManagement({
     return grouped;
   }, [reservations]);
 
-  const filteredParticipants = useMemo(() => {
-    return participants.filter((participant) => {
-      if (filter === "all") return participant.status !== "cancelled";
-      return participant.status === filter;
-    });
-  }, [participants, filter]);
+  const { filteredParticipants, cancelledParticipants } = useMemo(() => {
+    const nextFilteredParticipants: Participant[] = [];
+    const nextCancelledParticipants: Participant[] = [];
 
-  const cancelledParticipants = useMemo(() => {
-    return participants.filter((participant) => participant.status === "cancelled");
-  }, [participants]);
+    for (const participant of participants) {
+      if (participant.status === "cancelled") {
+        nextCancelledParticipants.push(participant);
+        continue;
+      }
+
+      if (filter === "all" || participant.status === filter) {
+        nextFilteredParticipants.push(participant);
+      }
+    }
+
+    return {
+      filteredParticipants: nextFilteredParticipants,
+      cancelledParticipants: nextCancelledParticipants,
+    };
+  }, [participants, filter]);
 
   const handleStatusUpdate = async (
     regId: string,
@@ -147,8 +161,11 @@ export function ParticipantManagement({
   };
 
   const getParticipantReservations = (p: Participant) => {
-    const key = `${p.user_id}:${p.child_profile_id ?? "self"}`;
-    return reservationsByParticipant.get(key) || [];
+    return (
+      reservationsByParticipant.get(
+        getParticipantKey(p.user_id, p.child_profile_id),
+      ) || []
+    );
   };
 
   const getParticipantAge = (participant: Participant) =>

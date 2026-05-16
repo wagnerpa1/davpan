@@ -51,7 +51,10 @@ export function MemberBarcodePopup({
 
   const memberDigits = toDigits(membershipNumber);
   const birthdateDdMmYyyy = toDdMmYyyy(birthdate);
-  const barcodePayload = memberDigits && birthdateDdMmYyyy ? `${memberDigits}${birthdateDdMmYyyy}` : "";
+  const barcodePayload =
+    memberDigits && birthdateDdMmYyyy
+      ? `${memberDigits}${birthdateDdMmYyyy}`
+      : "";
 
   const canRenderBarcode = barcodePayload.length > 0;
   const missingMembershipNumber = memberDigits.length === 0;

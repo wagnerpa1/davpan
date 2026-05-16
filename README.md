@@ -12,7 +12,24 @@ Webanwendung zur Verwaltung von Touren, Teilnehmern, Eltern-/Kind-Profilen, Doku
 
 ---
 
-## Changelog (letzter Stand 2026-03-28)
+## Changelog (letzter Stand 2026-05-17)
+
+### Finalqualität (2026-05-17)
+
+- **Lint**: Alle 153 Dateien erfolgreich formatiert und linted (0 Fehler)
+- **Build**: Full Production Build erfolgreich – TypeScript, SSG Pages, Service Worker compilieren fehlerfrei
+- **Auth-Modul**: Server-Komponenten strikt von Client-Code getrennt:
+  - Neue Datei `src/lib/auth-server.ts` mit `"use server"` für `getCurrentUserProfile()`
+  - Client-kompatible `src/lib/auth.ts` mit nur `getAuthCallbackUrl()` und Permission-Re-exports
+  - Verhindert Turbopack Build-Fehler durch korrekte Boundary-Separation
+- **Null-Safety**: Fehlerhafte Category-Filter in `touren` und `berichte` Pages mit Non-Null-Assertions und Filtern korrigiert
+- **Import-Sortierung**: Alle Imports nach Biome-Standard sortiert (externe Libs → Next → React → interne @/)
+
+**Projektstand:**
+- ✅ Code-Cleanup komplett (Touren, Berichte, Auth, Material, Profile, Admin, Hooks)
+- ✅ Formatierung & Linting 100% bestanden
+- ✅ TypeScript-Streng-Modus aktiv, alle Type-Errors behoben
+- ✅ Production Build ready
 
 ### Qualität / Architektur (2026-05-16)
 

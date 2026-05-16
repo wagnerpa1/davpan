@@ -303,26 +303,26 @@ export function MyTourRegistrationsPanel({
     return tabWithRegistrations?.id ?? tabs[0]?.id ?? "self";
   });
 
-  const activeTab = tabs.find((tab) => tab.id === activeTabId) ?? tabs[0] ?? null;
+  const activeTab =
+    tabs.find((tab) => tab.id === activeTabId) ?? tabs[0] ?? null;
 
-  const activeRegistrations = useMemo(
-    () =>
-      sortRegistrations(
-        (activeTab?.registrations ?? []).filter(
-          (registration) => !isArchivedRegistration(registration),
-        ),
-      ),
-    [activeTab],
-  );
-  const archiveRegistrations = useMemo(
-    () =>
-      sortRegistrations(
-        (activeTab?.registrations ?? []).filter((registration) =>
-          isArchivedRegistration(registration),
-        ),
-      ),
-    [activeTab],
-  );
+  const { activeRegistrations, archiveRegistrations } = useMemo(() => {
+    const nextActiveRegistrations: UserTourRegistration[] = [];
+    const nextArchiveRegistrations: UserTourRegistration[] = [];
+
+    for (const registration of activeTab?.registrations ?? []) {
+      if (isArchivedRegistration(registration)) {
+        nextArchiveRegistrations.push(registration);
+      } else {
+        nextActiveRegistrations.push(registration);
+      }
+    }
+
+    return {
+      activeRegistrations: sortRegistrations(nextActiveRegistrations),
+      archiveRegistrations: sortRegistrations(nextArchiveRegistrations),
+    };
+  }, [activeTab]);
 
   const participantLabel = activeTab?.label ?? "Ich";
 

@@ -167,17 +167,15 @@ export default async function AdminMaterialReservationsPage({
   const reservationRows = (reservations as ReservationRow[] | null) || [];
   const unavailableRequested = reservationRows.filter(isProblematicRequest);
 
-  const sortedReservations = reservationRows
-    .slice()
-    .sort((a, b) => {
-      const aProblematic = isProblematicRequest(a) ? 1 : 0;
-      const bProblematic = isProblematicRequest(b) ? 1 : 0;
-      if (aProblematic !== bProblematic) {
-        return bProblematic - aProblematic;
-      }
+  const sortedReservations = reservationRows.slice().sort((a, b) => {
+    const aProblematic = isProblematicRequest(a) ? 1 : 0;
+    const bProblematic = isProblematicRequest(b) ? 1 : 0;
+    if (aProblematic !== bProblematic) {
+      return bProblematic - aProblematic;
+    }
 
-      return getReservationTimestamp(b) - getReservationTimestamp(a);
-    });
+    return getReservationTimestamp(b) - getReservationTimestamp(a);
+  });
 
   const visibleReservations =
     activeView === "problematic"

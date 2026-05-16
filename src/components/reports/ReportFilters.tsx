@@ -43,7 +43,9 @@ export function ReportFilters({
     router.push("/berichte", { scroll: false });
   };
 
-  const hasActiveFilters = Boolean(currentCategory || currentYear || currentGroup);
+  const hasActiveFilters = Boolean(
+    currentCategory || currentYear || currentGroup,
+  );
 
   return (
     <div className="mb-6 space-y-4">

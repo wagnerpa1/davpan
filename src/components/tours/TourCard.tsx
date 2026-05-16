@@ -109,7 +109,8 @@ export function TourCard({ tour }: TourCardProps) {
   const statusClass = getTourStatusClass(tour.status, isCancelled);
   const statusLabel = getTourStatusLabel(tour.status);
   const dateLabel = getTourDateLabel(tour.start_date, tour.end_date);
-  const guideNames = tour.tour_guides?.map((guide) => guide.profiles?.full_name) ?? [];
+  const guideNames =
+    tour.tour_guides?.map((guide) => guide.profiles?.full_name) ?? [];
 
   return (
     <Link href={`/touren/${tour.id}`} className="motion-press block">
@@ -188,9 +189,7 @@ export function TourCard({ tour }: TourCardProps) {
                   isCancelled ? "text-slate-400" : "text-jdav-green",
                 )}
               />
-              <span className="truncate">
-                {dateLabel}
-              </span>
+              <span className="truncate">{dateLabel}</span>
             </div>
             <div className="flex items-center gap-2 min-w-0">
               <MapPin
@@ -237,7 +236,10 @@ export function TourCard({ tour }: TourCardProps) {
 
           <div className="mt-4 flex flex-wrap gap-2">
             <div
-              className={cn("inline-flex rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset", statusClass)}
+              className={cn(
+                "inline-flex rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset",
+                statusClass,
+              )}
             >
               {statusLabel}
             </div>

@@ -53,7 +53,9 @@ function normalizeCategoryFilter(
 
   // Older links may still carry the label, so keep both representations working.
   const categoryByLabel = new Map(
-    categories.map((category) => [category.category.toLowerCase(), category.id]),
+    categories
+      .filter((category) => category.category !== null)
+      .map((category) => [category.category?.toLowerCase(), category.id]),
   );
 
   return categoryByLabel.get(categoryFilter.toLowerCase()) ?? categoryFilter;
@@ -121,7 +123,8 @@ export default async function BerichtePage({ searchParams }: Props) {
 
   const filteredReports = yearFilter
     ? reports?.filter(
-        (report) => getReportYear(report.tours.start_date)?.toString() === yearFilter,
+        (report) =>
+          getReportYear(report.tours.start_date)?.toString() === yearFilter,
       )
     : reports;
 
@@ -132,9 +135,9 @@ export default async function BerichtePage({ searchParams }: Props) {
 
   const years = Array.from(
     new Set(
-      reports?.map((report) => getReportYear(report.tours.start_date)).filter(
-        (year): year is number => year !== null,
-      ) || [],
+      reports
+        ?.map((report) => getReportYear(report.tours.start_date))
+        .filter((year): year is number => year !== null) || [],
     ),
   ).sort((a, b) => b - a);
 

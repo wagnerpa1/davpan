@@ -76,7 +76,8 @@ export function NotificationCenter({ isParent }: NotificationCenterProps) {
 
   const totalUnread = tabs.reduce((sum, tab) => sum + tab.unreadCount, 0);
 
-  const activeTab = tabs.find((tab) => tab.id === activeTabId) ?? tabs[0] ?? null;
+  const activeTab =
+    tabs.find((tab) => tab.id === activeTabId) ?? tabs[0] ?? null;
 
   const hasTabNavigation = isParent && tabs.length > 1;
 
