@@ -1,320 +1,138 @@
-# JDAV / DAV Pfarrkirchen Touren-Portal
+# 🏔️ JDAV / DAV Pfarrkirchen Tourenverwaltung
 
-Webanwendung zur Verwaltung von Touren, Teilnehmern, Eltern-/Kind-Profilen, Dokumenten und (vorbereitet) Materialverwaltung.
+![JDAV Pfarrkirchen](https://img.shields.io/badge/DAV-Sektion_Pfarrkirchen-76a355?style=for-the-badge)
+![Next.js](https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js)
+![Supabase](https://img.shields.io/badge/Supabase-Database-3ecf8e?style=for-the-badge&logo=supabase)
+![PWA](https://img.shields.io/badge/PWA-Ready-blueviolet?style=for-the-badge)
 
-## Kurzstatus
-
-- Framework: Next.js 16.2.1
-- Runtime im Projekt aktuell: `turbopack` (über npm scripts)
-- Backend: Supabase (Auth + Postgres)
-- PWA: Serwist integriert
-- Sicherheitsbericht: siehe `sicherheit.md`
+Eine moderne, leistungsstarke Progressive Web App (PWA) zur Organisation und Verwaltung von Bergtouren, Material und Vereinsressourcen für die **JDAV & DAV Sektion Pfarrkirchen**.
 
 ---
 
-## Changelog (letzter Stand 2026-05-17)
+## 🚀 Kern-Features
 
-### Clean Code & Architektur-Refactoring (2026-05-16)
-
-- **Umfassende Codebase-Bereinigung**: Alle Dateien in `src/app`, `src/components`, `src/lib`, `src/hooks`, und `src/utils` analysiert und bereinigt.
-- **Dokumentation & TSDoc**: Umfangreiche TSDoc- und JSDoc-Kommentare für alle wichtigen Funktionen, Interfaces und komplexen Komponenten (wie `TourForm` und `ParticipantManagement`) hinzugefügt. Der Fokus lag dabei auf der "Warum"-Dokumentation der Business-Logik.
-- **Toter Code**: Ungenutzte Variablen, redundante Importe und veraltete Helfer-Fragmente entfernt, ohne die bestehende Funktionalität der App zu verändern.
-- **Formatierung**: Die gesamte Codebasis wurde konsistent mit Biome (`npm run format`) neu formatiert, um höchste Lesbarkeit zu gewährleisten.
-- **Build & Typ-Sicherheit**: Die strikten Typisierungsvorgaben (`tsc --noEmit`) wurden auf das gesamte Projekt angewandt und die Build-Pipeline validiert.
-
-### Finalqualität (2026-05-17)
-
-- **Lint**: Alle 153 Dateien erfolgreich formatiert und linted (0 Fehler)
-- **Build**: Full Production Build erfolgreich – TypeScript, SSG Pages, Service Worker compilieren fehlerfrei
-- **Auth-Modul**: Server-Komponenten strikt von Client-Code getrennt:
-  - Neue Datei `src/lib/auth-server.ts` mit `"use server"` für `getCurrentUserProfile()`
-  - Client-kompatible `src/lib/auth.ts` mit nur `getAuthCallbackUrl()` und Permission-Re-exports
-  - Verhindert Turbopack Build-Fehler durch korrekte Boundary-Separation
-- **Null-Safety**: Fehlerhafte Category-Filter in `touren` und `berichte` Pages mit Non-Null-Assertions und Filtern korrigiert
-- **Import-Sortierung**: Alle Imports nach Biome-Standard sortiert (externe Libs → Next → React → interne @/)
-
-**Projektstand:**
-- ✅ Code-Cleanup komplett (Touren, Berichte, Auth, Material, Profile, Admin, Hooks)
-- ✅ Formatierung & Linting 100% bestanden
-- ✅ TypeScript-Streng-Modus aktiv, alle Type-Errors behoben
-- ✅ Production Build ready
-
-### Qualität / Architektur (2026-05-16)
-
-- Touren-Seite und zugehörige Tour-Komponenten aufgeräumt, ohne Verhalten zu ändern
-- URL-Parameter werden zentral normalisiert, damit alte und neue Filter-Links gleich bleiben
-- Tour-CTA-Buttons in semantische `Link`-Elemente umgebaut
-- Status-, Datums- und Kapazitätslogik in [TourCard](src/components/tours/TourCard.tsx) lesbarer gemacht
-- Berichte-, Auth- und Material-Slices nach demselben Muster bereinigt und validiert
-- Profilseite von redundanten Rollen- und Mitgliederformatierungen befreit
-- Admin-Übersichten für Material, Ressourcen, News und Observability gestrafft
-- Gemeinsame Redirect- und Datums-Helfer zentralisiert, um Duplikate zu vermeiden
-
-### Qualität / Sicherheit (2026-03-28)
-
-- `biome check` bereinigt (keine offenen Lint-Fehler mehr)
-- A11y-/Conventions-Fixes in Admin- und Material-UI (Labels, Button-Typen, semantische Links)
-- `any`-Hotspots in Server Actions und Admin-Seiten durch konkrete Typen ersetzt
-- Build-Validierung erfolgreich (`next build --turbopack` inkl. TypeScript)
-- Security-Update: `next` auf `16.2.1` erhöht (Audit-Findings behoben)
-- Produktions-Audit sauber (`npm audit --omit=dev` → 0 Vulnerabilities)
-- CSRF-/Origin-Härtung für Deployments hinter Reverse Proxy verbessert (`forwarded`, `x-forwarded-*`, `sec-fetch-site` Fallback)
-- Next Server Actions auf vertrauenswürdige Origins beschränkt (`experimental.serverActions.allowedOrigins`)
-- Öffentliche Touren repariert: `anon`-Read-Policy für `tours` ergänzt (nur `planning/open/full`)
-- PWA-Start beschleunigt: `start_url` auf `/oeffentlich/touren`, Precache um öffentliche Startseite erweitert
-- Service-Worker-Caching überarbeitet (gezielte Runtime-Strategien statt generischem Default-Cache)
-
-### Behobene Fehler
-
-| # | Datei | Problem | Fix |
-|---|-------|---------|-----|
-| 1 | `src/app/touren/page.tsx` | `new Date(null\|undefined)` im `date_desc`-Sort → CI TypeScript Build-Abbruch | `toTimestamp()`-Hilfsfunktion mit Null-Guard |
-| 2 | `src/app/touren/page.tsx` | Ungenutzte `TourListItem`-Interface | Entfernt |
-| 3 | `src/app/touren/[id]/page.tsx` | Implizites `any` auf `tg`-Parameter in `.some()` und `.map()` | Explizit auf `TourGuide` typisiert |
-| 4 | `src/app/berichte/page.tsx` | `new Date(report.created_at)` ohne Null-Guard | Optional-Chaining mit Fallback `"–"` |
-| 5 | `src/components/auth/LoginForm.tsx` | Hydration-Mismatch: `origin`-State leer beim SSR, führt zu leerem `redirectTo` | State zu `redirectTo` umbenannt, `window`-Zugriff sicher nur im `useEffect` |
-| 6 | `src/app/actions/tour-management.ts` | `syncTourStatuses()` feuert DB-Write bei jedem Page-Request (Race Condition, unnötige Writes) | `React.cache()` für Request-Dedup + 60s In-Memory-Throttle |
-| 7 | `next.config.ts` | Service-Worker-Scope-Fehler bei `/serwist/sw.js` + Scope `/` | `Service-Worker-Allowed: /` Header gesetzt, Root-Scope stabil registrierbar |
-| 8 | `package.json` | `@supabase/auth-helpers-nextjs@0.15.0` (deprecated, nirgends importiert) | Entfernt |
-| 9 | `package.json` | `uuid@13.0.0` + `@types/uuid` (nirgends genutzt) | Entfernt |
+*   **📅 Touren-Management**: Planung, Veröffentlichung und Anmeldung zu Vereinstouren.
+*   **👥 Teilnehmerverwaltung**: Automatisierte Wartelistenlogik, Guide-Bestätigungen und Notfallkontakt-Management.
+*   **🛠️ Material- & Ressourcen**: Verleih von Bergsport-Ausrüstung und Reservierung von Vereinsressourcen (z. B. Vereinsbus).
+*   **👨‍👩‍👧‍👦 Eltern-Kind-System**: Zentrale Verwaltung von Kinderprofilen durch Eltern für einfache Tour-Anmeldungen.
+*   **📝 Tourberichte**: Community-Feed mit bebilderten Berichten vergangener Abenteuer.
+*   **📱 PWA-Erlebnis**: Installierbar auf Smartphones, Offline-Caching von Touren und Berichten sowie Push-Benachrichtigungen.
+*   **📁 Dokumenten-Center**: Schneller Zugriff auf Formulare, Packlisten und Vereinsregeln.
 
 ---
 
-## Lighthouse-Scores (Login-Seite, Desktop, 2026-03-13)
+## 🛠️ Tech Stack
 
-| Kategorie | Score |
-|-----------|-------|
-| Accessibility | **90** |
-| Best Practices | **96** |
-| SEO | **100** |
-
----
-
-## Funktionsumfang
-
-- Tourenplanung und Verwaltung (Guide/Admin)
-- Materialverwaltung und Reservierungssteuerung (Materialwart/Admin)
-- Anmeldung inkl. Wartelistenlogik
-- Teilnehmer-Statusverwaltung durch berechtigte Nutzer
-- Eltern-/Kind-Profile mit separaten Anmeldungen
-- Dokumentbereich
-- PWA-Grundfunktionen inkl. Offline-Fallbackseite
-
-## Rollenlogik (aktuell)
-
-- `member`: Basisrechte (Touren, Anmeldung, Material anfragen, Berichte lesen)
-- `parent`: wie `member` + Kinderprofile verwalten/anmelden
-- `guide`: Tourenrechte für eigene/zugewiesene Touren
-- `materialwart`: wie `member` + Material-Inventar und Material-Reservierungen verwalten
-- `admin`: Vollzugriff (inkl. Benutzer-/Dokumenten-/Ressourcenverwaltung)
-
-Wichtig: `materialwart` hat **keine** Guide- oder Admin-Rechte ausserhalb des Materialbereichs.
+*   **Framework**: [Next.js](https://nextjs.org/) (App Router, Server Actions)
+*   **Sprache**: TypeScript (Strict Mode)
+*   **Styling**: Tailwind CSS (Nature-themed Palette)
+*   **Datenbank & Auth**: [Supabase](https://supabase.com/) (PostgreSQL, Row Level Security)
+*   **PWA**: [Serwist](https://serwist.js.org/) für Service Worker & Offline-Caching
+*   **Icons**: Lucide React
+*   **Qualität**: Biome (Linting & Formatting)
 
 ---
 
-## Architektur
+## 🏁 Schnellstart (Setup)
 
-### Frontend / App-Layer
+### 1. Voraussetzungen
+*   **Node.js** (LTS empfohlen)
+*   Ein **Supabase-Projekt** (kostenloser Plan ausreichend)
 
-- `src/app` – Next.js App Router (Pages, Route Handlers, Server Actions)
-- `src/components` – UI-Komponenten (Auth, Touren, Layout)
-- `src/utils` – Supabase-Clients und URL-Helfer
-
-### Backend / Daten
-
-- Supabase Projekt (ref): `amjxgutnnnpjbjigzwpo`
-- DB Host: `db.amjxgutnnnpjbjigzwpo.supabase.co`
-- Hauptschema: `public`
-
-Wichtige Tabellen:
-- `profiles`
-- `child_profiles`
-- `tours`
-- `tour_groups`
-- `tour_guides`
-- `tour_participants`
-- `material_types`
-- `material_inventory`
-- `material_pricing`
-- `tour_materials`
-- `tour_material_requirements`
-- `material_reservations`
-- `resources`
-- `resource_bookings`
-- `tour_reports`
-- `report_images`
-- `documents`
-- `notification_preferences`
-- `child_notification_preferences`
-- `notifications`
-- `news_posts`
-- `push_subscriptions`
-
----
-
-## Notifications & Vereinsnews (neu)
-
-- Notification Center als Popup in der Kopfzeile mit Tabs:
-  - `Ich`
-  - pro Kind (nur für Eltern)
-- Benachrichtigungseinstellungen im Profil:
-  - eigene Einstellungen (`/api/profile/notifications`)
-  - pro Kind (`/api/profile/child/notifications`)
-  - Kanäle: Vereinsnews, System, Material, Kommentare, Tour-Gruppen, Push
-- Admin-News-Dashboard:
-  - Seite: `/admin/news`
-  - API: `/api/admin/news`
-  - Beim Posten werden `notifications` für User/Kinder erzeugt (nach Opt-in)
-
-Migrationen:
-
-- Migrationen liegen lokal unter `supabase/migrations/`, sind in diesem Repo aber bewusst von Git ausgeschlossen.
-- Für das Anwenden auf die DB die vorhandenen Skripte unter `scripts/` nutzen (z. B. `scripts/apply-migrations.ts`).
-
-Notification-Center APIs:
-
-- `GET /api/notifications/center`
-- `POST /api/notifications/mark-read`
-
-Push APIs:
-
-- `POST /api/push/subscription`
-- `DELETE /api/push/subscription`
-
-Serverseitiger Push-Versand:
-
-- zentral in `src/lib/notifications/push-dispatch.ts`
-- Versand wird beim Insert in `notifications` aus dem Dispatcher ausgelöst
-
----
-
-## Lokale Entwicklung
-
-### Voraussetzungen
-
-- Node.js LTS
-- npm
-- `.env.local` mit Supabase-Werten
-
-Beispiel:
-
-```powershell
-NEXT_PUBLIC_SUPABASE_URL=...
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=...
-```
-
-### Installation
-
-```powershell
+### 2. Installation
+```bash
+git clone https://github.com/dein-repo/davpan.git
+cd davpan
 npm install
 ```
 
-### Lokale Arbeitsartefakte
+### 3. Umgebungsvariablen
+Erstelle eine `.env.local` im Root-Verzeichnis. Hier sind alle verfügbaren Konfigurationsmöglichkeiten:
 
-- `temp/` wird nur lokal für Berichte, Scratch-Dateien und Zwischenstände verwendet.
-- `supabase/migrations/` wird lokal gepflegt und nicht ins Repository eingecheckt.
+| Variable | Beschreibung | Beispiel |
+| :--- | :--- | :--- |
+| `NEXT_PUBLIC_SUPABASE_URL` | URL deines Supabase Projekts | `https://xyz.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY` | Public Anon Key von Supabase | `sb_publishable_...` |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service Role Key (nur Server-seitig!) | `sb_secret_...` |
+| `NEXT_PUBLIC_SITE_URL` | Öffentliche URL der App (Frontend) | `http://localhost:3000` |
+| `SITE_URL` | Backend-URL der App | `http://localhost:3000` |
+| `CSRF_TRUSTED_ORIGINS` | Erlaubte Origins für Server Actions | `http://localhost:3000,https://deine-domain.de` |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Public Key für Web Push | `BKgta...` |
+| `VAPID_PRIVATE_KEY` | Private Key für Web Push | `tKdtR...` |
+| `VAPID_SUBJECT` | Kontakt-Mail für Push-Services | `mailto:admin@domain.de` |
+| `NOTIFICATION_DELIVERY_MODE` | Zustellungsmodus (`outbox` oder `direct`) | `outbox` |
+| `SMTP_HOST` | Host für E-Mail Versand | `mail.dein-server.de` |
+| `SMTP_PORT` | Port für E-Mail Versand | `587` |
+| `SMTP_USER` | Benutzer für E-Mail Versand | `no-reply@domain.de` |
+| `SMTP_PASS` | Passwort für E-Mail Versand | `...` |
+| `TOUR_VISIBILITY_NEXT_YEAR_UNLOCK_AT` | Wann das neue Programm freigeschaltet wird | `12-01` (1. Dezember) |
 
-### Development-Server
+**Beispiel `.env.local`:**
+```env
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=...
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+SITE_URL=http://localhost:3000
+CSRF_TRUSTED_ORIGINS=http://localhost:3000
+# ... weitere Variablen nach Bedarf
+```
 
-```powershell
+### 4. Datenbank-Setup
+Die Datenbank-Struktur wird über Supabase verwaltet. Migrationen befinden sich unter `supabase/migrations/`.
+Wende diese über das Supabase Dashboard oder CLI an.
+
+### 5. Starten
+```bash
 npm run dev
 ```
+Die App ist nun unter `http://localhost:3000` erreichbar.
 
-### Lint
+---
 
-```powershell
-npm run lint
+## 🔐 Rollen & Berechtigungen
+
+| Rolle | Beschreibung |
+| :--- | :--- |
+| **Member** | Touren einsehen, anmelden, Material anfragen, Berichte lesen. |
+| **Parent** | Wie Member + Verwaltung und Anmeldung von Kindern. |
+| **Guide** | Erstellung und Verwaltung eigener Touren, Teilnehmer-Bestätigung. |
+| **Materialwart** | Verwaltung des Bestands und der Material-Reservierungen. |
+| **Admin** | Voller Zugriff auf Benutzer, Dokumente, Ressourcen und System-Logs. |
+
+---
+
+## 🏗️ Projektstruktur
+
+```text
+src/
+├── app/            # Next.js Pages, API-Routes & Server Actions
+├── components/     # Wiederverwendbare UI-Komponenten (tours, auth, ui...)
+├── hooks/          # Custom React Hooks
+├── lib/            # Zentrale Logik (Auth, Supabase, Permissions)
+├── utils/          # Hilfsfunktionen (Formatting, ICS, Validation)
+└── types/          # TypeScript Definitionen
 ```
 
-### Security Audit (Production Dependencies)
+---
 
-```powershell
-npm audit --omit=dev
-```
+## 📦 Deployment
 
-### Production Build
-
-```powershell
-npm run build
-npm run start
-```
+Die App ist für das Deployment auf Plattformen wie **Vercel** oder **Netlify** optimiert.
+Achte darauf, dass im Deployment die `SITE_URL` und `CSRF_TRUSTED_ORIGINS` korrekt gesetzt sind, um die Sicherheitsmechanismen von Next.js Server Actions zu unterstützen.
 
 ---
 
-## PWA / Offline
+## 🛡️ Qualitätssicherung
 
-- Manifest: `public/manifest.json`
-- Service Worker Entry: `src/app/sw.ts`
-- Serwist Route: `src/app/serwist/[path]/route.ts`
-- Offline-Seite: `src/app/~offline/page.tsx`
-
-Runtime-Caching (Serwist):
-- Dokumente: `NetworkFirst` mit kurzem Timeout (4s) für spürbar schnelleren Erststart
-- JS/CSS/Worker: `StaleWhileRevalidate`
-- Bilder: `CacheFirst` mit Ablaufregeln
-- Sensible Pfade (`/api`, `/auth`, `/admin`, `/guide`, `/profile`) werden nicht als Seiten gecacht
-- Cache-Grössen sind bewusst begrenzt (Touren: 20, Berichte: 5)
-- Service Worker unterstützt Cache-Bereinigung via Client-Nachricht `CLEAR_AUTH_CACHES`
-
-Aktuell ist ein Offline-Fallback auf `"/~offline"` definiert.  
-Precache umfasst `"/login"`, `"/oeffentlich/touren"` und `"/~offline"`.
-
-Startverhalten (Android PWA):
-- `manifest.json` nutzt `start_url: "/oeffentlich/touren"`, um Login-Redirects und Session-Refresh beim Kaltstart zu minimieren.
+Wir setzen auf hohe Code-Qualität und Sicherheit:
+*   **Linting/Formatting**: `npm run lint`
+*   **Type-Check**: `npx tsc --noEmit`
+*   **Security**: Alle Tabellen sind durch strikte **PostgreSQL Row Level Security (RLS)** geschützt.
 
 ---
 
-## Sicherheit (wichtig)
+## 📜 Lizenz & Haftung
 
-Der aktuelle Sicherheitsstatus ist in `sicherheit.md` detailliert dokumentiert.
+Dieses Projekt ist für die interne Nutzung der **DAV Sektion Pfarrkirchen** bestimmt. Eine kommerzielle Weiterverbreitung ist nicht gestattet.
 
-Alle kritischen Findings sind behoben:
-- RLS + FORCE RLS aktiv auf allen 11 Kern-Tabellen
-- Auth-Callback mit Open-Redirect-Schutz (`sanitizeNextPath`)
-- CSRF-Schutz auf API-Routen (`isSameOriginRequest`)
-- Deployment-Härtung: zusätzliche Proxy-/Forwarded-Origin-Erkennung gegen `CSRF validation failed` im Domain-Betrieb
-- `getUser()` statt `getSession()` in allen Auth-relevanten Pfaden
-- Rolle wird nie aus Client-Metadata übernommen
-- Next.js auf gepatchte Version aktualisiert (`16.2.1`)
-
-Hinweis zum Auth-Setup:
-> ⚠️ **Leaked Password Protection** ist im Supabase Free Plan nicht verfügbar.  
-> Die App kompensiert mit bestehenden Schutzmassnahmen (RLS-Hardening, serverseitige Auth-Checks, Monitoring).
-
-Produktentscheidung Berichte:
-- Bildrechte-Checkbox wurde entfernt.
-- Datenschutz-Hinweis bleibt sichtbar.
-
----
-
-## Bekannte Laufzeit-Hinweise
-
-- Die `browserslist`-Warnung (`Critical dependency`) aus `@serwist/turbopack` ist ein bekanntes Paket-Thema und aktuell nur ein Warning, kein Build-Blocker.
-- Serwist ist im Development-Modus deaktiviert; PWA-Checks immer auch im Production-Run validieren.
-
----
-
-## Deployment-Variablen (CSRF/Origin)
-
-Für stabile POST-/Server-Action-Requests im Deployment sollten diese Variablen gesetzt sein:
-
-```powershell
-SITE_URL=https://deine-domain.tld
-NEXT_PUBLIC_SITE_URL=https://deine-domain.tld
-CSRF_TRUSTED_ORIGINS=https://deine-domain.tld,https://www.deine-domain.tld
-VAPID_PUBLIC_KEY=...
-VAPID_PRIVATE_KEY=...
-NEXT_PUBLIC_VAPID_PUBLIC_KEY=...
-SUPABASE_SERVICE_ROLE_KEY=...
-```
-
-Hinweis:
-- `CSRF_TRUSTED_ORIGINS` akzeptiert kommagetrennte Einträge.
-- Bei Deployments hinter Proxy/CDN müssen `x-forwarded-host` und `x-forwarded-proto` korrekt weitergereicht werden.
-
----
-
-## Haftung / Nutzung
-
-Dieses Repository ist für die interne Nutzung der DAV Sektion Pfarrkirchen gedacht.
-
+🏔️ **Bergheil!**
