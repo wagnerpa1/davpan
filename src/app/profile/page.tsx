@@ -11,6 +11,7 @@ import {
 } from "@/components/profile/NotificationPreferencesPanel";
 import { AnimatedSubmitButton } from "@/components/ui/AnimatedSubmitButton";
 import { AsyncForm } from "@/components/ui/AsyncForm";
+import { TextareaWithCounter } from "@/components/ui/TextareaWithCounter";
 import { createClient } from "@/utils/supabase/server";
 
 interface ChildProfile {
@@ -190,6 +191,7 @@ export default async function ProfilePage() {
               id="profile-full-name"
               type="text"
               name="full_name"
+              maxLength={100}
               defaultValue={profile?.full_name || ""}
               className="block w-full rounded-input border border-slate-300 px-3 py-1.5 text-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
               placeholder="Dein Vor- und Nachname"
@@ -285,6 +287,7 @@ export default async function ProfilePage() {
                 id="profile-phone"
                 type="tel"
                 name="phone"
+                maxLength={50}
                 defaultValue={profile?.phone || ""}
                 placeholder="Deine Handynummer"
                 className="block w-full rounded-input border border-slate-300 px-3 py-1.5 text-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
@@ -302,6 +305,7 @@ export default async function ProfilePage() {
                 id="profile-emergency-phone"
                 type="tel"
                 name="emergency_phone"
+                maxLength={50}
                 defaultValue={profile?.emergency_phone || ""}
                 placeholder="Wird nur Guides angezeigt"
                 className="block w-full rounded-input border border-slate-300 px-3 py-1.5 text-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
@@ -316,13 +320,14 @@ export default async function ProfilePage() {
             >
               Medizinische Hinweise
             </label>
-            <textarea
+            <TextareaWithCounter
               id="profile-medical-notes"
               name="medical_notes"
+              maxLength={2000}
               defaultValue={profile?.medical_notes || ""}
               placeholder="Allergien, Medikamente etc. (nur für Guides sichtbar)"
               rows={3}
-              className="block w-full rounded-input border border-slate-300 px-3 py-1.5 text-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
+              className="block w-full"
             />
           </div>
 
@@ -416,6 +421,7 @@ export default async function ProfilePage() {
                               id={`${child.id}-child-name`}
                               type="text"
                               name="child_name"
+                              maxLength={100}
                               defaultValue={child.full_name}
                               required
                               className="block w-full rounded-input border border-slate-300 px-3 py-1.5 text-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
@@ -445,13 +451,14 @@ export default async function ProfilePage() {
                           >
                             Medizinische Hinweise
                           </label>
-                          <textarea
+                          <TextareaWithCounter
                             id={`${child.id}-medical-notes`}
                             name="medical_notes"
+                            maxLength={2000}
                             defaultValue={child.medical_notes || ""}
                             placeholder="Allergien, Medikamente etc."
                             rows={2}
-                            className="block w-full rounded-input border border-slate-300 px-3 py-1.5 text-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
+                            className="block w-full"
                           />
                         </div>
                         <div className="rounded-card bg-slate-50 p-4">
@@ -529,6 +536,7 @@ export default async function ProfilePage() {
                     id="new-child-name"
                     type="text"
                     name="child_name"
+                    maxLength={100}
                     placeholder="Vor- und Nachname"
                     required
                     className="block w-full rounded-input border border-slate-200 bg-white px-3 py-1.5 text-sm shadow-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
@@ -557,12 +565,13 @@ export default async function ProfilePage() {
                 >
                   Medizinische Hinweise
                 </label>
-                <textarea
+                <TextareaWithCounter
                   id="new-child-medical-notes"
                   name="medical_notes"
+                  maxLength={2000}
                   placeholder="Z.B. Asthma, Nussallergie..."
                   rows={2}
-                  className="block w-full rounded-input border border-slate-200 bg-white px-3 py-1.5 text-sm shadow-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
+                  className="block w-full"
                 />
               </div>
               <div className="rounded-card border border-slate-200 bg-white p-3">
