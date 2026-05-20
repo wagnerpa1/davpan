@@ -40,7 +40,7 @@ interface TourParticipantCountRow {
  * recent club news, and the latest tour reports.
  */
 export default async function Home() {
-  const [{ fullName, role, user }, supabase] = await Promise.all([
+  const [{ role, user }, supabase] = await Promise.all([
     getCurrentUserProfile(),
     createClient(),
   ]);
@@ -49,7 +49,6 @@ export default async function Home() {
     return redirect("/login");
   }
 
-  const displayName = fullName || user.email?.split("@")[0];
   const registrationOverview = await loadTourRegistrationOverview(
     supabase,
     user.id,
@@ -129,10 +128,10 @@ export default async function Home() {
   const { data: profile } = await supabase
     .from("profiles")
     .select("full_name")
-    .eq("id", session.user.id)
+    .eq("id", user.id)
     .single();
 
-  const displayName = profile?.full_name || session.user.email?.split('@')[0];
+  const displayName = profile?.full_name || user.email?.split("@")[0];
 
   return (
     <div className="container mx-auto max-w-2xl px-4 py-8">
