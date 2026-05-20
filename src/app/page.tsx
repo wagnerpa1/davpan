@@ -49,37 +49,64 @@ export default async function Home() {
     return redirect("/login");
   }
 
-  const displayName = fullName || user.email?.split("@")[0];
-  const registrationOverview = await loadTourRegistrationOverview(
-    supabase,
-    user.id,
-    role === "parent",
-  );
+  const today = new Date().toISOString().split("T")[0];
+  const twoMonthsAgo = subMonths(new Date(), 2).toISOString();
+
+  // Parallelize main data fetches
+  const [
+    registrationOverview,
+    nextTourResult,
+    recentReportsResult,
+    recentNewsResult,
+  ] = await Promise.all([
+    loadTourRegistrationOverview(supabase, user.id, role === "parent"),
+    supabase
+      .from("tours")
+      .select(`
+        *,
+        tour_groups (group_name),
+        tour_categorys!tours_category_fkey (category),
+        tour_guides (
+          user_id,
+          profiles (
+            full_name
+          )
+        )
+      `)
+      .gte("end_date", today)
+      .neq("status", "completed")
+      .neq("status", "cancelled")
+      .order("start_date", { ascending: true })
+      .limit(1)
+      .single(),
+    supabase
+      .from("tour_reports")
+      .select(`
+        *,
+        tours (
+          title,
+          start_date,
+          tour_categorys!tours_category_fkey (category)
+        ),
+        report_images (image_url, order_index)
+      `)
+      .gte("created_at", twoMonthsAgo)
+      .order("created_at", { ascending: false })
+      .limit(5),
+    supabase
+      .from("news_posts")
+      .select("id, title, content, published_at")
+      .order("published_at", { ascending: false })
+      .limit(4),
+  ]);
+
+  const { data: nextTour } = nextTourResult;
+  const { data: recentReports } = recentReportsResult;
+  const { data: recentNews } = recentNewsResult;
+
   const nextConfirmedRegistration = getNextConfirmedRegistration(
     registrationOverview.tabs,
   );
-
-  // Fetch only the single next upcoming or currently running tour
-  const today = new Date().toISOString().split("T")[0];
-  const { data: nextTour } = await supabase
-    .from("tours")
-    .select(`
-      *,
-      tour_groups (group_name),
-      tour_categorys!tours_category_fkey (category),
-      tour_guides (
-        user_id,
-        profiles (
-          full_name
-        )
-      )
-    `)
-    .gte("end_date", today) // Keep showing until it ends
-    .neq("status", "completed")
-    .neq("status", "cancelled")
-    .order("start_date", { ascending: true })
-    .limit(1)
-    .single();
 
   let nextTourWithCount = nextTour;
   if (nextTour?.id) {
@@ -102,37 +129,7 @@ export default async function Home() {
     : "Deine nächste Tour";
   const featuredLink = nextConfirmedRegistration ? "/touren/meine" : "/touren";
 
-  // Fetch recent reports (max 5, max 2 months old)
-  const twoMonthsAgo = subMonths(new Date(), 2).toISOString();
-  const { data: recentReports } = await supabase
-    .from("tour_reports")
-    .select(`
-      *,
-      tours (
-        title, 
-        start_date,
-        tour_categorys!tours_category_fkey (category)
-      ),
-      report_images (image_url, order_index)
-    `)
-    .gte("created_at", twoMonthsAgo)
-    .order("created_at", { ascending: false })
-    .limit(5);
-
-  const { data: recentNews } = await supabase
-    .from("news_posts")
-    .select("id, title, content, published_at")
-    .order("published_at", { ascending: false })
-    .limit(4);
-
-  // Fetch active profile for personalization
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name")
-    .eq("id", session.user.id)
-    .single();
-
-  const displayName = profile?.full_name || session.user.email?.split('@')[0];
+  const displayName = fullName || user.email?.split("@")[0];
 
   return (
     <div className="container mx-auto max-w-2xl px-4 py-8">

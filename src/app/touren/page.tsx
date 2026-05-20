@@ -173,11 +173,23 @@ export default async function TourenPage({
   const availableOnly = getSearchParam(params, "available") === "true";
   const sortBy = getSearchParam(params, "sort", "date_asc");
 
-  // Fetch unique data for filters (only for active tours)
-  const { data: categoryData } = await supabase
-    .from("tour_categorys")
-    .select("id, category")
-    .order("category");
+  // Fetch unique data for filters (only for active tours) in parallel
+  const [
+    { data: categoryData },
+    { data: allToursData },
+    { data: guidesData },
+    { data: tourGroupsData },
+  ] = await Promise.all([
+    supabase.from("tour_categorys").select("id, category").order("category"),
+    supabase.from("tours").select("difficulty").neq("status", "completed"),
+    supabase
+      .from("profiles")
+      .select("id, full_name")
+      .in("role", ["guide", "admin"])
+      .order("full_name"),
+    supabase.from("tour_groups").select("id, group_name").order("group_name"),
+  ]);
+
   const categories = ((categoryData || []) as TourCategoryOption[]).filter(
     (c): c is { id: string; category: string } => Boolean(c.category),
   );
@@ -186,25 +198,12 @@ export default async function TourenPage({
     categories,
   );
 
-  const { data: allToursData } = await supabase
-    .from("tours")
-    .select("difficulty")
-    .neq("status", "completed");
-
   const difficulties = Array.from(
     new Set(allToursData?.map((t) => t.difficulty).filter(Boolean)),
   ) as string[];
 
-  const { data: guides } = await supabase
-    .from("profiles")
-    .select("id, full_name")
-    .in("role", ["guide", "admin"])
-    .order("full_name");
-
-  const { data: tourGroups } = await supabase
-    .from("tour_groups")
-    .select("id, group_name")
-    .order("group_name");
+  const guides = guidesData || [];
+  const tourGroups = tourGroupsData || [];
 
   // Build query
   let query = supabase
