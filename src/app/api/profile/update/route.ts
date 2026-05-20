@@ -44,6 +44,32 @@ export async function POST(req: NextRequest) {
   const image_consent = formData.get("image_consent") === "on";
   const role = formData.get("role")?.toString();
 
+  // Input validation for security and data integrity
+  if (full_name && full_name.length > 100) {
+    return NextResponse.json(
+      { error: "Name too long (max. 100)" },
+      { status: 400 },
+    );
+  }
+  if (phone && phone.length > 50) {
+    return NextResponse.json(
+      { error: "Phone number too long (max. 50)" },
+      { status: 400 },
+    );
+  }
+  if (emergency_phone && emergency_phone.length > 50) {
+    return NextResponse.json(
+      { error: "Emergency phone number too long (max. 50)" },
+      { status: 400 },
+    );
+  }
+  if (medical_notes && medical_notes.length > 2000) {
+    return NextResponse.json(
+      { error: "Medical notes too long (max. 2000)" },
+      { status: 400 },
+    );
+  }
+
   // Validate role if provided (only members and parents can self-assign)
   const ALLOWED_SELF_ROLES = ["member", "parent"];
   if (role !== undefined && !ALLOWED_SELF_ROLES.includes(role)) {
