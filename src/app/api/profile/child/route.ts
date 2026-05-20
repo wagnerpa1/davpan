@@ -32,6 +32,20 @@ export async function POST(req: NextRequest) {
   const medicalNotes = formData.get("medical_notes")?.toString();
   const imageConsent = formData.get("image_consent") === "on";
 
+  // Input validation for security and data integrity
+  if (name && name.length > 100) {
+    return NextResponse.json(
+      { error: "Name too long (max. 100)" },
+      { status: 400 },
+    );
+  }
+  if (medicalNotes && medicalNotes.length > 2000) {
+    return NextResponse.json(
+      { error: "Medical notes too long (max. 2000)" },
+      { status: 400 },
+    );
+  }
+
   if (!name || !birthdate) {
     return NextResponse.json(
       { error: "Name and birthdate are required" },
