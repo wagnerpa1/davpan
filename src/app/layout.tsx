@@ -8,8 +8,6 @@ import { PushNotificationInit } from "@/components/layout/PushNotificationInit";
 import { OfflineIndicator } from "@/components/ui/OfflineIndicator";
 import { getCurrentUserProfile } from "@/lib/auth";
 import { SerwistProvider } from "./serwist";
-import { Header } from "@/components/layout/Header";
-import { BottomNavigation } from "@/components/layout/BottomNavigation";
 
 const APP_NAME = "JDAV Pfarrkirchen";
 const APP_DEFAULT_TITLE = "JDAV Pfarrkirchen";

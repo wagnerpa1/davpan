@@ -1,0 +1,49 @@
+
+> davpan@0.1.0 dev
+> next dev --turbopack
+
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.2:3000
+✓ Ready in 532ms
+- Experiments (use with caution):
+  · serverActions
+
+⨯ Error: Supabase environment variables are not configured.
+    at getSupabaseEnv (src/utils/supabase/middleware.ts:9:11)
+    at createClient (src/utils/supabase/middleware.ts:16:24)
+    at proxy (src/proxy.ts:34:28)
+   7 |
+   8 |   if (!url || !key) {
+>  9 |     throw new Error("Supabase environment variables are not configured.");
+     |           ^
+  10 |   }
+  11 |
+  12 |   return { url, key };
+ GET / 404 in 2.2s (next.js: -155884µs, proxy.ts: 2.1s, application-code: 163ms)
+[browser] Uncaught Error: Supabase environment variables are not configured.
+    at getSupabaseEnv (src/utils/supabase/middleware.ts:9:11)
+    at createClient (src/utils/supabase/middleware.ts:16:24)
+    at proxy (src/proxy.ts:34:28)
+   7 |
+   8 |   if (!url || !key) {
+>  9 |     throw new Error("Supabase environment variables are not configured.");
+     |           ^
+  10 |   }
+  11 |
+  12 |   return { url, key };
+○ Compiling /_not-found/page ...
+⨯ Error: Supabase environment variables are not configured.
+    at getSupabaseEnv (src/utils/supabase/server.ts:9:11)
+    at createClient (src/utils/supabase/server.ts:17:24)
+    at async (src/lib/auth-server.ts:18:22)
+    at async RootLayout (src/app/layout.tsx:293:7)
+   7 |
+   8 |   if (!url || !key) {
+>  9 |     throw new Error("Supabase environment variables are not configured.");
+     |           ^
+  10 |   }
+  11 |
+  12 |   return { url, key }; {
+  digest: '2629436587'
+}

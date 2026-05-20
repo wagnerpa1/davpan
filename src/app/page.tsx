@@ -125,15 +125,6 @@ export default async function Home() {
     .order("published_at", { ascending: false })
     .limit(4);
 
-  // Fetch active profile for personalization
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name")
-    .eq("id", session.user.id)
-    .single();
-
-  const displayName = profile?.full_name || session.user.email?.split('@')[0];
-
   return (
     <div className="container mx-auto max-w-2xl px-4 py-8">
       <div className="mb-10 lg:mb-12">
