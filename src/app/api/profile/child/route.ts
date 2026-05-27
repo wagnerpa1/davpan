@@ -39,6 +39,17 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Input length validation
+  if (name.length > 100) {
+    return NextResponse.json({ error: "Name too long" }, { status: 400 });
+  }
+  if (medicalNotes && medicalNotes.length > 2000) {
+    return NextResponse.json(
+      { error: "Medical notes too long" },
+      { status: 400 },
+    );
+  }
+
   let savedAction: "child_updated" | "child_created" = "child_created";
 
   if (childId) {

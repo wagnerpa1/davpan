@@ -44,6 +44,29 @@ export async function POST(req: NextRequest) {
   const image_consent = formData.get("image_consent") === "on";
   const role = formData.get("role")?.toString();
 
+  // Input length validation
+  if (full_name && full_name.length > 100) {
+    return NextResponse.json({ error: "Name too long" }, { status: 400 });
+  }
+  if (phone && phone.length > 50) {
+    return NextResponse.json(
+      { error: "Phone number too long" },
+      { status: 400 },
+    );
+  }
+  if (emergency_phone && emergency_phone.length > 50) {
+    return NextResponse.json(
+      { error: "Emergency phone number too long" },
+      { status: 400 },
+    );
+  }
+  if (medical_notes && medical_notes.length > 2000) {
+    return NextResponse.json(
+      { error: "Medical notes too long" },
+      { status: 400 },
+    );
+  }
+
   // Validate role if provided (only members and parents can self-assign)
   const ALLOWED_SELF_ROLES = ["member", "parent"];
   if (role !== undefined && !ALLOWED_SELF_ROLES.includes(role)) {
@@ -71,7 +94,7 @@ export async function POST(req: NextRequest) {
   if (error) {
     console.error("Error updating profile:", error);
     return NextResponse.json(
-      { error: "Failed to update profile", details: error.message },
+      { error: "Failed to update profile" },
       { status: 500 },
     );
   }

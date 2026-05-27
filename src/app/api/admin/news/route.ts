@@ -50,9 +50,17 @@ export async function POST(req: NextRequest) {
 
   if (!title || !content) {
     return NextResponse.json(
-      { error: "Titel und Inhalt sind erforderlich." },
+      { error: "Title and content are required" },
       { status: 400 },
     );
+  }
+
+  // Input length validation
+  if (title.length > 200) {
+    return NextResponse.json({ error: "Title too long" }, { status: 400 });
+  }
+  if (content.length > 10000) {
+    return NextResponse.json({ error: "Content too long" }, { status: 400 });
   }
 
   const { data: insertedNews, error: newsError } = await auth.supabase
@@ -68,7 +76,7 @@ export async function POST(req: NextRequest) {
 
   if (newsError || !insertedNews) {
     return NextResponse.json(
-      { error: newsError?.message || "News konnte nicht erstellt werden." },
+      { error: "Failed to create news" },
       { status: 500 },
     );
   }
@@ -126,7 +134,7 @@ export async function DELETE(req: NextRequest) {
   const id = searchParams.get("id");
 
   if (!id) {
-    return NextResponse.json({ error: "id fehlt" }, { status: 400 });
+    return NextResponse.json({ error: "Missing id" }, { status: 400 });
   }
 
   const { error } = await auth.supabase
@@ -135,7 +143,10 @@ export async function DELETE(req: NextRequest) {
     .eq("id", id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to delete news" },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json({ success: true });
