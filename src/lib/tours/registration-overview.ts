@@ -151,6 +151,7 @@ export async function loadTourRegistrationOverview(
   userId: string,
   isParent: boolean,
 ): Promise<TourRegistrationOverview> {
+  // Fetch all relevant registrations and profiles in parallel to avoid waterfalls
   const [selfResult, childProfilesResult] = await Promise.all([
     supabase
       .from("tour_participants")

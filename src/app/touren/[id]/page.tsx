@@ -164,68 +164,91 @@ export default async function TourDetailPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data: tour, error } = await supabase
-    .from("tours")
-    .select(`
-      *,
-      tour_guides (
-        user_id,
-        profiles (
-          id,
-          full_name
-        )
-      ),
-      tour_participants (
-        id,
-        status,
-        user_id,
-        child_profile_id,
-        waitlist_position,
-        age_override,
-        created_at,
-        profiles!tour_participants_user_id_fkey (
-          full_name,
-          phone,
-          emergency_phone,
-          medical_notes,
-          birthdate
-        ),
-        child_profiles (
-          full_name,
-          medical_notes,
-          birthdate,
-          profiles!child_profiles_parent_id_fkey (
+  // Parallelize main data fetches to avoid waterfalls.
+  // This reduces the number of sequential Round-Trips to Supabase,
+  // potentially saving ~100ms-300ms depending on network latency.
+  const [
+    { data: tour, error },
+    authContext,
+    { data: tmData },
+    { data: reservationsData },
+    { data: countRows },
+  ] = await Promise.all([
+    supabase
+      .from("tours")
+      .select(`
+        *,
+        tour_guides (
+          user_id,
+          profiles (
+            id,
             full_name
           )
+        ),
+        tour_participants (
+          id,
+          status,
+          user_id,
+          child_profile_id,
+          waitlist_position,
+          age_override,
+          created_at,
+          profiles!tour_participants_user_id_fkey (
+            full_name,
+            phone,
+            emergency_phone,
+            medical_notes,
+            birthdate
+          ),
+          child_profiles (
+            full_name,
+            medical_notes,
+            birthdate,
+            profiles!child_profiles_parent_id_fkey (
+              full_name
+            )
+          )
+        ),
+        tour_groups!tours_group_fkey (
+          group_name
+        ),
+        tour_categorys!tours_category_fkey (
+          category
         )
-      ),
-      tour_groups!tours_group_fkey (
-        group_name
-      ),
-      tour_categorys!tours_category_fkey (
-        category
-      )
-    `)
-    .eq("id", id)
-    .single();
+      `)
+      .eq("id", id)
+      .single(),
+    getCurrentUserProfile(),
+    supabase
+      .from("tour_material_requirements")
+      .select(`
+        material_type_id,
+        material_types(
+          id,
+          name,
+          inventory:material_inventory(id, size, quantity_available)
+        )
+      `)
+      .eq("tour_id", id),
+    supabase
+      .from("material_reservations")
+      .select(`
+        id, material_inventory_id, user_id, child_profile_id,
+        material_inventory (
+          id, size,
+          material_types (name)
+        )
+      `)
+      .eq("tour_id", id),
+    supabase.rpc("get_tour_participant_counts", {
+      p_tour_ids: [id],
+    }),
+  ]);
 
   if (error || !tour) notFound();
   const tourData = tour as typeof tour & TourDetailUiState;
 
-  const authContext = await getCurrentUserProfile();
   const isLoggedIn = !!authContext.user;
-
-  const { data: tmData } = await supabase
-    .from("tour_material_requirements")
-    .select(`
-      material_type_id,
-      material_types(
-        id,
-        name,
-        inventory:material_inventory(id, size, quantity_available)
-      )
-    `)
-    .eq("tour_id", id);
 
   const materialMap = new Map<string, AvailableMaterial>();
   (tmData as TourMaterialRequirementRow[] | null)?.forEach((row) => {
@@ -253,16 +276,6 @@ export default async function TourDetailPage({
   });
   const availableMaterials = Array.from(materialMap.values());
 
-  const { data: reservationsData } = await supabase
-    .from("material_reservations")
-    .select(`
-      id, material_inventory_id, user_id, child_profile_id,
-      material_inventory (
-        id, size,
-        material_types (name)
-      )
-    `)
-    .eq("tour_id", id);
   // Map back to expected structure (size, materials(name))
   const reservations = ((reservationsData || []) as ReservationQueryRow[]).map(
     (r) => ({
@@ -285,20 +298,23 @@ export default async function TourDetailPage({
   if (authContext.user) {
     userBirthdate = authContext.birthdate;
 
-    if (authContext.role === "parent") {
-      const { data: cData } = await supabase
-        .from("child_profiles")
-        .select("id, full_name, birthdate")
-        .eq("parent_id", authContext.user.id);
-      childrenProfiles = cData || [];
-    }
+    const [childProfilesResult, userRegistrationsResult] = await Promise.all([
+      authContext.role === "parent"
+        ? supabase
+            .from("child_profiles")
+            .select("id, full_name, birthdate")
+            .eq("parent_id", authContext.user.id)
+        : Promise.resolve({ data: [] as ChildProfileOption[] | null }),
+      supabase
+        .from("tour_participants")
+        .select("id, user_id, child_profile_id, status, waitlist_position")
+        .eq("tour_id", id)
+        .eq("user_id", authContext.user.id),
+    ]);
 
-    const { data: rData } = await supabase
-      .from("tour_participants")
-      .select("id, user_id, child_profile_id, status, waitlist_position")
-      .eq("tour_id", id)
-      .eq("user_id", authContext.user.id);
-    userRegistrations = rData || [];
+    childrenProfiles = (childProfilesResult.data as ChildProfileOption[]) || [];
+    userRegistrations =
+      (userRegistrationsResult.data as UserRegistration[]) || [];
 
     const userRole = authContext.role;
     const isLead = tourData.tour_guides?.some(
@@ -314,12 +330,6 @@ export default async function TourDetailPage({
     (tg: TourGuide) => tg.profiles?.full_name || "Unbekannt",
   );
   const participants = (tourData.tour_participants || []) as TourParticipant[];
-  const { data: countRows } = await supabase.rpc(
-    "get_tour_participant_counts",
-    {
-      p_tour_ids: [id],
-    },
-  );
   const confirmedParticipantCount =
     ((countRows as TourParticipantCountRow[] | null)?.[0]?.confirmed_count ??
       participants.filter((p) => p.status === "confirmed").length) ||
