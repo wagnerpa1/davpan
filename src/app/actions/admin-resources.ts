@@ -199,3 +199,134 @@ export async function releaseResourceBooking(resourceBookingId: string) {
   revalidatePath("/admin/resources");
   return { success: true };
 }
+
+export async function bookResourceStandalone(
+  resourceId: string,
+  startDate: string,
+  endDate: string,
+  reason: string,
+) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht eingeloggt." };
+
+  // Permission check: Allow Guide, Materialwart, or Admin
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role, full_name")
+    .eq("id", user.id)
+    .single();
+
+  const canBookResource =
+    profile?.role === "admin" ||
+    profile?.role === "guide" ||
+    profile?.role === "materialwart";
+
+  if (!canBookResource) {
+    return {
+      error:
+        "Keine Berechtigung. Nur Guide, Materialwart oder Admin können Ressourcen reservieren.",
+    };
+  }
+
+  if (!reason || reason.trim().length === 0) {
+    return { error: "Grund für die Reservierung ist erforderlich." };
+  }
+
+  // Check for time conflicts
+  const { data: conflicts, error: conflictError } = await supabase
+    .from("resource_bookings")
+    .select("id")
+    .eq("resource_id", resourceId)
+    .neq("status", "released")
+    .gte("end_date", startDate)
+    .lte("start_date", endDate);
+
+  if (conflictError) {
+    return { error: `Fehler bei Konfliktprüfung: ${conflictError.message}` };
+  }
+
+  if (conflicts && conflicts.length > 0) {
+    return {
+      error:
+        "Zeitkonflikt: Diese Ressource ist bereits in diesem Zeitraum reserviert.",
+    };
+  }
+
+  // Create standalone booking
+  const { data, error } = await supabase
+    .from("resource_bookings")
+    .insert({
+      resource_id: resourceId,
+      tour_id: null,
+      start_date: startDate,
+      end_date: endDate,
+      reason: reason.trim(),
+      status: "booked",
+      created_by: user.id,
+    })
+    .select("id");
+
+  if (error) {
+    return { error: `Fehler beim Erstellen der Buchung: ${error.message}` };
+  }
+
+  revalidatePath("/admin/resources");
+  return { success: true, booking_id: data?.[0]?.id };
+}
+
+export async function deleteResourceBooking(resourceBookingId: string) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht eingeloggt." };
+
+  // Permission check
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  const { data: booking } = await supabase
+    .from("resource_bookings")
+    .select("tour_id, created_by")
+    .eq("id", resourceBookingId)
+    .single();
+
+  if (!booking) return { error: "Buchung nicht gefunden." };
+
+  const isAdmin = profile?.role === "admin";
+  const isCreator = booking.created_by === user.id;
+  const isGuideOfTour =
+    booking.tour_id &&
+    (
+      await supabase
+        .from("tour_guides")
+        .select("id")
+        .eq("tour_id", booking.tour_id)
+        .eq("user_id", user.id)
+        .single()
+    ).data;
+
+  if (!isAdmin && !isCreator && !isGuideOfTour) {
+    return { error: "Keine Berechtigung zum Löschen dieser Buchung." };
+  }
+
+  const { error } = await supabase
+    .from("resource_bookings")
+    .delete()
+    .eq("id", resourceBookingId);
+
+  if (error) {
+    return { error: `Fehler beim Löschen: ${error.message}` };
+  }
+
+  revalidatePath("/admin/resources");
+  return { success: true };
+}

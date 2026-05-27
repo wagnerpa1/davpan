@@ -193,7 +193,7 @@ export function TourForm({
                 defaultValue={initialData?.group || ""}
                 className="mt-1 flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-jdav-green"
               >
-                <option value="">-- Keine spezifiziert --</option>
+                <option value="">-- Nicht angegeben --</option>
                 {tourGroups.map((g) => (
                   <option key={g.id} value={g.id}>
                     {g.group_name}

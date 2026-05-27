@@ -511,6 +511,7 @@ export interface Database {
           status: string | null;
           created_by: string | null;
           created_at: string | null;
+          reason: string | null;
         };
         Insert: {
           id?: string;
@@ -521,6 +522,7 @@ export interface Database {
           status?: string | null;
           created_by?: string | null;
           created_at?: string | null;
+          reason?: string | null;
         };
         Update: {
           id?: string;
@@ -531,6 +533,7 @@ export interface Database {
           status?: string | null;
           created_by?: string | null;
           created_at?: string | null;
+          reason?: string | null;
         };
       };
       resources: {

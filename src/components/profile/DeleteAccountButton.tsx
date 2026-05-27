@@ -29,7 +29,7 @@ export function DeleteAccountButton() {
       type="button"
       onClick={handleDelete}
       disabled={isPending}
-      className="inline-flex items-center justify-center rounded-md bg-red-600 px-4 py-2 font-medium text-white transition-colors hover:bg-red-700 w-full disabled:opacity-50"
+      className="inline-flex w-full items-center justify-center rounded-xl bg-red-600 px-4 py-2 font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50"
     >
       {isPending ? (
         <>

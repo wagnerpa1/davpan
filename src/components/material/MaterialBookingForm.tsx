@@ -84,7 +84,7 @@ export function MaterialBookingForm({
       data-material-id={materialId}
     >
       {error && (
-        <div className="rounded-lg bg-red-50 p-2 text-xs font-medium text-red-800">
+        <div className="rounded-xl bg-red-50 p-2 text-xs font-medium text-red-800">
           {error}
         </div>
       )}
@@ -101,7 +101,7 @@ export function MaterialBookingForm({
             id={`size-${materialId}`}
             value={inventoryId}
             onChange={(e) => setInventoryId(e.target.value)}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
+            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
           >
             {availableSizes.map((s) => (
               <option key={s.id} value={s.id}>
@@ -126,7 +126,7 @@ export function MaterialBookingForm({
             value={loanDate}
             onChange={(e) => setLoanDate(e.target.value)}
             required
-            className="rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
+            className="rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
           />
         </div>
         <div className="flex flex-col gap-1 flex-1">
@@ -142,7 +142,7 @@ export function MaterialBookingForm({
             value={returnDate}
             onChange={(e) => setReturnDate(e.target.value)}
             required
-            className="rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
+            className="rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
           />
         </div>
       </div>
