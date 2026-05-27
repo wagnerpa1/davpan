@@ -121,7 +121,7 @@ export function RegisterForm({ className }: { className?: string }) {
     <div className={cn("grid gap-6", className)}>
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="rounded-md bg-red-50 p-3 text-sm text-red-600">
+          <div className="rounded-xl bg-red-50 p-3 text-sm text-red-600">
             {error}
           </div>
         )}
@@ -136,7 +136,7 @@ export function RegisterForm({ className }: { className?: string }) {
               type="button"
               onClick={() => setIsParent(false)}
               className={cn(
-                "relative p-4 rounded-lg border-2 transition-all duration-200 hover:shadow-md",
+                "relative p-4 rounded-2xl border-2 transition-all duration-200 hover:shadow-md",
                 !isParent
                   ? "border-jdav-green bg-green-50 shadow-md shadow-green-200"
                   : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm",
@@ -145,7 +145,7 @@ export function RegisterForm({ className }: { className?: string }) {
               <div className="flex flex-col items-center text-center gap-2">
                 <div
                   className={cn(
-                    "p-2 rounded-lg transition-all duration-200",
+                    "p-2 rounded-xl transition-all duration-200",
                     !isParent
                       ? "bg-jdav-green text-white"
                       : "bg-slate-100 text-slate-600",
@@ -171,7 +171,7 @@ export function RegisterForm({ className }: { className?: string }) {
               type="button"
               onClick={() => setIsParent(true)}
               className={cn(
-                "relative p-4 rounded-lg border-2 transition-all duration-200 hover:shadow-md",
+                "relative p-4 rounded-2xl border-2 transition-all duration-200 hover:shadow-md",
                 isParent
                   ? "border-jdav-green bg-green-50 shadow-md shadow-green-200"
                   : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm",
@@ -180,7 +180,7 @@ export function RegisterForm({ className }: { className?: string }) {
               <div className="flex flex-col items-center text-center gap-2">
                 <div
                   className={cn(
-                    "p-2 rounded-lg transition-all duration-200",
+                    "p-2 rounded-xl transition-all duration-200",
                     isParent
                       ? "bg-jdav-green text-white"
                       : "bg-slate-100 text-slate-600",
@@ -217,7 +217,7 @@ export function RegisterForm({ className }: { className?: string }) {
             required
             value={name}
             onChange={handleInputChange(setName)}
-            className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
+            className="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
           />
         </div>
 
@@ -239,7 +239,7 @@ export function RegisterForm({ className }: { className?: string }) {
             value={membershipNumber}
             onChange={handleMembershipChange}
             maxLength={14}
-            className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm font-mono shadow-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
+            className="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-2 text-sm font-mono shadow-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
           />
           <p className="mt-1 text-xs text-slate-500">
             Format: 3-stellig - 2-stellig - 6-stellig (z.B. 209-00-001234)
@@ -259,7 +259,7 @@ export function RegisterForm({ className }: { className?: string }) {
             required
             value={birthdate}
             onChange={handleInputChange(setBirthdate)}
-            className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
+            className="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
           />
         </div>
 
@@ -276,7 +276,7 @@ export function RegisterForm({ className }: { className?: string }) {
             required
             value={email}
             onChange={handleInputChange(setEmail)}
-            className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
+            className="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
           />
         </div>
 
@@ -294,7 +294,7 @@ export function RegisterForm({ className }: { className?: string }) {
             minLength={6}
             value={password}
             onChange={handleInputChange(setPassword)}
-            className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
+            className="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
           />
         </div>
 

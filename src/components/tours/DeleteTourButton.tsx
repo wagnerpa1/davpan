@@ -37,7 +37,7 @@ export function DeleteTourButton({ tourId }: DeleteTourButtonProps) {
       type="button"
       onClick={handleDelete}
       disabled={isDeleting}
-      className="flex items-center gap-1 rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-100 disabled:opacity-50"
+      className="flex items-center gap-1 rounded-xl bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-100 disabled:opacity-50"
     >
       <Trash2 className="h-3.5 w-3.5" />
       {isDeleting ? "Sagt ab..." : "Absagen"}

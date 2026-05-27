@@ -76,7 +76,7 @@ export function BottomNavigation({ userRole }: BottomNavigationProps) {
 
         <div
           className={cn(
-            "absolute bottom-24 left-4 right-4 mx-auto max-h-[calc(100vh-12rem)] max-w-md overflow-y-auto rounded-3xl border border-slate-200 bg-white p-4 shadow-2xl transition-all duration-200",
+            "absolute bottom-24 left-4 right-4 mx-auto max-h-[calc(100vh-12rem)] max-w-md overflow-y-auto rounded-3xl border border-slate-200 bg-white/95 p-4 shadow-2xl backdrop-blur-md transition-all duration-200",
             isMoreOpen
               ? "translate-y-0 scale-100"
               : "translate-y-3 scale-[0.98]",
@@ -115,7 +115,7 @@ export function BottomNavigation({ userRole }: BottomNavigationProps) {
                         key={item.href}
                         href={item.href}
                         onClick={() => setIsMoreOpen(false)}
-                        className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white px-3 py-3 shadow-sm transition hover:border-jdav-green/30 hover:bg-green-50"
+                        className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white px-3 py-3 shadow-sm transition hover:border-jdav-green/30 hover:bg-jdav-green/5"
                       >
                         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-jdav-green/10 text-jdav-green">
                           <ItemIcon className="h-5 w-5" />
@@ -160,7 +160,7 @@ export function BottomNavigation({ userRole }: BottomNavigationProps) {
       </div>
 
       {/* BOTTOM NAVIGATION BAR */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 flex h-20 w-full items-center justify-around border-t border-slate-100 bg-white/90 backdrop-blur-lg pb-safe-bottom pt-1 md:hidden shadow-[0_-8px_30px_rgba(0,0,0,0.04)]">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 flex h-20 w-full items-center justify-around border-t border-slate-100 bg-white/92 backdrop-blur-lg pb-safe-bottom pt-1 md:hidden shadow-[0_-8px_30px_rgba(0,0,0,0.04)]">
         {navigation.primary.map((item) => {
           const isActive = isActivePath(item.href) && !isMoreOpen;
           const Icon = iconByHref[item.href] ?? Home;

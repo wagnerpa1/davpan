@@ -29,7 +29,7 @@
   /* Global border radius reference derived from TourCards (1rem = rounded-2xl) */
   --radius: 1rem;
 
-  --background: #f8fafc; /* light slate/gray as default bg */
+  --background: #f6faf4; /* subtle green-tinted neutral for the JDAV shell */
   --foreground: #0f172a;
 
   --primary: #76a355;

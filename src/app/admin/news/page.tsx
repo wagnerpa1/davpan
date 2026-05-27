@@ -200,7 +200,7 @@ export default async function AdminNewsPage() {
             </select>
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
             <p className="text-xs font-bold uppercase tracking-wider text-slate-600">
               Rollen (für Modus "Nur Rollen")
             </p>
@@ -220,7 +220,7 @@ export default async function AdminNewsPage() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
             <p className="text-xs font-bold uppercase tracking-wider text-slate-600">
               Tour-Gruppen (für Modus "Nur Tour-Gruppen")
             </p>
@@ -277,7 +277,7 @@ export default async function AdminNewsPage() {
             {audits.map((entry) => (
               <article
                 key={entry.id}
-                className="rounded-xl border border-slate-200 bg-slate-50 p-4"
+                className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -323,7 +323,7 @@ export default async function AdminNewsPage() {
             ))}
           </div>
         ) : (
-          <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
+          <div className="rounded-2xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
             Noch keine Systemnachrichten versendet.
           </div>
         )}

@@ -38,7 +38,7 @@ export function DeleteNewsButton({ id }: DeleteNewsButtonProps) {
       type="button"
       onClick={handleDelete}
       disabled={isDeleting}
-      className="inline-flex items-center gap-1 rounded-md border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50"
+      className="inline-flex items-center gap-1 rounded-xl border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50"
     >
       <Trash2 className="h-3.5 w-3.5" />
       {isDeleting ? "Lösche..." : "Löschen"}

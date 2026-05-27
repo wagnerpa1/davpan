@@ -60,7 +60,7 @@ export default async function ObservabilityDashboard() {
         <p className="text-slate-600 mt-2">
           P3.1 Überwachung des Event-Systems und der Domain-Status-Transitions
         </p>
-        <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+        <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
           <span className="font-semibold">Notification Delivery Mode:</span>{" "}
           <span className="uppercase tracking-wide">{deliveryMode}</span>
           {deliveryMode === "direct" && (
@@ -72,14 +72,14 @@ export default async function ObservabilityDashboard() {
           )}
         </div>
         {metricsError && (
-          <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          <div className="mt-3 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
             Fehler beim Laden der Outbox-Metriken: {metricsError.message}
           </div>
         )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex items-center gap-3">
             <Activity className="w-8 h-8 text-blue-500" />
             <div>
@@ -91,7 +91,7 @@ export default async function ObservabilityDashboard() {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex items-center gap-3">
             <Clock className="w-8 h-8 text-amber-500" />
             <div>
@@ -103,7 +103,7 @@ export default async function ObservabilityDashboard() {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex items-center gap-3">
             <ShieldAlert className="w-8 h-8 text-red-500" />
             <div>
@@ -117,7 +117,7 @@ export default async function ObservabilityDashboard() {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex items-center gap-3">
             <Database className="w-8 h-8 text-emerald-500" />
             <div>

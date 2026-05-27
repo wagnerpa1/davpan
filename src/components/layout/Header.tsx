@@ -26,7 +26,7 @@ export function Header({ birthdate, membershipNumber, userRole }: HeaderProps) {
   const navigation = buildNavigation(userRole);
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 w-full border-b border-slate-200 bg-white shadow-sm">
+    <header className="fixed inset-x-0 top-0 z-50 w-full border-b border-slate-200/80 bg-white/95 shadow-sm backdrop-blur-md">
       <div className="container mx-auto flex h-16 items-center px-4">
         <Link href="/" className="flex items-center">
           <Image
@@ -61,7 +61,7 @@ export function Header({ birthdate, membershipNumber, userRole }: HeaderProps) {
             </button>
 
             {isMoreOpen && (
-              <div className="absolute left-0 top-9 w-80 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl">
+              <div className="absolute left-0 top-9 w-80 rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-xl backdrop-blur-md">
                 <div className="space-y-3">
                   {navigation.groups.map((group) => (
                     <section key={group.label} className="space-y-1.5">
@@ -73,7 +73,7 @@ export function Header({ birthdate, membershipNumber, userRole }: HeaderProps) {
                           key={item.href}
                           href={item.href}
                           onClick={() => setIsMoreOpen(false)}
-                          className="block rounded-xl px-2 py-2 text-sm text-slate-700 transition hover:bg-green-50 hover:text-jdav-green"
+                          className="block rounded-xl px-2 py-2 text-sm text-slate-700 transition hover:bg-jdav-green/5 hover:text-jdav-green"
                         >
                           <p className="font-semibold">{item.label}</p>
                           {item.description && (

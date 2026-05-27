@@ -8,7 +8,7 @@ import {
 } from "@/app/actions/admin-resources";
 import { getCurrentUserProfile } from "@/lib/auth";
 import { DeleteResourceButton } from "./DeleteResourceButton";
-import { ResourceCalendar } from "./ResourceCalendar";
+import { ResourceCalendarWrapper } from "./ResourceCalendarWrapper";
 
 export const metadata: Metadata = {
   title: "Admin - Vereinsressourcen | JDAV Pfarrkirchen",
@@ -116,10 +116,10 @@ export default async function AdminResourcesPage() {
         </div>
 
         <div className="min-h-150 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6 lg:col-span-3">
-          <h2 className="text-lg font-bold text-slate-800 mb-6">
-            Buchungs-Kalender
-          </h2>
-          <ResourceCalendar bookings={bookings || []} />
+          <ResourceCalendarWrapper
+            resources={resourceRows}
+            bookings={bookings || []}
+          />
         </div>
       </div>
     </div>
