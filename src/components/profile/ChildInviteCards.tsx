@@ -162,6 +162,7 @@ export function CreateChildInviteAction({ childId }: { childId: string }) {
               variant="ghost"
               className="h-8 w-8 ml-2"
               onClick={copyToClipboard}
+              aria-label={copied ? "Code kopiert" : "Code kopieren"}
             >
               {copied ? (
                 <Check className="h-4 w-4 text-green-600" />
@@ -214,6 +215,7 @@ export function RedeemChildInvitePopup() {
                 variant="ghost"
                 onClick={() => setIsOpen(false)}
                 className="h-8 w-8"
+                aria-label="Popup schließen"
               >
                 <X className="h-4 w-4" />
               </Button>

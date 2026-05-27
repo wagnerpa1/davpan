@@ -53,6 +53,8 @@ export function Header({ birthdate, membershipNumber, userRole }: HeaderProps) {
             <button
               type="button"
               onClick={() => setIsMoreOpen((prev) => !prev)}
+              aria-expanded={isMoreOpen}
+              aria-haspopup="true"
               className="inline-flex items-center gap-1 text-sm font-medium text-slate-700 transition-colors hover:text-jdav-green"
             >
               Mehr
