@@ -1,3 +1,5 @@
+import { siteConfig } from "@/lib/site-config";
+
 /**
  * Utilities for generating ICS (iCalendar) files for tours.
  * Follows RFC 5545 standard.
@@ -67,7 +69,7 @@ export function generateTourIcs(options: IcsEventOptions): string {
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//JDAV Pfarrkirchen//Tour Management//DE",
+    `PRODID:${siteConfig.icsProductId}`,
     "CALSCALE:GREGORIAN",
     "BEGIN:VEVENT",
     `SUMMARY:${escapeIcs(title)}`,

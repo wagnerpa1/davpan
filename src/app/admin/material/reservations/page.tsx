@@ -9,7 +9,7 @@ import { ReservationStatusManager } from "./ReservationStatusManager";
 import { TourBulkReservationManager } from "./TourBulkReservationManager";
 
 export const metadata: Metadata = {
-  title: "Material Reservierungen - Admin | JDAV Pfarrkirchen",
+  title: "Material Reservierungen - Admin",
 };
 
 interface ReservationRow {

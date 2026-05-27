@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { getCurrentUserProfile } from "@/lib/auth";
 
 export const metadata: Metadata = {
-  title: "Admin - Datenexport | JDAV Pfarrkirchen",
+  title: "Admin - Datenexport",
 };
 
 export default async function AdminExportPage() {

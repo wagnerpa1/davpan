@@ -19,6 +19,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { buildNavigation } from "@/lib/navigation/nav-config";
+import { siteConfig } from "@/lib/site-config";
 import { cn } from "@/lib/utils";
 
 interface BottomNavigationProps {
@@ -88,7 +89,7 @@ export function BottomNavigation({ userRole }: BottomNavigationProps) {
                 Mehr
               </h2>
               <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500">
-                JDAV Pfarrkirchen
+                {siteConfig.appName}
               </p>
             </div>
             <button

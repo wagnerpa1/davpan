@@ -1,4 +1,4 @@
-# Sicherheitsstatus - JDAV / DAV Pfarrkirchen
+# Sicherheitsstatus - DAV Pfarrkirchen
 
 Stand: 2026-03-31
 

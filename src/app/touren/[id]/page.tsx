@@ -19,6 +19,7 @@ import { DeleteTourButton } from "@/components/tours/DeleteTourButton";
 import { ParticipantManagement } from "@/components/tours/ParticipantManagement";
 import { TourRegistrationSection } from "@/components/tours/TourRegistrationSection";
 import { getCurrentUserProfile } from "@/lib/auth";
+import { siteConfig } from "@/lib/site-config";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/server";
 
@@ -368,7 +369,7 @@ export default async function TourDetailPage({
             {tour.title}
           </h1>
           <p className="text-lg font-medium opacity-90">
-            {tour.target_area || "JDAV Pfarrkirchen"}
+            {tour.target_area || siteConfig.appName}
           </p>
 
           {/* Guides */}
@@ -528,7 +529,7 @@ export default async function TourDetailPage({
                   <MapPin className="h-5 w-5 text-jdav-green" /> Treffpunkt
                 </h4>
                 <p className="text-sm text-slate-600 leading-relaxed">
-                  {tour.meeting_point || "P&R Parkplatz Pfarrkirchen"} <br />
+                  {tour.meeting_point || siteConfig.defaultMeetingPoint} <br />
                   <span className="font-bold text-jdav-green">
                     {tour.meeting_time
                       ? `Um ${tour.meeting_time.substring(0, 5)} Uhr`

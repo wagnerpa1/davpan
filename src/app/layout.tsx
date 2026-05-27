@@ -7,26 +7,21 @@ import { Header } from "@/components/layout/Header";
 import { PushNotificationInit } from "@/components/layout/PushNotificationInit";
 import { OfflineIndicator } from "@/components/ui/OfflineIndicator";
 import { getCurrentUserProfile } from "@/lib/auth";
+import { siteConfig } from "@/lib/site-config";
 import { SerwistProvider } from "./serwist";
 
-const APP_NAME = "JDAV Pfarrkirchen";
-const APP_DEFAULT_TITLE = "JDAV Pfarrkirchen";
-const APP_TITLE_TEMPLATE = "%s | JDAV Pfarrkirchen";
-const APP_DESCRIPTION =
-  "App für den JDAV Pfarrkirchen - Touren, Material, Kalender";
-
 export const metadata: Metadata = {
-  applicationName: APP_NAME,
+  applicationName: siteConfig.appName,
   title: {
-    default: APP_DEFAULT_TITLE,
-    template: APP_TITLE_TEMPLATE,
+    default: siteConfig.appName,
+    template: `%s | ${siteConfig.appName}`,
   },
-  description: APP_DESCRIPTION,
-  manifest: "/manifest.json",
+  description: siteConfig.description,
+  manifest: siteConfig.manifestPath,
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: APP_DEFAULT_TITLE,
+    title: siteConfig.appName,
     startupImage: [
       {
         url: "/splash_screens/iPhone_17_Pro_Max__iPhone_16_Pro_Max_landscape.png",
@@ -255,20 +250,20 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    siteName: APP_NAME,
+    siteName: siteConfig.appName,
     title: {
-      default: APP_DEFAULT_TITLE,
-      template: APP_TITLE_TEMPLATE,
+      default: siteConfig.appName,
+      template: `%s | ${siteConfig.appName}`,
     },
-    description: APP_DESCRIPTION,
+    description: siteConfig.description,
   },
   twitter: {
     card: "summary",
     title: {
-      default: APP_DEFAULT_TITLE,
-      template: APP_TITLE_TEMPLATE,
+      default: siteConfig.appName,
+      template: `%s | ${siteConfig.appName}`,
     },
-    description: APP_DESCRIPTION,
+    description: siteConfig.description,
   },
 };
 

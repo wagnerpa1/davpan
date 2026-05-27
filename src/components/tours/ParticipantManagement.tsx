@@ -15,6 +15,7 @@ import Image from "next/image";
 import { useMemo, useState } from "react";
 import { updateParticipantStatus } from "@/app/actions/participant-management";
 import { Button } from "@/components/ui/button";
+import { siteConfig } from "@/lib/site-config";
 import { cn } from "@/lib/utils";
 import { calculateAge } from "@/utils/date";
 
@@ -202,7 +203,7 @@ export function ParticipantManagement({
         <div className="flex justify-between items-start">
           <div className="space-y-1">
             <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tight">
-              Teilnehmerliste – JDAV Pfarrkirchen
+              Teilnehmerliste – {siteConfig.appName}
             </h1>
             <div className="grid grid-cols-2 gap-x-12 gap-y-1 text-sm text-slate-800">
               <p>
@@ -244,8 +245,8 @@ export function ParticipantManagement({
             </div>
           </div>
           <Image
-            src="/JDAV-Logo-grün-ganz.svg"
-            alt="JDAV Logo"
+            src={siteConfig.logoPath}
+            alt={siteConfig.logoAlt}
             width={240}
             height={64}
             className="h-auto w-60"

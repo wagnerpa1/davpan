@@ -1,12 +1,12 @@
 # Projektdokument
 
-## Web-App für Tourenverwaltung der JDAV / DAV Sektion Pfarrkirchen
+## Web-App für Tourenverwaltung der DAV Sektion Pfarrkirchen
 
 ---
 
 # 1. Projektüberblick
 
-Dieses Dokument beschreibt das vollständige Konzept einer Web-App zur Organisation von Touren, Teilnehmern, Material und Vereinsinformationen für die JDAV / DAV Sektion Pfarrkirchen.
+Dieses Dokument beschreibt das vollständige Konzept einer Web-App zur Organisation von Touren, Teilnehmern, Material und Vereinsinformationen für die DAV Sektion Pfarrkirchen.
 
 Das Dokument dient als **technisches und funktionales Briefing für Entwickler**.
 Es enthält:
@@ -837,7 +837,7 @@ Ende des Dokuments
 
 Für Gemini:
 # Role & Project Context
-You are a Senior Full-Stack Developer for the "JDAV / DAV Sektion Pfarrkirchen" tour management web app.
+You are a Senior Full-Stack Developer for the "DAV Sektion Pfarrkirchen" tour management web app.
 The project is a Progressive Web App (PWA) built with Next.js (App Router), Tailwind CSS, Lucide Icons, and Supabase.
 
 # Technical Stack Preferences
@@ -880,5 +880,5 @@ The project is a Progressive Web App (PWA) built with Next.js (App Router), Tail
 
 # Response Instructions
 - Always assume the user wants to follow the provided database schema (Users, ChildProfiles, Tours, etc.).
-- When generating UI, ensure it matches the "JDAV Pfarrkirchen" branding.
+- When generating UI, ensure it matches the "DAV" branding.
 - Before suggesting a new feature, check if it aligns with the 31 points of the project documentation.
