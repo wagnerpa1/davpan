@@ -1,6 +1,6 @@
 "use client";
 
-import { type ChangeEvent, useState } from "react";
+import { type ChangeEvent, forwardRef, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Textarea, type TextareaProps } from "./textarea";
 
@@ -12,16 +12,26 @@ interface TextareaWithCounterProps extends TextareaProps {
  * A Textarea wrapper that includes a character counter.
  * Provides visual feedback as the user approaches the character limit.
  */
-export function TextareaWithCounter({
-  maxLength,
-  onChange,
-  defaultValue,
-  className,
-  ...props
-}: TextareaWithCounterProps) {
-  const [count, setCount] = useState(
-    defaultValue ? String(defaultValue).length : 0,
+const getTextLength = (
+  text: TextareaProps["value"] | TextareaProps["defaultValue"],
+) => (text == null ? 0 : String(text).length);
+
+export const TextareaWithCounter = forwardRef<
+  HTMLTextAreaElement,
+  TextareaWithCounterProps
+>(function TextareaWithCounter(
+  { maxLength, onChange, value, defaultValue, className, ...props },
+  ref,
+) {
+  const [count, setCount] = useState(() =>
+    getTextLength(value ?? defaultValue),
   );
+
+  useEffect(() => {
+    if (value !== undefined) {
+      setCount(getTextLength(value));
+    }
+  }, [value]);
 
   const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     setCount(e.target.value.length);
@@ -37,6 +47,8 @@ export function TextareaWithCounter({
     <div className="relative">
       <Textarea
         {...props}
+        ref={ref}
+        value={value}
         defaultValue={defaultValue}
         onChange={handleChange}
         maxLength={maxLength}
@@ -57,4 +69,6 @@ export function TextareaWithCounter({
       </div>
     </div>
   );
-}
+});
+
+TextareaWithCounter.displayName = "TextareaWithCounter";
