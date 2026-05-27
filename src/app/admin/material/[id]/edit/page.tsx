@@ -6,7 +6,7 @@ import { canManageMaterial, getCurrentUserProfile } from "@/lib/auth";
 import { createClient } from "@/utils/supabase/server";
 
 export const metadata: Metadata = {
-  title: "Material bearbeiten - Admin | DAV Pfarrkirchen",
+  title: "Material bearbeiten - Admin",
 };
 
 export default async function EditMaterialPage({

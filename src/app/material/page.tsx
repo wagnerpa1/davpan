@@ -5,11 +5,12 @@ import Link from "next/link";
 import { cancelOwnPrivateMaterialReservation } from "@/app/actions/material";
 import { MaterialBookingForm } from "@/components/material/MaterialBookingForm";
 import { canAccessMaterialAdmin, getCurrentUserProfile } from "@/lib/auth";
+import { siteConfig } from "@/lib/site-config";
 import { createClient } from "@/utils/supabase/server";
 
 export const metadata: Metadata = {
-  title: "Materialausleihe | DAV Pfarrkirchen",
-  description: "Zentraler Material-Verleih für Mitglieder des DAV Pfarrkirchen",
+  title: "Materialausleihe",
+  description: `Zentraler Material-Verleih für Mitglieder des ${siteConfig.appName}`,
 };
 
 interface MaterialRow {

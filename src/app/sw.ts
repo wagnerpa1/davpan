@@ -24,6 +24,10 @@ declare global {
 
 declare const self: ServiceWorkerGlobalScope;
 
+const notificationTitle =
+  process.env.NEXT_PUBLIC_DAV_APP_NAME ||
+  `DAV ${process.env.NEXT_PUBLIC_DAV_SECTION_NAME || "Pfarrkirchen"}`;
+
 const bgSyncPlugin = new BackgroundSyncPlugin("offline-mutations-queue", {
   maxRetentionTime: 24 * 60, // Retry for max 24 Hours
   onSync: async ({ queue }) => {
@@ -238,7 +242,7 @@ self.addEventListener("push", (event) => {
     };
   }
 
-  const title = data.title || "DAV Pfarrkirchen";
+  const title = data.title || notificationTitle;
   const body = data.body || "Neue Benachrichtigung";
   const url = data.payload?.url || "/";
 

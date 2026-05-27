@@ -11,7 +11,7 @@ import { DeleteResourceButton } from "./DeleteResourceButton";
 import { ResourceCalendarWrapper } from "./ResourceCalendarWrapper";
 
 export const metadata: Metadata = {
-  title: "Admin - Vereinsressourcen | DAV Pfarrkirchen",
+  title: "Admin - Vereinsressourcen",
 };
 
 interface ResourceListItem {

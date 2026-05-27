@@ -1,0 +1,77 @@
+import type { MetadataRoute } from "next";
+import { siteConfig } from "@/lib/site-config";
+
+export default function manifest(): MetadataRoute.Manifest {
+  return {
+    theme_color: "#5a8040",
+    background_color: "#f8fafc",
+    id: "/",
+    start_url: "/",
+    scope: "/",
+    icons: [
+      {
+        purpose: "any",
+        sizes: "192x192",
+        src: "/android-chrome-192x192.png",
+        type: "image/png",
+      },
+      {
+        purpose: "maskable",
+        sizes: "512x512",
+        src: "/icon512_maskable.png",
+        type: "image/png",
+      },
+      {
+        purpose: "any",
+        sizes: "512x512",
+        src: "/icon512_rounded.png",
+        type: "image/png",
+      },
+    ],
+    orientation: "portrait",
+    display: "standalone",
+    dir: "auto",
+    lang: "de-DE",
+    name: siteConfig.appName,
+    short_name: siteConfig.shortName,
+    description: `${siteConfig.appName} Touren-Portal`,
+    shortcuts: [
+      {
+        name: "Touren",
+        short_name: "Touren",
+        description: "Tourenübersicht",
+        url: "/touren",
+        icons: [
+          {
+            sizes: "96x96",
+            src: "/compass.svg",
+          },
+        ],
+      },
+      {
+        name: "Material",
+        short_name: "Material",
+        description: "Materialausleihe",
+        url: "/material",
+        icons: [
+          {
+            sizes: "96x96",
+            src: "/pickaxe.svg",
+          },
+        ],
+      },
+      {
+        name: "Profile",
+        short_name: "Profile",
+        description: "Profile",
+        url: "/profile",
+        icons: [
+          {
+            sizes: "96x96",
+            src: "/user.svg",
+          },
+        ],
+      },
+    ],
+  };
+}

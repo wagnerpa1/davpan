@@ -5,7 +5,7 @@ import { MaterialForm } from "@/app/admin/material/MaterialForm";
 import { canManageMaterial, getCurrentUserProfile } from "@/lib/auth";
 
 export const metadata: Metadata = {
-  title: "Neues Material - Admin | DAV Pfarrkirchen",
+  title: "Neues Material - Admin",
 };
 
 export default async function CreateMaterialPage() {

@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { siteConfig } from "@/lib/site-config";
 
 const port = parseInt(process.env.SMTP_PORT || "587", 10);
 const isSecureEnv = process.env.SMTP_SECURE === "true";
@@ -28,7 +29,7 @@ export async function dispatchEmailForNotification(
 
   try {
     await transporter.sendMail({
-      from: `"DAV Pfarrkirchen" <${process.env.SMTP_USER}>`,
+      from: `"${siteConfig.appName}" <${process.env.SMTP_USER}>`,
       to: email,
       subject: title,
       text: body,

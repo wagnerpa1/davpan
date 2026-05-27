@@ -11,6 +11,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { TourCard } from "@/components/tours/TourCard";
 import { getCurrentUserProfile } from "@/lib/auth";
+import { siteConfig } from "@/lib/site-config";
 import {
   getNextConfirmedRegistration,
   loadTourRegistrationOverview,
@@ -132,7 +133,7 @@ export default async function Home() {
           Servus, {displayName}!
         </h1>
         <p className="mt-2 text-slate-500">
-          Willkommen im Mitgliederbereich der Sektion Pfarrkirchen
+          Willkommen im Mitgliederbereich der Sektion {siteConfig.sectionName}
         </p>
       </div>
 

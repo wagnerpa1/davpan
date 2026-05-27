@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { ComponentProps } from "react";
 import { TourCard } from "@/components/tours/TourCard";
 import { TourFilters } from "@/components/tours/TourFilters";
+import { siteConfig } from "@/lib/site-config";
 import { createClient } from "@/utils/supabase/server";
 
 type TourCardItem = ComponentProps<typeof TourCard>["tour"];
@@ -235,7 +236,7 @@ export default async function PublicToursPage({
           Öffentliche Touren
         </h1>
         <p className="mt-2 text-sm text-slate-600">
-          Überblick über kommende Touren der DAV/JDAV Sektion Pfarrkirchen.
+          Überblick über kommende Touren der Sektion {siteConfig.sectionName}.
         </p>
       </div>
 

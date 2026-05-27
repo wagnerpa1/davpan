@@ -7,6 +7,7 @@ import { useState } from "react";
 import { MemberBarcodePopup } from "@/components/layout/MemberBarcodePopup";
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
 import { buildNavigation } from "@/lib/navigation/nav-config";
+import { siteConfig } from "@/lib/site-config";
 
 interface HeaderProps {
   birthdate: string | null;
@@ -16,7 +17,7 @@ interface HeaderProps {
 
 /**
  * The main application header for desktop and tablet views.
- * Displays the JDAV logo, primary navigation links, a "More" dropdown for secondary links,
+ * Displays the club logo, primary navigation links, a "More" dropdown for secondary links,
  * and user-specific actions (barcode popup, notifications, logout).
  */
 export function Header({ birthdate, membershipNumber, userRole }: HeaderProps) {
@@ -30,8 +31,8 @@ export function Header({ birthdate, membershipNumber, userRole }: HeaderProps) {
       <div className="container mx-auto flex h-16 items-center px-4">
         <Link href="/" className="flex items-center">
           <Image
-            src="/JDAV-Logo-grün-ganz.svg"
-            alt="JDAV Pfarrkirchen Logo"
+            src={siteConfig.logoPath}
+            alt={siteConfig.logoAlt}
             width={180}
             height={48}
             className="h-auto w-22 sm:w-26 md:w-30"
