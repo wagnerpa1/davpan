@@ -13,8 +13,8 @@ interface TextareaWithCounterProps extends TextareaProps {
  * Provides visual feedback as the user approaches the character limit.
  */
 const getTextLength = (
-  text: TextareaProps["value"] | TextareaProps["defaultValue"],
-) => (text == null ? 0 : String(text).length);
+  textValue: TextareaProps["value"] | TextareaProps["defaultValue"],
+) => (textValue == null ? 0 : String(textValue).length);
 
 export const TextareaWithCounter = forwardRef<
   HTMLTextAreaElement,
@@ -24,7 +24,7 @@ export const TextareaWithCounter = forwardRef<
   ref,
 ) {
   const [count, setCount] = useState(() =>
-    getTextLength(value ?? defaultValue),
+    getTextLength(value !== undefined ? value : defaultValue),
   );
 
   useEffect(() => {
