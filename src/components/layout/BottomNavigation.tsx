@@ -88,7 +88,7 @@ export function BottomNavigation({ userRole }: BottomNavigationProps) {
                 Mehr
               </h2>
               <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500">
-                JDAV Pfarrkirchen
+                DAV Pfarrkirchen
               </p>
             </div>
             <button

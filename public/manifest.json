@@ -28,9 +28,9 @@
   "display": "standalone",
   "dir": "auto",
   "lang": "de-DE",
-  "name": "JDAV Pfarrkirchen",
-  "short_name": "JDAV PAN",
-  "description": "JDAV Pfarrkirchen Touren-Portal",
+  "name": "DAV Pfarrkirchen",
+  "short_name": "DAV PAN",
+  "description": "DAV Pfarrkirchen Touren-Portal",
   "shortcuts": [
     {
       "name": "Touren",

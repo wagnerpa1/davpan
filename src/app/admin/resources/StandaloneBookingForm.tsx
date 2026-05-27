@@ -111,7 +111,7 @@ export function StandaloneBookingForm({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm animate-in fade-in">
-      <div className="w-full max-w-lg md:w-[500px] animate-in zoom-in-95">
+      <div className="w-full max-w-lg md:w-125 animate-in zoom-in-95">
         <form
           onSubmit={handleSubmit}
           className="space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-xl"

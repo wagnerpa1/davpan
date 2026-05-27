@@ -235,7 +235,7 @@ export default async function PublicToursPage({
           Öffentliche Touren
         </h1>
         <p className="mt-2 text-sm text-slate-600">
-          Überblick über kommende Touren der JDAV/DAV Sektion Pfarrkirchen.
+          Überblick über kommende Touren der DAV/JDAV Sektion Pfarrkirchen.
         </p>
       </div>
 

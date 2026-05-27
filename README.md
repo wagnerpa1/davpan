@@ -1,11 +1,11 @@
-# 🏔️ JDAV / DAV Pfarrkirchen Tourenverwaltung
+# 🏔️ DAV Pfarrkirchen Tourenverwaltung
 
-![JDAV Pfarrkirchen](https://img.shields.io/badge/DAV-Sektion_Pfarrkirchen-76a355?style=for-the-badge)
+![DAV Pfarrkirchen](https://img.shields.io/badge/DAV-Sektion_Pfarrkirchen-76a355?style=for-the-badge)
 ![Next.js](https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js)
 ![Supabase](https://img.shields.io/badge/Supabase-Database-3ecf8e?style=for-the-badge&logo=supabase)
 ![PWA](https://img.shields.io/badge/PWA-Ready-blueviolet?style=for-the-badge)
 
-Eine moderne, leistungsstarke Progressive Web App (PWA) zur Organisation und Verwaltung von Bergtouren, Material und Vereinsressourcen für die **JDAV & DAV Sektion Pfarrkirchen**.
+Eine moderne, leistungsstarke Progressive Web App (PWA) zur Organisation und Verwaltung von Bergtouren, Material und Vereinsressourcen für die **DAV Sektion Pfarrkirchen**.
 
 ---
 

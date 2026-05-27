@@ -8,9 +8,8 @@ import { canAccessMaterialAdmin, getCurrentUserProfile } from "@/lib/auth";
 import { createClient } from "@/utils/supabase/server";
 
 export const metadata: Metadata = {
-  title: "Materialausleihe | JDAV Pfarrkirchen",
-  description:
-    "Zentraler Material-Verleih für Mitglieder der JDAV Pfarrkirchen",
+  title: "Materialausleihe | DAV Pfarrkirchen",
+  description: "Zentraler Material-Verleih für Mitglieder des DAV Pfarrkirchen",
 };
 
 interface MaterialRow {
@@ -220,7 +219,7 @@ export default async function MaterialPage() {
             Materialausleihe
           </h1>
           <p className="mt-2 text-slate-600">
-            Leihen Sie sich Material für Ihre privaten Touren. Für JDAV/DAV
+            Leihen Sie sich Material für Ihre privaten Touren. Für DAV/JDAV
             Touren wird Material direkt in der Anmeldung gebucht.
           </p>
         </div>

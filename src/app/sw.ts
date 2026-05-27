@@ -238,7 +238,7 @@ self.addEventListener("push", (event) => {
     };
   }
 
-  const title = data.title || "JDAV Pfarrkirchen";
+  const title = data.title || "DAV Pfarrkirchen";
   const body = data.body || "Neue Benachrichtigung";
   const url = data.payload?.url || "/";
 

@@ -9,11 +9,11 @@ import { OfflineIndicator } from "@/components/ui/OfflineIndicator";
 import { getCurrentUserProfile } from "@/lib/auth";
 import { SerwistProvider } from "./serwist";
 
-const APP_NAME = "JDAV Pfarrkirchen";
-const APP_DEFAULT_TITLE = "JDAV Pfarrkirchen";
-const APP_TITLE_TEMPLATE = "%s | JDAV Pfarrkirchen";
+const APP_NAME = "DAV Pfarrkirchen";
+const APP_DEFAULT_TITLE = "DAV Pfarrkirchen";
+const APP_TITLE_TEMPLATE = "%s | DAV Pfarrkirchen";
 const APP_DESCRIPTION =
-  "App für den JDAV Pfarrkirchen - Touren, Material, Kalender";
+  "App für den DAV Pfarrkirchen - Touren, Material, Kalender";
 
 export const metadata: Metadata = {
   applicationName: APP_NAME,

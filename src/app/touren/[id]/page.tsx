@@ -368,7 +368,7 @@ export default async function TourDetailPage({
             {tour.title}
           </h1>
           <p className="text-lg font-medium opacity-90">
-            {tour.target_area || "JDAV Pfarrkirchen"}
+            {tour.target_area || "DAV Pfarrkirchen"}
           </p>
 
           {/* Guides */}

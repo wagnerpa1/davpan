@@ -14,7 +14,7 @@ interface AdminDocument {
 }
 
 export const metadata: Metadata = {
-  title: "Admin - Dokumente verwalten | JDAV Pfarrkirchen",
+  title: "Admin - Dokumente verwalten | DAV Pfarrkirchen",
 };
 
 export default async function AdminDokumentePage() {

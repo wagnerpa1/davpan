@@ -28,7 +28,7 @@ export async function dispatchEmailForNotification(
 
   try {
     await transporter.sendMail({
-      from: `"JDAV / DAV Pfarrkirchen" <${process.env.SMTP_USER}>`,
+      from: `"DAV Pfarrkirchen" <${process.env.SMTP_USER}>`,
       to: email,
       subject: title,
       text: body,

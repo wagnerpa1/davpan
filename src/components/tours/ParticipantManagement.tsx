@@ -202,7 +202,7 @@ export function ParticipantManagement({
         <div className="flex justify-between items-start">
           <div className="space-y-1">
             <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tight">
-              Teilnehmerliste – JDAV Pfarrkirchen
+              Teilnehmerliste – DAV Pfarrkirchen
             </h1>
             <div className="grid grid-cols-2 gap-x-12 gap-y-1 text-sm text-slate-800">
               <p>

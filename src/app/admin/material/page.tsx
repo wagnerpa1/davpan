@@ -33,7 +33,7 @@ function getTotalStock(inventory: MaterialInventoryItem[] | null) {
 }
 
 export const metadata: Metadata = {
-  title: "Admin - Material verwalten | JDAV Pfarrkirchen",
+  title: "Admin - Material verwalten | DAV Pfarrkirchen",
 };
 
 export default async function AdminMaterialPage() {
