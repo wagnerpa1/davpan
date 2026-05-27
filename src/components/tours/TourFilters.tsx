@@ -95,7 +95,7 @@ export function TourFilters({
             className="flex-1 sm:flex-none max-w-50 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-jdav-green"
           >
             <option value="date_asc">Datum (Anstehend)</option>
-            <option value="date_desc">Datum (Abstehend)</option>
+            <option value="date_desc">Datum (Absteigend)</option>
             <option value="capacity_low">Kapazität (Voll zuerst)</option>
             <option value="capacity_high">Kapazität (Leer zuerst)</option>
           </select>
@@ -119,7 +119,7 @@ export function TourFilters({
                 onChange={(e) => updateFilters({ category: e.target.value })}
                 className="w-full rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-jdav-green"
               >
-                <option value="">Alle Arten</option>
+                <option value="">Alle Kategorien</option>
                 {categories.map((cat) => (
                   <option key={cat.id} value={cat.id} className="capitalize">
                     {cat.category}
@@ -142,7 +142,7 @@ export function TourFilters({
                 onChange={(e) => updateFilters({ difficulty: e.target.value })}
                 className="w-full rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-jdav-green"
               >
-                <option value="">Alle Grade</option>
+                <option value="">Alle Schwierigkeitsgrade</option>
                 {difficulties.map((diff) => (
                   <option key={diff} value={diff}>
                     {diff}
