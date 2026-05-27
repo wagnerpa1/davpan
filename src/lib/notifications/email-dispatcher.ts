@@ -1,9 +1,13 @@
 import nodemailer from "nodemailer";
 
+const port = parseInt(process.env.SMTP_PORT || "587", 10);
+const isSecureEnv = process.env.SMTP_SECURE === "true";
+
 const smtpConfig = {
   host: process.env.SMTP_HOST || "",
-  port: parseInt(process.env.SMTP_PORT || "587", 10),
-  secure: process.env.SMTP_SECURE === "true",
+  port,
+  // Nodemailer requires secure: false for port 587 (STARTTLS) and secure: true for 465 (TLS)
+  secure: port === 465 ? true : port === 587 ? false : isSecureEnv,
   auth: {
     user: process.env.SMTP_USER || "",
     pass: process.env.SMTP_PASS || "",
