@@ -1,3 +1,5 @@
+import { isAdminRole, isGuideRole, type RoleLike } from "@/lib/permissions";
+
 const DEFAULT_CUTOFF = "12-01";
 
 /**
@@ -49,6 +51,6 @@ export function getTourVisibilityDateLimit(currentDate: Date): string {
  * Determines whether a user's role requires them to be restricted by the visibility limit.
  * Admins and Guides can see all tours regardless of the date.
  */
-export function shouldApplyTourVisibilityLimit(role: string | null): boolean {
-  return role !== "admin" && role !== "guide";
+export function shouldApplyTourVisibilityLimit(role: RoleLike): boolean {
+  return !isAdminRole(role) && !isGuideRole(role);
 }

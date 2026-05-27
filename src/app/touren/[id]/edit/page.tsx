@@ -9,6 +9,7 @@ import {
   updateTour,
 } from "@/app/actions/tour-management";
 import { TourForm } from "@/components/tours/TourForm";
+import { isAdminRole, isGuideRole } from "@/lib/permissions";
 import { createClient } from "@/utils/supabase/server";
 
 export default async function EditTourPage({
@@ -64,8 +65,8 @@ export default async function EditTourPage({
   const userRole = profileRes.data?.role;
 
   // Check permissions: Admin can edit all. Guide can edit if lead.
-  let canEdit = userRole === "admin";
-  if (!canEdit && userRole === "guide") {
+  let canEdit = isAdminRole(userRole);
+  if (!canEdit && isGuideRole(userRole)) {
     const { data: leadCheck } = await supabase
       .from("tour_guides")
       .select("id")
@@ -86,7 +87,7 @@ export default async function EditTourPage({
   const updateTourWithId = updateTour.bind(null, id);
 
   return (
-    <div className="container mx-auto max-w-2xl px-4 py-8">
+    <div className="mx-auto max-w-site px-4 py-8">
       <div className="mb-8 flex items-center gap-3">
         <div className="rounded-xl bg-jdav-green p-2 text-white">
           <Edit className="h-6 w-6" />

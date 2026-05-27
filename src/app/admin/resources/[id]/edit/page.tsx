@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { ResourceForm } from "@/app/admin/resources/ResourceForm";
 import { getCurrentUserProfile } from "@/lib/auth";
+import { isAdminRole } from "@/lib/permissions";
 import { createClient } from "@/utils/supabase/server";
 
 export default async function EditResourcePage({
@@ -11,7 +12,7 @@ export default async function EditResourcePage({
   const { id } = await params;
   const authContext = await getCurrentUserProfile();
 
-  if (authContext.role !== "admin") {
+  if (!isAdminRole(authContext.role)) {
     redirect("/admin/resources");
   }
 
@@ -27,7 +28,7 @@ export default async function EditResourcePage({
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
+    <div className="mx-auto max-w-site px-4 py-8">
       <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl mb-6">
         Ressource bearbeiten
       </h1>

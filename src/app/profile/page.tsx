@@ -12,6 +12,7 @@ import {
 import { AnimatedSubmitButton } from "@/components/ui/AnimatedSubmitButton";
 import { AsyncForm } from "@/components/ui/AsyncForm";
 import { TextareaWithCounter } from "@/components/ui/TextareaWithCounter";
+import { getRoleDisplayName } from "@/lib/permissions";
 import { createClient } from "@/utils/supabase/server";
 
 interface ChildProfile {
@@ -143,7 +144,7 @@ export default async function ProfilePage() {
   }));
 
   return (
-    <div className="container mx-auto max-w-2xl px-4 py-8">
+    <div className="mx-auto max-w-site px-4 py-8">
       <div className="mb-10 lg:mb-12">
         <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
           Profil & Einstellungen
@@ -228,15 +229,7 @@ export default async function ProfilePage() {
               <input
                 id="profile-role-read-only"
                 disabled
-                defaultValue={
-                  profile?.role === "guide"
-                    ? "Tourenleiter (Guide)"
-                    : profile?.role === "materialwart"
-                      ? "Materialwart"
-                      : profile?.role === "admin"
-                        ? "Administrator"
-                        : "Mitglied"
-                }
+                defaultValue={getRoleDisplayName(profile?.role)}
                 className="block w-full rounded-input border border-slate-300 bg-slate-50 px-3 py-1.5 text-sm text-slate-500 capitalize"
               />
             ) : (

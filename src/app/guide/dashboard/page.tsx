@@ -11,6 +11,7 @@ import {
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { syncTourStatuses } from "@/app/actions/tour-management";
+import { isAdminRole, isGuideRole } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/server";
 
@@ -71,11 +72,11 @@ export default async function GuideDashboardPage() {
     .eq("id", user.id)
     .single();
 
-  if (!profile || (profile.role !== "guide" && profile.role !== "admin")) {
+  if (!profile || (!isGuideRole(profile.role) && !isAdminRole(profile.role))) {
     redirect("/touren");
   }
 
-  const isAdmin = profile.role === "admin";
+  const isAdmin = isAdminRole(profile.role);
 
   // Sync statuses based on dates
   await syncTourStatuses();
@@ -225,7 +226,7 @@ export default async function GuideDashboardPage() {
   );
 
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-8">
+    <div className="mx-auto max-w-site px-4 py-8">
       <div className="mb-10 flex flex-col gap-4 xs:flex-row xs:items-center xs:justify-between lg:mb-12">
         <div className="flex items-center gap-3">
           <div className="rounded-xl bg-jdav-green p-2 text-white shadow-sm">

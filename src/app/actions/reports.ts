@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { isAdminRole } from "@/lib/permissions";
 import { createClient } from "@/utils/supabase/server";
 
 export async function upsertReport(formData: FormData) {
@@ -15,7 +16,7 @@ export async function upsertReport(formData: FormData) {
   const title = formData.get("title") as string;
   const text = formData.get("text") as string;
   const reportId = formData.get("reportId") as string | null;
-  const imagesJson = formData.get("images") as string | null; // Added
+  const imagesJson = formData.get("images") as string | null;
 
   if (!tourId || !title || !text) {
     return { error: "Titel und Berichtstext sind erforderlich." };
@@ -28,7 +29,7 @@ export async function upsertReport(formData: FormData) {
     .eq("id", user.id)
     .single();
 
-  if (profile?.role !== "admin") {
+  if (!isAdminRole(profile?.role)) {
     const { data: tourGuide } = await supabase
       .from("tour_guides")
       .select("id")
@@ -226,7 +227,7 @@ export async function getTourParticipantsForListing(tourId: string) {
     .eq("id", user.id)
     .single();
 
-  const isAdmin = profile?.role === "admin";
+  const isAdmin = isAdminRole(profile?.role);
   const { data: isGuide } = await supabase
     .from("tour_guides")
     .select("id")

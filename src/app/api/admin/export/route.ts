@@ -1,5 +1,6 @@
 ﻿import { NextResponse } from "next/server";
 import { getCurrentUserProfile } from "@/lib/auth";
+import { isAdminRole } from "@/lib/permissions";
 import { createClient } from "@/utils/supabase/server";
 
 type Nullable<T> = T | null;
@@ -304,7 +305,7 @@ export async function GET(request: Request) {
   try {
     const profile = await getCurrentUserProfile();
 
-    if (!profile || profile.role !== "admin") {
+    if (!profile || !isAdminRole(profile.role)) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 

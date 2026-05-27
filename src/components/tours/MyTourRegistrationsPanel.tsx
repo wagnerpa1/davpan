@@ -327,7 +327,7 @@ export function MyTourRegistrationsPanel({
   const participantLabel = activeTab?.label ?? "Ich";
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-6 px-4 sm:px-6 lg:px-8">
+    <div className="mx-auto w-full max-w-site space-y-6 px-4 sm:px-6 lg:px-8">
       <section className="space-y-4 border-b border-slate-200 pb-5">
         <div className="space-y-2">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-jdav-green-dark">
@@ -336,7 +336,7 @@ export function MyTourRegistrationsPanel({
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
             Deine Anmeldungen im Überblick
           </h1>
-          <p className="max-w-2xl text-sm leading-6 text-slate-600">
+          <p className="max-w-site text-sm leading-6 text-slate-600">
             Hier siehst du bestätigte, offene und archivierte Anmeldungen.
           </p>
         </div>

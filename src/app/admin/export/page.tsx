@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { getCurrentUserProfile } from "@/lib/auth";
+import { isAdminRole } from "@/lib/permissions";
 
 export const metadata: Metadata = {
   title: "Admin - Datenexport",
@@ -11,7 +12,7 @@ export const metadata: Metadata = {
 export default async function AdminExportPage() {
   const profile = await getCurrentUserProfile();
 
-  if (!profile || profile.role !== "admin") {
+  if (!profile || !isAdminRole(profile.role)) {
     redirect("/");
   }
 
@@ -19,7 +20,7 @@ export default async function AdminExportPage() {
   const nextYear = currentYear + 1;
 
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-8">
+    <div className="mx-auto max-w-site px-4 py-8">
       <div className="mb-10 lg:mb-12">
         <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
           Datenexport

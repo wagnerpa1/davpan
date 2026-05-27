@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { isAdminRole } from "@/lib/permissions";
 import { createClient } from "@/utils/supabase/server";
 
 export async function uploadDocument(formData: FormData) {
@@ -16,7 +17,7 @@ export async function uploadDocument(formData: FormData) {
     .select("role")
     .eq("id", user.id)
     .single();
-  if (profile?.role !== "admin") {
+  if (!isAdminRole(profile?.role)) {
     return { error: "Keine Berechtigung (nur Admin)." };
   }
 
@@ -81,7 +82,7 @@ export async function deleteDocument(id: string, fileUrl: string) {
     .select("role")
     .eq("id", user.id)
     .single();
-  if (profile?.role !== "admin") {
+  if (!isAdminRole(profile?.role)) {
     return { error: "Keine Berechtigung (nur Admin)." };
   }
 

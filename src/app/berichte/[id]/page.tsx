@@ -13,6 +13,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import { ReportGallery } from "@/components/reports/ReportGallery";
+import { isAdminRole } from "@/lib/permissions";
 import { createClient } from "@/utils/supabase/server";
 
 interface Props {
@@ -86,12 +87,12 @@ export default async function ReportDetailPage({ params }: Props) {
     .eq("id", user.id)
     .single();
 
-  const isAdmin = userProfile?.role === "admin";
+  const isAdmin = isAdminRole(userProfile?.role);
   const isGuideOfTour = guides.some((g) => g.user_id === user.id);
   const canEdit = isAdmin || isGuideOfTour;
 
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-8">
+    <div className="mx-auto max-w-site px-4 py-8">
       <div className="mb-6 flex items-center justify-between text-sm">
         <Link
           href="/berichte"

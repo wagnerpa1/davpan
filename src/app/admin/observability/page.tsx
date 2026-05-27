@@ -1,6 +1,7 @@
 import { Activity, Clock, Database, ShieldAlert } from "lucide-react";
 import { redirect } from "next/navigation";
 import { getNotificationDeliveryMode } from "@/lib/notifications/outbox";
+import { isAdminRole } from "@/lib/permissions";
 import { createClient } from "@/utils/supabase/server";
 
 interface AuditLogEntry {
@@ -32,7 +33,7 @@ export default async function ObservabilityDashboard() {
     .eq("id", user.id)
     .single();
 
-  if (profile?.role !== "admin") {
+  if (!isAdminRole(profile?.role)) {
     redirect("/");
   }
 

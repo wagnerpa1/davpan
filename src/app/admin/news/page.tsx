@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { DeleteNewsButton } from "@/components/admin/DeleteNewsButton";
 import { getCurrentUserProfile } from "@/lib/auth";
+import { isAdminRole } from "@/lib/permissions";
 import { createClient } from "@/utils/supabase/server";
 
 interface NewsPost {
@@ -45,7 +46,7 @@ export default async function AdminNewsPage() {
     createClient(),
   ]);
 
-  const isAdmin = authContext.role === "admin";
+  const isAdmin = isAdminRole(authContext.role);
 
   if (!isAdmin) {
     redirect("/");
@@ -92,7 +93,7 @@ export default async function AdminNewsPage() {
   );
 
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-8">
+    <div className="mx-auto max-w-site px-4 py-8">
       <div className="mb-10 lg:mb-12">
         <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
           Vereinsnews verwalten

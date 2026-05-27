@@ -25,6 +25,13 @@ export function isGuideRole(role: RoleLike): boolean {
 }
 
 /**
+ * Checks if the given role is a material steward role.
+ */
+export function isMaterialwartRole(role: RoleLike): boolean {
+  return role === "materialwart";
+}
+
+/**
  * Checks if the user is allowed to manage material (Materialwart or Admin).
  */
 export function canManageMaterial(role: RoleLike): boolean {
@@ -36,4 +43,36 @@ export function canManageMaterial(role: RoleLike): boolean {
  */
 export function canAccessMaterialAdmin(role: RoleLike): boolean {
   return canManageMaterial(role) || isGuideRole(role);
+}
+
+/**
+ * Checks if the user can create standalone resource bookings.
+ */
+export function canBookStandaloneResource(role: RoleLike): boolean {
+  return isGuideRole(role) || isMaterialwartRole(role) || isAdminRole(role);
+}
+
+/**
+ * Checks if the user can create tours.
+ */
+export function canCreateTour(role: RoleLike): boolean {
+  return isGuideRole(role) || isAdminRole(role);
+}
+
+/**
+ * Returns the display label for a role in the UI.
+ */
+export function getRoleDisplayName(role: RoleLike): string {
+  switch (role) {
+    case "guide":
+      return "Tourenleiter (Guide)";
+    case "materialwart":
+      return "Materialwart";
+    case "admin":
+      return "Administrator";
+    case "parent":
+      return "Elternkonto";
+    default:
+      return "Mitglied";
+  }
 }

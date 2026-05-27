@@ -195,3 +195,24 @@ body {
     display: table;
   }
 }
+
+/* Site-wide content width utility for consistent desktop layout */
+:root {
+  --site-max-width: 64rem; /* matches Tailwind's max-w-5xl (64rem ≈ 1024px) */
+}
+
+/* A simple utility class to unify page widths on desktop while staying responsive */
+.max-w-site {
+  width: 100%;
+  max-width: var(--site-max-width);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (max-width: 1023px) {
+  .max-w-site {
+    max-width: 100%;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}

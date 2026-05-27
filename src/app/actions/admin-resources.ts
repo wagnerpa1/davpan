@@ -1,7 +1,23 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { canBookStandaloneResource, isAdminRole } from "@/lib/permissions";
 import { createClient } from "@/utils/supabase/server";
+
+async function isUserGuideForTour(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  tourId: string,
+  userId: string,
+) {
+  const { data } = await supabase
+    .from("tour_guides")
+    .select("id")
+    .eq("tour_id", tourId)
+    .eq("user_id", userId)
+    .single();
+
+  return Boolean(data);
+}
 
 // ----- RESOURCES -----
 
@@ -34,7 +50,7 @@ export async function createOrUpdateResource(formData: FormData) {
     .eq("id", user.id)
     .single();
 
-  if (profile?.role !== "admin") {
+  if (!isAdminRole(profile?.role)) {
     return { error: "Keine Berechtigung (nur Admin)." };
   }
 
@@ -85,7 +101,7 @@ export async function deleteResource(id: string) {
     .eq("id", user.id)
     .single();
 
-  if (profile?.role !== "admin") {
+  if (!isAdminRole(profile?.role)) {
     return { error: "Keine Berechtigung (nur Admin)." };
   }
 
@@ -166,7 +182,7 @@ export async function releaseResourceBooking(resourceBookingId: string) {
     .select("role")
     .eq("id", user.id)
     .single();
-  const isAdmin = profile?.role === "admin";
+  const isAdmin = isAdminRole(profile?.role);
 
   if (!isAdmin) {
     const { data: booking } = await supabase
@@ -177,14 +193,7 @@ export async function releaseResourceBooking(resourceBookingId: string) {
 
     if (!booking) return { error: "Buchung nicht gefunden." };
 
-    const { data: isGuide } = await supabase
-      .from("tour_guides")
-      .select("id")
-      .eq("tour_id", booking.tour_id)
-      .eq("user_id", user.id)
-      .single();
-
-    if (!isGuide) {
+    if (!(await isUserGuideForTour(supabase, booking.tour_id, user.id))) {
       return { error: "Keine Berechtigung für diese Buchung." };
     }
   }
@@ -220,12 +229,7 @@ export async function bookResourceStandalone(
     .eq("id", user.id)
     .single();
 
-  const canBookResource =
-    profile?.role === "admin" ||
-    profile?.role === "guide" ||
-    profile?.role === "materialwart";
-
-  if (!canBookResource) {
+  if (!canBookStandaloneResource(profile?.role)) {
     return {
       error:
         "Keine Berechtigung. Nur Guide, Materialwart oder Admin können Ressourcen reservieren.",
@@ -301,18 +305,11 @@ export async function deleteResourceBooking(resourceBookingId: string) {
 
   if (!booking) return { error: "Buchung nicht gefunden." };
 
-  const isAdmin = profile?.role === "admin";
+  const isAdmin = isAdminRole(profile?.role);
   const isCreator = booking.created_by === user.id;
-  const isGuideOfTour =
-    booking.tour_id &&
-    (
-      await supabase
-        .from("tour_guides")
-        .select("id")
-        .eq("tour_id", booking.tour_id)
-        .eq("user_id", user.id)
-        .single()
-    ).data;
+  const isGuideOfTour = booking.tour_id
+    ? await isUserGuideForTour(supabase, booking.tour_id, user.id)
+    : false;
 
   if (!isAdmin && !isCreator && !isGuideOfTour) {
     return { error: "Keine Berechtigung zum Löschen dieser Buchung." };

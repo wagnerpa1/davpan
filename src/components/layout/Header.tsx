@@ -56,6 +56,7 @@ export function Header({ birthdate, membershipNumber, userRole }: HeaderProps) {
               onClick={() => setIsMoreOpen((prev) => !prev)}
               aria-expanded={isMoreOpen}
               aria-haspopup="true"
+              aria-label={isMoreOpen ? "Mehr schließen" : "Mehr öffnen"}
               className="inline-flex items-center gap-1 text-sm font-medium text-slate-700 transition-colors hover:text-jdav-green"
             >
               Mehr

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
+import { isAdminRole } from "@/lib/permissions";
 import { createAdminClient } from "@/utils/supabase/admin";
 import type { Database } from "@/utils/supabase/types";
 
@@ -36,7 +37,7 @@ export async function resolveTourManagerUserIds(
     }
   }
 
-  if (owner?.id && owner.role === "admin") {
+  if (owner?.id && isAdminRole(owner.role)) {
     managerIds.add(owner.id);
   }
 

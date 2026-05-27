@@ -7,6 +7,7 @@ import {
   getResources,
 } from "@/app/actions/admin-resources";
 import { getCurrentUserProfile } from "@/lib/auth";
+import { isAdminRole, isGuideRole } from "@/lib/permissions";
 import { DeleteResourceButton } from "./DeleteResourceButton";
 import { ResourceCalendarWrapper } from "./ResourceCalendarWrapper";
 
@@ -24,8 +25,8 @@ interface ResourceListItem {
 
 export default async function AdminResourcesPage() {
   const authContext = await getCurrentUserProfile();
-  const isAdmin = authContext.role === "admin";
-  const canManageResources = isAdmin || authContext.role === "guide";
+  const isAdmin = isAdminRole(authContext.role);
+  const canManageResources = isAdmin || isGuideRole(authContext.role);
 
   if (!canManageResources) {
     redirect("/");

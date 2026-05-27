@@ -1,4 +1,15 @@
-import { Compass, File, FileText, Home, Newspaper, Package, Settings, ShieldCheck, User, type LucideIcon } from "lucide-react";
+import {
+  Compass,
+  File,
+  FileText,
+  Home,
+  type LucideIcon,
+  Newspaper,
+  Package,
+  Settings,
+  ShieldCheck,
+  User,
+} from "lucide-react";
 
 const navigationIcons: Record<string, LucideIcon> = {
   "/": Home,
@@ -14,6 +25,9 @@ const navigationIcons: Record<string, LucideIcon> = {
   "/admin/news": Newspaper,
 };
 
-export function getNavigationIcon(href: string, fallback: LucideIcon = File): LucideIcon {
+export function getNavigationIcon(
+  href: string,
+  fallback: LucideIcon = File,
+): LucideIcon {
   return navigationIcons[href] ?? fallback;
 }

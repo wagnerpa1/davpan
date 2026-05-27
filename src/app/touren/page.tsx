@@ -6,6 +6,7 @@ import { syncTourStatuses } from "@/app/actions/tour-management";
 import { TourCard } from "@/components/tours/TourCard";
 import { TourFilters } from "@/components/tours/TourFilters";
 import { getCurrentUserProfile } from "@/lib/auth";
+import { canCreateTour } from "@/lib/permissions";
 import {
   getTourVisibilityDateLimit,
   shouldApplyTourVisibilityLimit,
@@ -276,8 +277,7 @@ export default async function TourenPage({
   );
 
   // Check if user is logged in for "Create" button (session already fetched above)
-  const userRole = authContext.role;
-  const canCreate = userRole === "guide" || userRole === "admin";
+  const canCreate = canCreateTour(authContext.role);
 
   let filteredTours: TourCardItem[] = normalizeTourRows(
     tours as RawTourCardItem[] | null,
@@ -315,7 +315,7 @@ export default async function TourenPage({
   }
 
   return (
-    <div className="container mx-auto max-w-3xl px-4 py-8">
+    <div className="mx-auto max-w-site px-4 py-8">
       <div className="mb-10 flex flex-col gap-4 xs:flex-row xs:items-center xs:justify-between lg:mb-12">
         <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
           Tourenprogramm

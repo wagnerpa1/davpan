@@ -147,7 +147,7 @@ export default async function BerichtePage({ searchParams }: Props) {
   ).sort((a, b) => b - a);
 
   return (
-    <div className="container mx-auto max-w-5xl px-4 py-8">
+    <div className="mx-auto max-w-site px-4 py-8">
       <div className="mb-10 lg:mb-12">
         <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
           Tourenberichte
