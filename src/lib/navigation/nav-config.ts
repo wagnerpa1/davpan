@@ -1,4 +1,10 @@
-import { canAccessMaterialAdmin, canManageMaterial } from "@/lib/permissions";
+import {
+  canAccessMaterialAdmin,
+  canManageMaterial,
+  isAdminRole,
+  isGuideRole,
+  type RoleLike,
+} from "@/lib/permissions";
 
 interface AppNavItem {
   label: string;
@@ -16,9 +22,9 @@ export interface AppNavigation {
   groups: AppNavGroup[];
 }
 
-export function buildNavigation(userRole?: string | null): AppNavigation {
-  const isGuideOrAdmin = userRole === "guide" || userRole === "admin";
-  const isAdmin = userRole === "admin";
+export function buildNavigation(userRole?: RoleLike): AppNavigation {
+  const isGuideOrAdmin = isGuideRole(userRole) || isAdminRole(userRole);
+  const isAdmin = isAdminRole(userRole);
   const canOpenMaterialAdmin = canAccessMaterialAdmin(userRole);
   const canOpenReservations = canManageMaterial(userRole);
 
