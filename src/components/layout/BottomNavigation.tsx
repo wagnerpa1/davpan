@@ -1,29 +1,23 @@
 "use client";
 
 import {
-  Compass,
   File,
-  FileText,
   Home,
   LogOut,
-  type LucideIcon,
   Menu,
-  Newspaper,
-  Package,
-  Settings,
-  ShieldCheck,
-  User,
   X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { buildNavigation } from "@/lib/navigation/nav-config";
+import { getNavigationIcon } from "@/lib/navigation/nav-icons";
+import type { RoleLike } from "@/lib/permissions";
 import { siteConfig } from "@/lib/site-config";
 import { cn } from "@/lib/utils";
 
 interface BottomNavigationProps {
-  userRole?: string | null;
+  userRole?: RoleLike;
 }
 
 /**
@@ -43,20 +37,6 @@ export function BottomNavigation({ userRole }: BottomNavigationProps) {
     }
 
     return pathname === href || pathname.startsWith(`${href}/`);
-  };
-
-  const iconByHref: Record<string, LucideIcon> = {
-    "/": Home,
-    "/touren": Compass,
-    "/material": Package,
-    "/berichte": FileText,
-    "/profile": User,
-    "/dokumente": File,
-    "/guide/dashboard": Compass,
-    "/admin/resources": Compass,
-    "/admin/material": ShieldCheck,
-    "/material/reservation": Settings,
-    "/admin/news": Newspaper,
   };
 
   return (
@@ -109,7 +89,7 @@ export function BottomNavigation({ userRole }: BottomNavigationProps) {
                 </h3>
                 <div className="space-y-2">
                   {group.items.map((item) => {
-                    const ItemIcon = iconByHref[item.href] ?? File;
+                    const ItemIcon = getNavigationIcon(item.href, File);
 
                     return (
                       <Link
@@ -164,7 +144,7 @@ export function BottomNavigation({ userRole }: BottomNavigationProps) {
       <nav className="fixed bottom-0 left-0 right-0 z-50 flex h-20 w-full items-center justify-around border-t border-slate-100 bg-white/92 backdrop-blur-lg pb-safe-bottom pt-1 md:hidden shadow-[0_-8px_30px_rgba(0,0,0,0.04)]">
         {navigation.primary.map((item) => {
           const isActive = isActivePath(item.href) && !isMoreOpen;
-          const Icon = iconByHref[item.href] ?? Home;
+          const Icon = getNavigationIcon(item.href, Home);
 
           return (
             <Link

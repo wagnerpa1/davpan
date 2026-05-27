@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
+import { isAdminRole, isGuideRole } from "@/lib/permissions";
 import { notifyTourOpenForSubscribers } from "@/lib/notifications/targets";
 import { createClient } from "@/utils/supabase/server";
 import { checkAndBookResource } from "./admin-resources";
@@ -176,7 +177,7 @@ export async function createTour(formData: FormData) {
     .eq("id", user.id)
     .single();
 
-  if (!profile || (profile.role !== "guide" && profile.role !== "admin")) {
+  if (!profile || (!isGuideRole(profile.role) && !isAdminRole(profile.role))) {
     redirect("/touren?error=forbidden");
   }
 
@@ -269,7 +270,7 @@ export async function createTour(formData: FormData) {
       user_id: uid,
     }));
     await supabase.from("tour_guides").insert(guideInserts);
-  } else if (profile.role === "guide") {
+  } else if (isGuideRole(profile.role)) {
     // If no guides selected but user is guide, add them as default
     await supabase.from("tour_guides").insert({
       tour_id: tour.id,

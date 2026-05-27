@@ -7,17 +7,18 @@ import { useState } from "react";
 import { MemberBarcodePopup } from "@/components/layout/MemberBarcodePopup";
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
 import { buildNavigation } from "@/lib/navigation/nav-config";
+import type { RoleLike } from "@/lib/permissions";
 import { siteConfig } from "@/lib/site-config";
 
 interface HeaderProps {
   birthdate: string | null;
   membershipNumber: string | null;
-  userRole?: string | null;
+  userRole?: RoleLike;
 }
 
 /**
  * The main application header for desktop and tablet views.
- * Displays the club logo, primary navigation links, a "More" dropdown for secondary links,
+ * Displays the JDAV logo, primary navigation links, a "More" dropdown for secondary links,
  * and user-specific actions (barcode popup, notifications, logout).
  */
 export function Header({ birthdate, membershipNumber, userRole }: HeaderProps) {
@@ -27,8 +28,8 @@ export function Header({ birthdate, membershipNumber, userRole }: HeaderProps) {
   const navigation = buildNavigation(userRole);
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 w-full border-b border-slate-200/80 bg-white/95 shadow-sm backdrop-blur-md">
-      <div className="container mx-auto flex h-16 items-center px-4">
+    <header className="fixed inset-x-0 top-0 z-50 w-full border-b border-slate-200/80 bg-white/95 shadow-sm md:backdrop-blur-md">
+      <div className="container mx-auto flex h-14 items-center px-3 sm:h-16 sm:px-4">
         <Link href="/" className="flex items-center">
           <Image
             src={siteConfig.logoPath}

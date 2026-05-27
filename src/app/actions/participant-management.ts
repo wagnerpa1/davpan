@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { buildIdempotencyKey } from "@/lib/idempotency";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
+import { isAdminRole, isGuideRole } from "@/lib/permissions";
 import { createClient } from "@/utils/supabase/server";
 
 function isParticipantTransitionRpcSignatureMismatch(
@@ -60,8 +61,8 @@ export async function updateParticipantStatus(
     .maybeSingle();
 
   // Permission check
-  let canManage = userRole === "admin";
-  if (!canManage && userRole === "guide") {
+  let canManage = isAdminRole(userRole);
+  if (!canManage && isGuideRole(userRole)) {
     const { data: leadCheck } = await supabase
       .from("tour_guides")
       .select("id")

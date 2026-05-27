@@ -36,7 +36,7 @@ function formatTimestamp(value: string) {
 }
 
 export const metadata: Metadata = {
-  title: "Admin - Vereinsnews",
+  title: "Admin - Vereinsnews | JDAV Pfarrkirchen",
 };
 
 export default async function AdminNewsPage() {
