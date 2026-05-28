@@ -19,6 +19,8 @@ import { DeleteTourButton } from "@/components/tours/DeleteTourButton";
 import { ParticipantManagement } from "@/components/tours/ParticipantManagement";
 import { TourRegistrationSection } from "@/components/tours/TourRegistrationSection";
 import { getCurrentUserProfile } from "@/lib/auth";
+import { isParentRole } from "@/lib/permissions";
+import { isAdminRole } from "@/lib/permissions";
 import { siteConfig } from "@/lib/site-config";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/server";
@@ -286,7 +288,7 @@ export default async function TourDetailPage({
   if (authContext.user) {
     userBirthdate = authContext.birthdate;
 
-    if (authContext.role === "parent") {
+    if (isParentRole(authContext.role)) {
       const { data: cData } = await supabase
         .from("child_profiles")
         .select("id, full_name, birthdate")
@@ -306,7 +308,7 @@ export default async function TourDetailPage({
       (tg: TourGuide) => tg.user_id === authContext.user?.id,
     );
     canManageTour =
-      userRole === "admin" ||
+      isAdminRole(userRole) ||
       isLead ||
       tourData.created_by === authContext.user.id;
   }
@@ -334,7 +336,7 @@ export default async function TourDetailPage({
     (tour as TourCategoryRelation).tour_categorys?.category || "n.A.";
 
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-8">
+    <div className="mx-auto max-w-site px-4 py-8">
       <div className="mb-6 flex items-center justify-between text-sm print:hidden">
         <Link href="/touren" className="text-slate-500 hover:text-jdav-green">
           &larr; Zurück

@@ -4,8 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
-import { isAdminRole, isGuideRole } from "@/lib/permissions";
 import { notifyTourOpenForSubscribers } from "@/lib/notifications/targets";
+import { isAdminRole, isGuideRole } from "@/lib/permissions";
 import { createClient } from "@/utils/supabase/server";
 import { checkAndBookResource } from "./admin-resources";
 
@@ -256,7 +256,6 @@ export async function createTour(formData: FormData) {
 
   if (error) {
     console.error("Error creating tour:", error);
-    // TEMP DEBUG: keep encoded DB detail in query for faster production diagnosis.
     const debugValue = encodeURIComponent(
       `${error.code || "unknown"}:${error.message}`.slice(0, 220),
     );
@@ -482,7 +481,7 @@ export async function deleteTour(tourId: string) {
     .eq("id", user.id)
     .single();
 
-  if (profile?.role !== "admin") {
+  if (!isAdminRole(profile?.role)) {
     const { data: tour } = await supabase
       .from("tours")
       .select("created_by")

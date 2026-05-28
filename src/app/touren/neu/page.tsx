@@ -9,6 +9,7 @@ import {
   getTourGroups,
 } from "@/app/actions/tour-management";
 import { TourForm } from "@/components/tours/TourForm";
+import { canCreateTour } from "@/lib/permissions";
 import { createClient } from "@/utils/supabase/server";
 
 export default async function NewTourPage({
@@ -45,7 +46,7 @@ export default async function NewTourPage({
     .eq("id", user.id)
     .single();
 
-  if (!profile || (profile.role !== "guide" && profile.role !== "admin")) {
+  if (!profile || !canCreateTour(profile.role)) {
     redirect("/touren");
   }
 
@@ -66,7 +67,7 @@ export default async function NewTourPage({
     : null;
 
   return (
-    <div className="container mx-auto max-w-2xl px-4 py-8">
+    <div className="mx-auto max-w-site px-4 py-8">
       <div className="mb-8 flex items-center gap-3">
         <div className="rounded-xl bg-jdav-green p-2 text-white">
           <Mountain className="h-6 w-6" />
@@ -90,7 +91,7 @@ export default async function NewTourPage({
               <p className="text-sm">{errorMessage}</p>
               {debug && (
                 <p className="mt-2 text-xs text-red-700">
-                  Technischer Hinweis (temp): {decodeURIComponent(debug)}
+                  Technischer Hinweis: {decodeURIComponent(debug)}
                 </p>
               )}
             </div>

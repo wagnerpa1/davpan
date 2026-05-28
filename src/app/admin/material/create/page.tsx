@@ -14,7 +14,7 @@ export default async function CreateMaterialPage() {
     redirect("/admin/material");
   }
   return (
-    <div className="container mx-auto px-4 py-8 max-w-3xl pb-32">
+    <div className="mx-auto max-w-site px-4 py-8 pb-32">
       <div className="mb-6 flex items-center justify-between text-sm">
         <Link
           href="/admin/material"

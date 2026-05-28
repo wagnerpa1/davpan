@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
+import { isAdminRole } from "@/lib/permissions";
 import { createAdminClient } from "@/utils/supabase/admin";
 import type { Database } from "@/utils/supabase/types";
 
@@ -36,7 +37,7 @@ export async function resolveTourManagerUserIds(
     }
   }
 
-  if (owner?.id && owner.role === "admin") {
+  if (owner?.id && isAdminRole(owner.role)) {
     managerIds.add(owner.id);
   }
 
@@ -46,10 +47,11 @@ export async function resolveTourManagerUserIds(
 export async function resolveMaterialManagerUserIds(
   supabase: SupabaseClient<Database>,
 ) {
+  // Include guides as material managers so they see reservations as well.
   const { data: managerRows } = await supabase
     .from("profiles")
     .select("id")
-    .in("role", ["materialwart", "admin"]);
+    .in("role", ["materialwart", "admin", "guide"]);
 
   return ((managerRows ?? []) as ManagerRow[]).map((row) => row.id);
 }

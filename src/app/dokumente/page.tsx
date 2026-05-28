@@ -2,6 +2,7 @@ import { Download, File, Settings } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUserProfile } from "@/lib/auth";
+import { isAdminRole } from "@/lib/permissions";
 import { createClient } from "@/utils/supabase/server";
 
 interface DocumentItem {
@@ -37,7 +38,7 @@ export default async function DokumentePage() {
   );
 
   return (
-    <div className="container mx-auto max-w-3xl px-4 py-8">
+    <div className="mx-auto max-w-site px-4 py-8">
       <div className="mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 lg:mb-12">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
@@ -47,7 +48,7 @@ export default async function DokumentePage() {
             Wichtige Formulare und Leitfäden der Sektion.
           </p>
         </div>
-        {authContext.role === "admin" && (
+        {isAdminRole(authContext.role) && (
           <Link
             href="/admin/dokumente"
             className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-4 py-2 rounded-xl flex items-center gap-2 transition shadow-sm border border-slate-200"

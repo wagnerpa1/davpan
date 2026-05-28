@@ -98,6 +98,11 @@ export function buildNavigation(userRole?: RoleLike): AppNavigation {
           description: "News erstellen und veröfentlichen",
         },
         {
+          label: "Tour-Metadaten",
+          href: "/admin/touren-meta",
+          description: "Tour-Kategorien und Gruppen verwalten",
+        },
+        {
           label: "Observability",
           href: "/admin/observability",
           description: "Metriken, Outbox und Audit-Logs",

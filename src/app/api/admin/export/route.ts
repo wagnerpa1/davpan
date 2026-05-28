@@ -1,5 +1,6 @@
 ﻿import { NextResponse } from "next/server";
 import { getCurrentUserProfile } from "@/lib/auth";
+import { isAdminRole } from "@/lib/permissions";
 import { createClient } from "@/utils/supabase/server";
 
 type Nullable<T> = T | null;
@@ -52,41 +53,36 @@ type ExportTour = {
   resource_bookings: ExportTourResourceRelation[] | null;
 };
 
-type ExportParticipantProfile = {
+type ExportTourSummary = {
+  id: string;
   title: string;
+  group: Nullable<string>;
+};
+
+type ExportTourGroupSummary = {
+  id: string;
+  group_name: Nullable<string>;
+};
+
+type ExportParticipantProfile = {
+  id: string;
   full_name: Nullable<string>;
   birthdate: Nullable<string>;
   membership_number: Nullable<string>;
 };
 
-type ExportParticipantChildProfile = {
+type ExportChildProfile = {
+  id: string;
   full_name: Nullable<string>;
   birthdate: Nullable<string>;
 };
 
-type ExportParticipant = {
+type ExportParticipantRow = {
   status: Nullable<string>;
-  tours:
-    | {
-        title: Nullable<string>;
-        tour_groups:
-          | { group_name: Nullable<string> }
-          | { group_name: Nullable<string> }[]
-          | null;
-      }
-    | {
-        title: Nullable<string>;
-        tour_groups:
-          | { group_name: Nullable<string> }
-          | { group_name: Nullable<string> }[]
-          | null;
-      }[]
-    | null;
-  profiles: ExportParticipantProfile | ExportParticipantProfile[] | null;
-  child_profiles:
-    | ExportParticipantChildProfile
-    | ExportParticipantChildProfile[]
-    | null;
+  tour_id: string | null;
+  user_id: string | null;
+  child_profile_id: string | null;
+  created_at: string | null;
 };
 
 function firstOrNull<T>(value: T | T[] | null | undefined): T | null {
@@ -113,8 +109,22 @@ function getTargetYearFromType(type: string): number {
   return new Date().getFullYear() + (isNextYear ? 1 : 0);
 }
 
+function getYearRange(targetYear: number) {
+  return {
+    start: `${targetYear}-01-01`,
+    end: `${targetYear + 1}-01-01`,
+  };
+}
+
+function getUniqueIds(values: Array<string | null>) {
+  return Array.from(
+    new Set(values.filter((value): value is string => Boolean(value))),
+  );
+}
+
 async function exportTours(targetYear: number): Promise<NextResponse> {
   const supabase = await createClient();
+  const { start, end } = getYearRange(targetYear);
 
   const { data: tours, error } = await supabase
     .from("tours")
@@ -134,9 +144,8 @@ async function exportTours(targetYear: number): Promise<NextResponse> {
         resources ( name )
       )
     `)
-    .gte("start_date", `${targetYear}-01-01`)
-    .lt("start_date", `${targetYear + 1}-01-01`)
-    .in("status", ["planning", "open", "full"])
+    .gte("start_date", start)
+    .lt("start_date", end)
     .order("start_date", { ascending: true });
 
   if (error) {
@@ -230,35 +239,108 @@ async function exportTours(targetYear: number): Promise<NextResponse> {
 
 async function exportParticipants(targetYear: number): Promise<NextResponse> {
   const supabase = await createClient();
+  const { start, end } = getYearRange(targetYear);
 
-  const { data: participants, error } = await supabase
-    .from("tour_participants")
-    .select(`
-      status,
-      tours!tour_participants_tour_id_fkey (
-        title,
-        tour_groups!tours_group_fkey ( group_name )
-      ),
-      profiles!tour_participants_user_id_fkey (
-        full_name,
-        birthdate,
-        membership_number
-      ),
-      child_profiles (
-        full_name,
-        birthdate
-      )
-    `)
-    .gte("tours.start_date", `${targetYear}-01-01`)
-    .lt("tours.start_date", `${targetYear + 1}-01-01`)
-    .in("tours.status", ["planning", "open", "full"])
-    .in("status", ["pending", "confirmed", "waitlist"])
-    .order("created_at", { ascending: true });
+  const { data: toursInYear, error: toursError } = await supabase
+    .from("tours")
+    .select("id, title, group")
+    .gte("start_date", start)
+    .lt("start_date", end)
+    .order("start_date", { ascending: true });
 
-  if (error) {
-    console.error("Export Error (Participants):", error);
+  if (toursError) {
+    console.error("Export Error (Participants - Tours):", toursError);
     return new NextResponse("Internal Server Error", { status: 500 });
   }
+
+  const tourRows = (toursInYear ?? []) as ExportTourSummary[];
+  const tourIds = tourRows.map((tour) => tour.id);
+
+  const participantResult = tourIds.length
+    ? await supabase
+        .from("tour_participants")
+        .select("status, tour_id, user_id, child_profile_id, created_at")
+        .in("tour_id", tourIds)
+        .in("status", ["pending", "confirmed", "waitlist"])
+        .order("created_at", { ascending: true })
+    : {
+        data: [] as ExportParticipantRow[],
+        error: null as { message: string } | null,
+      };
+
+  if (participantResult.error) {
+    console.error("Export Error (Participants):", participantResult.error);
+    return new NextResponse("Internal Server Error", { status: 500 });
+  }
+
+  const participantRows = (
+    participantResult.data ?? []
+  ) as ExportParticipantRow[];
+  const profileIds = getUniqueIds(
+    participantRows.map((participant) => participant.user_id),
+  );
+  const childProfileIds = getUniqueIds(
+    participantRows.map((participant) => participant.child_profile_id),
+  );
+  const groupIds = getUniqueIds(tourRows.map((tour) => tour.group));
+
+  let profiles: ExportParticipantProfile[] = [];
+  if (profileIds.length > 0) {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, full_name, birthdate, membership_number")
+      .in("id", profileIds);
+
+    if (error) {
+      console.error("Export Error (Participants - Profiles):", error);
+      return new NextResponse("Internal Server Error", { status: 500 });
+    }
+
+    profiles = (data ?? []) as ExportParticipantProfile[];
+  }
+
+  let childProfiles: ExportChildProfile[] = [];
+  if (childProfileIds.length > 0) {
+    const { data, error } = await supabase
+      .from("child_profiles")
+      .select("id, full_name, birthdate")
+      .in("id", childProfileIds);
+
+    if (error) {
+      console.error("Export Error (Participants - Child Profiles):", error);
+      return new NextResponse("Internal Server Error", { status: 500 });
+    }
+
+    childProfiles = (data ?? []) as ExportChildProfile[];
+  }
+
+  let groups: ExportTourGroupSummary[] = [];
+  if (groupIds.length > 0) {
+    const { data, error } = await supabase
+      .from("tour_groups")
+      .select("id, group_name")
+      .in("id", groupIds);
+
+    if (error) {
+      console.error("Export Error (Participants - Groups):", error);
+      return new NextResponse("Internal Server Error", { status: 500 });
+    }
+
+    groups = (data ?? []) as ExportTourGroupSummary[];
+  }
+
+  const tourById = new Map<string, ExportTourSummary>(
+    tourRows.map((tour) => [tour.id, tour]),
+  );
+  const groupById = new Map<string, ExportTourGroupSummary>(
+    groups.map((group) => [group.id, group]),
+  );
+  const profileById = new Map<string, ExportParticipantProfile>(
+    profiles.map((profile) => [profile.id, profile]),
+  );
+  const childProfileById = new Map<string, ExportChildProfile>(
+    childProfiles.map((profile) => [profile.id, profile]),
+  );
 
   const header = [
     "Tour",
@@ -270,24 +352,26 @@ async function exportParticipants(targetYear: number): Promise<NextResponse> {
     .map((h) => toCsvCell(h))
     .join(",");
 
-  const rows = ((participants ?? []) as ExportParticipant[]).map(
-    (participant) => {
-      const tour = firstOrNull(participant.tours);
-      const tourGroup = firstOrNull(tour?.tour_groups);
-      const profile = firstOrNull(participant.profiles);
-      const childProfile = firstOrNull(participant.child_profiles);
+  const rows = participantRows.map((participant) => {
+    const tour = participant.tour_id ? tourById.get(participant.tour_id) : null;
+    const tourGroup = tour?.group ? groupById.get(tour.group) : null;
+    const profile = participant.user_id
+      ? profileById.get(participant.user_id)
+      : null;
+    const childProfile = participant.child_profile_id
+      ? childProfileById.get(participant.child_profile_id)
+      : null;
 
-      return [
-        tour?.title || "",
-        tourGroup?.group_name || "",
-        profile?.full_name || childProfile?.full_name || "Unbekannt",
-        formatDate(profile?.birthdate || childProfile?.birthdate || ""),
-        profile?.membership_number || "",
-      ]
-        .map((value) => toCsvCell(value))
-        .join(",");
-    },
-  );
+    return [
+      tour?.title || "",
+      tourGroup?.group_name || "",
+      profile?.full_name || childProfile?.full_name || "Unbekannt",
+      formatDate(profile?.birthdate || childProfile?.birthdate || ""),
+      profile?.membership_number || "",
+    ]
+      .map((value) => toCsvCell(value))
+      .join(",");
+  });
 
   const csv = [header, ...rows].join("\n");
 
@@ -304,7 +388,7 @@ export async function GET(request: Request) {
   try {
     const profile = await getCurrentUserProfile();
 
-    if (!profile || profile.role !== "admin") {
+    if (!profile || !isAdminRole(profile.role)) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 

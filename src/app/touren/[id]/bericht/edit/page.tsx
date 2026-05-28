@@ -5,6 +5,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getTourParticipantsForListing } from "@/app/actions/reports";
 import { ReportForm } from "@/components/reports/ReportForm";
+import { isAdminRole } from "@/lib/permissions";
 import { createClient } from "@/utils/supabase/server";
 
 interface Props {
@@ -61,7 +62,7 @@ export default async function EditReportPage({ params, searchParams }: Props) {
   const isGuide = (tour.tour_guides as TourGuide[] | undefined)?.some(
     (tg) => tg.user_id === user.id,
   );
-  const isAdmin = profile?.role === "admin";
+  const isAdmin = isAdminRole(profile?.role);
 
   if (!isGuide && !isAdmin) {
     redirect("/guide/dashboard");
@@ -70,7 +71,7 @@ export default async function EditReportPage({ params, searchParams }: Props) {
   const participants = await getTourParticipantsForListing(tourId);
 
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-8">
+    <div className="mx-auto max-w-site px-4 py-8">
       <div className="mb-8 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <Link

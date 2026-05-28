@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { getCurrentUserProfile } from "@/lib/auth";
+import { isAdminRole } from "@/lib/permissions";
 
 export const metadata: Metadata = {
   title: "Admin - Datenexport",
@@ -11,7 +12,7 @@ export const metadata: Metadata = {
 export default async function AdminExportPage() {
   const profile = await getCurrentUserProfile();
 
-  if (!profile || profile.role !== "admin") {
+  if (!profile || !isAdminRole(profile.role)) {
     redirect("/");
   }
 
@@ -19,7 +20,7 @@ export default async function AdminExportPage() {
   const nextYear = currentYear + 1;
 
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-8">
+    <div className="mx-auto max-w-site px-4 py-8">
       <div className="mb-10 lg:mb-12">
         <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
           Datenexport
@@ -34,7 +35,7 @@ export default async function AdminExportPage() {
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="mb-2 text-xl font-bold text-slate-900">Tourenliste</h2>
           <p className="mb-6 text-sm text-slate-600">
-            Exportiert nur geplante Touren des Jahres (ohne Teilnehmer) mit
+            Exportiert alle Touren des gewählten Jahres (ohne Teilnehmer) mit
             lesbaren Tourdetails, benötigten Ressourcen und Material.
           </p>
           <div className="flex flex-col gap-4 sm:flex-row">
@@ -63,7 +64,8 @@ export default async function AdminExportPage() {
           </h2>
           <p className="mb-6 text-sm text-slate-600">
             Separater Teilnehmer-Export mit Tourname, Tourengruppe, Name,
-            Geburtsdatum und Mitgliedsnummer.
+            Geburtsdatum und Mitgliedsnummer für alle Touren des gewählten
+            Jahres.
           </p>
           <div className="flex flex-col gap-4 sm:flex-row">
             <form action="/api/admin/export" method="GET">

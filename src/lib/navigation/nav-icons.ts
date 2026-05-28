@@ -1,4 +1,16 @@
-import { Compass, File, FileText, Home, Newspaper, Package, Settings, ShieldCheck, User, type LucideIcon } from "lucide-react";
+import {
+  Compass,
+  File,
+  FileText,
+  Home,
+  type LucideIcon,
+  Newspaper,
+  Package,
+  Settings,
+  ShieldCheck,
+  User,
+  Tags,
+} from "lucide-react";
 
 const navigationIcons: Record<string, LucideIcon> = {
   "/": Home,
@@ -12,8 +24,12 @@ const navigationIcons: Record<string, LucideIcon> = {
   "/admin/material": ShieldCheck,
   "/material/reservation": Settings,
   "/admin/news": Newspaper,
+  "/admin/touren-meta": Tags,
 };
 
-export function getNavigationIcon(href: string, fallback: LucideIcon = File): LucideIcon {
+export function getNavigationIcon(
+  href: string,
+  fallback: LucideIcon = File,
+): LucideIcon {
   return navigationIcons[href] ?? fallback;
 }

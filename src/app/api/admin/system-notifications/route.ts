@@ -7,6 +7,7 @@ import {
   type SystemTargetRole,
 } from "@/lib/notifications/admin-targeting";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
+import { isAdminRole } from "@/lib/permissions";
 import { isSameOriginRequest } from "@/lib/security";
 import { createClient } from "@/utils/supabase/server";
 import { getServerURL } from "@/utils/url-helpers";
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
     .eq("id", user.id)
     .single();
 
-  if (profile?.role !== "admin") {
+  if (!isAdminRole(profile?.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

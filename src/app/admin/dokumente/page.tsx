@@ -2,6 +2,7 @@ import { File } from "lucide-react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getCurrentUserProfile } from "@/lib/auth";
+import { isAdminRole } from "@/lib/permissions";
 import { createClient } from "@/utils/supabase/server";
 import { DeleteDocumentButton } from "./DeleteDocumentButton";
 import { DocumentUploadForm } from "./DocumentUploadForm";
@@ -21,7 +22,7 @@ export default async function AdminDokumentePage() {
   const supabase = await createClient();
   const authContext = await getCurrentUserProfile();
 
-  if (authContext.role !== "admin") {
+  if (!isAdminRole(authContext.role)) {
     redirect("/dokumente");
   }
 
@@ -39,7 +40,7 @@ export default async function AdminDokumentePage() {
   ];
 
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-8">
+    <div className="mx-auto max-w-site px-4 py-8">
       <div className="mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 lg:mb-12">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
