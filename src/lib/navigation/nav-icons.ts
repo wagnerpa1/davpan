@@ -9,6 +9,7 @@ import {
   Settings,
   ShieldCheck,
   User,
+  Tags,
 } from "lucide-react";
 
 const navigationIcons: Record<string, LucideIcon> = {
@@ -23,6 +24,7 @@ const navigationIcons: Record<string, LucideIcon> = {
   "/admin/material": ShieldCheck,
   "/material/reservation": Settings,
   "/admin/news": Newspaper,
+  "/admin/touren-meta": Tags,
 };
 
 export function getNavigationIcon(
