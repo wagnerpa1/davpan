@@ -467,7 +467,7 @@ export function NotificationCenter({ isParent }: NotificationCenterProps) {
                                 onClick={() => void openNotification(item)}
                                 className="text-[11px] font-semibold text-jdav-green hover:underline"
                               >
-                                Zum Beitrag
+                                Zur Tour
                               </button>
                             )}
                           </div>

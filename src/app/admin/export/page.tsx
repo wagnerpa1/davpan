@@ -35,7 +35,7 @@ export default async function AdminExportPage() {
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="mb-2 text-xl font-bold text-slate-900">Tourenliste</h2>
           <p className="mb-6 text-sm text-slate-600">
-            Exportiert nur geplante Touren des Jahres (ohne Teilnehmer) mit
+            Exportiert alle Touren des gewählten Jahres (ohne Teilnehmer) mit
             lesbaren Tourdetails, benötigten Ressourcen und Material.
           </p>
           <div className="flex flex-col gap-4 sm:flex-row">
@@ -64,7 +64,8 @@ export default async function AdminExportPage() {
           </h2>
           <p className="mb-6 text-sm text-slate-600">
             Separater Teilnehmer-Export mit Tourname, Tourengruppe, Name,
-            Geburtsdatum und Mitgliedsnummer.
+            Geburtsdatum und Mitgliedsnummer für alle Touren des gewählten
+            Jahres.
           </p>
           <div className="flex flex-col gap-4 sm:flex-row">
             <form action="/api/admin/export" method="GET">

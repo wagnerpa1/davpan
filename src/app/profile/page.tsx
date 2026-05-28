@@ -12,7 +12,7 @@ import {
 import { AnimatedSubmitButton } from "@/components/ui/AnimatedSubmitButton";
 import { AsyncForm } from "@/components/ui/AsyncForm";
 import { TextareaWithCounter } from "@/components/ui/TextareaWithCounter";
-import { getRoleDisplayName } from "@/lib/permissions";
+import { getRoleDisplayName, isParentRole } from "@/lib/permissions";
 import { createClient } from "@/utils/supabase/server";
 
 interface ChildProfile {
@@ -32,7 +32,7 @@ function formatMembershipNumber(value: string | null | undefined) {
 }
 
 function isProtectedRole(role: string | null | undefined) {
-  return ["guide", "materialwart", "admin"].includes(role || "");
+  return role === "guide" || role === "materialwart" || role === "admin";
 }
 
 function mapChildProfileRow(
@@ -60,7 +60,7 @@ export default async function ProfilePage() {
     .single();
 
   let children: ChildProfile[] = [];
-  if (profile?.role === "parent") {
+  if (isParentRole(profile?.role)) {
     const { data: legacyChildren } = await supabase
       .from("child_profiles")
       .select("*")

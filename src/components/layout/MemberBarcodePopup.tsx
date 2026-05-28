@@ -96,15 +96,15 @@ export function MemberBarcodePopup({
       </button>
 
       {isOpen && (
-        <div className="fixed inset-x-0 bottom-0 top-14 z-[60] md:hidden">
+        <div className="fixed inset-0 z-60 md:hidden">
           <button
             type="button"
             aria-label="Barcode schließen"
             onClick={() => setIsOpen(false)}
-            className="absolute inset-0 bg-slate-900/15 backdrop-blur-[2px]"
+            className="fixed inset-0 bg-slate-900/15 backdrop-blur-[2px]"
           />
 
-          <div className="fixed inset-x-0 bottom-0 top-14 flex items-start justify-center px-4 pt-4 pb-6">
+          <div className="fixed inset-0 flex items-start justify-center px-4 pt-16 pb-6">
             <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-4 shadow-2xl">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-bold text-slate-900">

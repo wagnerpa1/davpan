@@ -19,6 +19,7 @@ import { DeleteTourButton } from "@/components/tours/DeleteTourButton";
 import { ParticipantManagement } from "@/components/tours/ParticipantManagement";
 import { TourRegistrationSection } from "@/components/tours/TourRegistrationSection";
 import { getCurrentUserProfile } from "@/lib/auth";
+import { isParentRole } from "@/lib/permissions";
 import { isAdminRole } from "@/lib/permissions";
 import { siteConfig } from "@/lib/site-config";
 import { cn } from "@/lib/utils";
@@ -287,7 +288,7 @@ export default async function TourDetailPage({
   if (authContext.user) {
     userBirthdate = authContext.birthdate;
 
-    if (authContext.role === "parent") {
+    if (isParentRole(authContext.role)) {
       const { data: cData } = await supabase
         .from("child_profiles")
         .select("id, full_name, birthdate")

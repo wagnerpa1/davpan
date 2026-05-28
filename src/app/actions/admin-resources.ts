@@ -119,7 +119,36 @@ export async function deleteResource(id: string) {
 // ----- RESOURCE BOOKINGS -----
 
 export async function getResourceBookings() {
-  const supabase = await createClient();
+  // Ensure only managers (guide, materialwart, admin) can fetch the full list.
+  const userClient = await createClient();
+
+  const {
+    data: { user },
+  } = await userClient.auth.getUser();
+
+  if (!user) return [];
+
+  const { data: profile } = await userClient
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  const role = profile?.role as string | null | undefined;
+  if (!role) return [];
+
+  // Only allow guides, materialwarts or admins to view all bookings.
+  const isManager =
+    role === "admin" || role === "materialwart" || role === "guide";
+
+  if (!isManager) return [];
+
+  // Prefer using the service-role admin client if available so RLS doesn't block reads.
+  const { createAdminClient } = await import("@/utils/supabase/admin");
+  const adminClient = createAdminClient();
+
+  const supabase = adminClient ?? userClient;
+
   const { data, error } = await supabase
     .from("resource_bookings")
     .select(`

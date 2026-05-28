@@ -47,10 +47,11 @@ export async function resolveTourManagerUserIds(
 export async function resolveMaterialManagerUserIds(
   supabase: SupabaseClient<Database>,
 ) {
+  // Include guides as material managers so they see reservations as well.
   const { data: managerRows } = await supabase
     .from("profiles")
     .select("id")
-    .in("role", ["materialwart", "admin"]);
+    .in("role", ["materialwart", "admin", "guide"]);
 
   return ((managerRows ?? []) as ManagerRow[]).map((row) => row.id);
 }

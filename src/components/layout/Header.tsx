@@ -8,6 +8,7 @@ import { MemberBarcodePopup } from "@/components/layout/MemberBarcodePopup";
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
 import { buildNavigation } from "@/lib/navigation/nav-config";
 import type { RoleLike } from "@/lib/permissions";
+import { isParentRole } from "@/lib/permissions";
 import { siteConfig } from "@/lib/site-config";
 
 interface HeaderProps {
@@ -22,7 +23,7 @@ interface HeaderProps {
  * and user-specific actions (barcode popup, notifications, logout).
  */
 export function Header({ birthdate, membershipNumber, userRole }: HeaderProps) {
-  const isParent = userRole === "parent";
+  const isParent = isParentRole(userRole);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
 
   const navigation = buildNavigation(userRole);

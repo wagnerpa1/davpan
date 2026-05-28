@@ -32,6 +32,13 @@ export function isMaterialwartRole(role: RoleLike): boolean {
 }
 
 /**
+ * Checks if the given role is a parent account.
+ */
+export function isParentRole(role: RoleLike): boolean {
+  return role === "parent";
+}
+
+/**
  * Checks if the user is allowed to manage material (Materialwart or Admin).
  */
 export function canManageMaterial(role: RoleLike): boolean {
