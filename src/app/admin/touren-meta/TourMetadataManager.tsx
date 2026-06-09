@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  Loader2,
-  Tags,
-  Trash2,
-  Users,
-  type LucideIcon,
-} from "lucide-react";
+import { Loader2, Tags, Trash2, Users, type LucideIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {

@@ -273,9 +273,8 @@ async function exportParticipants(targetYear: number): Promise<NextResponse> {
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 
-  const participantRows = (
-    participantResult.data ?? []
-  ) as ExportParticipantRow[];
+  const participantRows = (participantResult.data ??
+    []) as ExportParticipantRow[];
   const profileIds = getUniqueIds(
     participantRows.map((participant) => participant.user_id),
   );
