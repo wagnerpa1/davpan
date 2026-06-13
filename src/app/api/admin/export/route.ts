@@ -101,7 +101,19 @@ function formatDate(value: string | null | undefined): string {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value;
 
-  return new Intl.DateTimeFormat("de-DE").format(parsed);
+  return new Intl.DateTimeFormat("de-DE", { timeZone: "UTC" }).format(parsed);
+}
+
+function createCsvResponse(csv: string, filename: string): NextResponse {
+  return new NextResponse(csv, {
+    status: 200,
+    headers: {
+      "Content-Type": "text/csv; charset=utf-8",
+      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Cache-Control": "no-store, max-age=0, must-revalidate",
+      Pragma: "no-cache",
+    },
+  });
 }
 
 function getTargetYearFromType(type: string): number {
@@ -228,13 +240,7 @@ async function exportTours(targetYear: number): Promise<NextResponse> {
 
   const csv = [header, ...rows].join("\n");
 
-  return new NextResponse(csv, {
-    status: 200,
-    headers: {
-      "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="touren_geplant_${targetYear}.csv"`,
-    },
-  });
+  return createCsvResponse(csv, `touren_geplant_${targetYear}.csv`);
 }
 
 async function exportParticipants(targetYear: number): Promise<NextResponse> {
@@ -374,13 +380,7 @@ async function exportParticipants(targetYear: number): Promise<NextResponse> {
 
   const csv = [header, ...rows].join("\n");
 
-  return new NextResponse(csv, {
-    status: 200,
-    headers: {
-      "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="teilnehmer_${targetYear}.csv"`,
-    },
-  });
+  return createCsvResponse(csv, `teilnehmer_${targetYear}.csv`);
 }
 
 export async function GET(request: Request) {

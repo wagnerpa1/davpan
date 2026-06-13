@@ -153,7 +153,7 @@ export default async function Home() {
             </h2>
             <Link
               href={featuredLink}
-              className="text-xs font-bold text-jdav-green uppercase tracking-wider hover:underline"
+              className="text-xs font-bold text-jdav-green-dark uppercase tracking-wider hover:underline"
             >
               Zu meinen Touren
             </Link>
@@ -181,7 +181,7 @@ export default async function Home() {
             <h2 className="text-xl font-bold text-slate-900">Neuigkeiten</h2>
             <Link
               href="/berichte"
-              className="text-xs font-bold text-jdav-green uppercase tracking-wider hover:underline"
+              className="text-xs font-bold text-jdav-green-dark uppercase tracking-wider hover:underline"
             >
               Alle Berichte
             </Link>
@@ -283,6 +283,7 @@ export default async function Home() {
           <button
             type="submit"
             className="group flex items-center gap-2 text-[10px] font-bold text-slate-400 hover:text-red-500 transition-all uppercase tracking-widest"
+            aria-label="Abmelden"
           >
             <LogOut className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
             Abmelden
