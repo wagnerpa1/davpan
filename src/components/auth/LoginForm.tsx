@@ -1,108 +1,63 @@
-"use client";
+import { signIn } from "@/app/login/actions";
 
-import { Auth } from "@supabase/auth-ui-react";
-import { ThemeSupa } from "@supabase/auth-ui-shared";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { getAuthCallbackUrl } from "@/lib/auth";
-import { cn } from "@/lib/utils";
-import { createClient } from "@/utils/supabase/client";
+interface LoginFormProps {
+  className?: string;
+  errorMessage?: string | null;
+}
 
-export function LoginForm({ className }: { className?: string }) {
-  const [supabase] = useState(() => createClient());
-  const router = useRouter();
-  const [redirectTo, setRedirectTo] = useState<string>("");
-
-  useEffect(() => {
-    setRedirectTo(getAuthCallbackUrl());
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event) => {
-      if (event === "SIGNED_IN") {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (user) {
-          router.push("/");
-          router.refresh();
-        }
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [supabase, router]);
+export function LoginForm({ className, errorMessage }: LoginFormProps) {
+  const emailId = "login-email";
+  const passwordId = "login-password";
 
   return (
-    <div className={cn("grid gap-6", className)}>
-      <Auth
-        supabaseClient={supabase}
-        appearance={{
-          theme: ThemeSupa,
-          variables: {
-            default: {
-              colors: {
-                brand: "#76a355", // jdav-green
-                brandAccent: "#5a8040", // jdav-green-dark
-                brandButtonText: "white",
-                defaultButtonBackground: "white",
-                defaultButtonBackgroundHover: "#f8fafc",
-                inputBackground: "white",
-                inputBorder: "#e2e8f0",
-                inputBorderHover: "#76a355",
-                inputBorderFocus: "#76a355",
-              },
-              radii: {
-                borderRadiusButton: "0.5rem",
-                buttonBorderRadius: "0.5rem",
-                inputBorderRadius: "0.5rem",
-              },
-            },
-          },
-          className: {
-            button: "font-medium shadow-sm transition-colors",
-            input: "shadow-sm transition-colors",
-            label: "text-slate-800 font-semibold",
-            message: "text-sm",
-          },
-        }}
-        localization={{
-          variables: {
-            sign_in: {
-              email_label: "E-Mail Adresse",
-              password_label: "Passwort",
-              button_label: "Anmelden",
-              loading_button_label: "Melde an ...",
-              link_text: "Du hast bereits ein Konto? Meld dich an",
-              email_input_placeholder: "deine@email.com",
-              password_input_placeholder: "Dein Passwort",
-            },
-            sign_up: {
-              email_label: "E-Mail Adresse",
-              password_label: "Passwort (min. 6 Zeichen)",
-              button_label: "Registrieren",
-              loading_button_label: "Registriere ...",
-              link_text: "Du hast noch kein Konto? Registrier dich",
-              email_input_placeholder: "deine@email.com",
-              password_input_placeholder: "Dein Passwort",
-            },
-            forgotten_password: {
-              email_label: "E-Mail Adresse",
-              email_input_placeholder: "deine@email.com",
-              button_label: "Passwort-Reset senden",
-              loading_button_label: "Sende Reset-Link ...",
-              link_text: "Passwort vergessen?",
-              confirmation_text:
-                "Überprüfe deine E-Mail für den Passwort-Reset-Link",
-            },
-          },
-        }}
-        providers={[]}
-        view="sign_in"
-        showLinks={false}
-        theme="light"
-        redirectTo={redirectTo || undefined}
-      />
+    <div className={`grid gap-6 ${className ?? ""}`}>
+      <form className="grid gap-4" action={signIn}>
+        <label
+          htmlFor={emailId}
+          className="grid gap-2 text-sm font-semibold text-slate-800"
+        >
+          <span>E-Mail Adresse</span>
+          <input
+            id={emailId}
+            type="email"
+            name="email"
+            autoComplete="email"
+            placeholder="deine@email.com"
+            className="flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-jdav-green focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            required
+          />
+        </label>
+
+        <label
+          htmlFor={passwordId}
+          className="grid gap-2 text-sm font-semibold text-slate-800"
+        >
+          <span>Passwort</span>
+          <input
+            id={passwordId}
+            type="password"
+            name="password"
+            autoComplete="current-password"
+            placeholder="Dein Passwort"
+            className="flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-jdav-green focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            required
+          />
+        </label>
+
+        {errorMessage && (
+          <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {errorMessage}
+          </p>
+        )}
+
+        <button
+          type="submit"
+          className="h-11 w-full rounded-xl bg-jdav-green font-semibold text-white shadow-sm transition-colors hover:bg-jdav-green-dark disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          Anmelden
+        </button>
+      </form>
+
       <div className="space-y-3 text-center text-sm">
         <div>
           <a

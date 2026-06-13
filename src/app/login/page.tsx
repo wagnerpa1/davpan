@@ -1,6 +1,21 @@
 import { LoginForm } from "@/components/auth/LoginForm";
 
-export default function LoginPage() {
+interface LoginPageProps {
+  searchParams?: {
+    error?: string | string[];
+  };
+}
+
+function getLoginErrorMessage(searchParams?: LoginPageProps["searchParams"]) {
+  const error = searchParams?.error;
+  const value = Array.isArray(error) ? error[0] : error;
+
+  return value ? decodeURIComponent(value) : null;
+}
+
+export default function LoginPage({ searchParams }: LoginPageProps) {
+  const errorMessage = getLoginErrorMessage(searchParams);
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-green-100 p-4">
       <div className="w-full max-w-md space-y-8 rounded-2xl bg-white p-8 shadow-xl">
@@ -12,7 +27,7 @@ export default function LoginPage() {
             Bitte melde dich an, um Fortzufahren
           </p>
         </div>
-        <LoginForm />
+        <LoginForm errorMessage={errorMessage} />
 
         <div className="mt-8 text-center text-sm text-slate-500">
           <p>Du bist noch kein Mitglied oder möchtest nur stöbern?</p>

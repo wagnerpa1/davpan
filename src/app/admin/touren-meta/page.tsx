@@ -1,4 +1,3 @@
-import { Layers3 } from "lucide-react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getCurrentUserProfile } from "@/lib/auth";
@@ -56,16 +55,13 @@ export default async function AdminTourMetadataPage() {
     <div className="mx-auto max-w-site px-4 py-8">
       <div className="mb-10 flex flex-col gap-4 lg:mb-12">
         <div className="flex items-start gap-4">
-          <div className="rounded-2xl bg-jdav-green/10 p-3 text-jdav-green">
-            <Layers3 className="h-6 w-6" />
-          </div>
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
               Tourkategorien und Gruppen
             </h1>
             <p className="mt-2 max-w-3xl text-slate-600">
-              Hier pflegen Sie die Stammdaten, die im Tourenbereich für
-              Auswahlfelder, Filter und Benachrichtigungen verwendet werden.
+              Pflegen der Stammdaten, die im Tourenbereich für Auswahlfelder,
+              Filter und Benachrichtigungen verwendet werden.
             </p>
           </div>
         </div>

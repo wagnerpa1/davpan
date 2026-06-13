@@ -8,8 +8,8 @@ import {
   Package,
   Settings,
   ShieldCheck,
-  User,
   Tags,
+  User,
 } from "lucide-react";
 
 const navigationIcons: Record<string, LucideIcon> = {

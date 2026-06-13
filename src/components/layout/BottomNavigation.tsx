@@ -68,6 +68,7 @@ export function BottomNavigation({ userRole }: BottomNavigationProps) {
             </div>
             <button
               type="button"
+              aria-label="Menü schließen"
               onClick={() => setIsMoreOpen(false)}
               className="rounded-full bg-slate-100 p-2 text-slate-600"
             >
@@ -184,6 +185,7 @@ export function BottomNavigation({ userRole }: BottomNavigationProps) {
         {/* MORE BUTTON */}
         <button
           type="button"
+          aria-label={isMoreOpen ? "Mehr-Menü schließen" : "Mehr-Menü öffnen"}
           onClick={() => setIsMoreOpen(!isMoreOpen)}
           className={cn(
             "motion-press group relative flex flex-col items-center justify-center px-1.5 py-1 transition-all duration-300",
