@@ -277,7 +277,7 @@ export default async function TourenPage({
   );
 
   // Check if user is logged in for "Create" button (session already fetched above)
-    const canCreate = canCreateTour(authContext.role);
+  const canCreate = canCreateTour(authContext.role);
 
   let filteredTours: TourCardItem[] = normalizeTourRows(
     tours as RawTourCardItem[] | null,

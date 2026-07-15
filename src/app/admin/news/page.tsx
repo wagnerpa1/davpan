@@ -133,7 +133,8 @@ export default async function AdminNewsPage() {
           Vereinsnews verwalten
         </h1>
         <p className="mt-2 text-slate-500">
-          Neue News und Systemmeldungen veröffentlichen sowie bestehende Einträge einsehen und löschen.
+          Neue News und Systemmeldungen veröffentlichen sowie bestehende
+          Einträge einsehen und löschen.
         </p>
       </div>
 

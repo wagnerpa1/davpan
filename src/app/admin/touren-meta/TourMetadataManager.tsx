@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  Loader2,
-  Tags,
-  Trash2,
-  Users,
-  type LucideIcon,
-} from "lucide-react";
+import { Loader2, type LucideIcon, Tags, Trash2, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
@@ -83,7 +77,7 @@ function LookupSection({
   }
 
   return (
-    <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+    <section className="rounded-card border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
       <div className="flex items-start gap-4">
         <div className="rounded-2xl bg-jdav-green/10 p-3 text-jdav-green">
           <Icon className="h-5 w-5" />
