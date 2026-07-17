@@ -117,7 +117,7 @@ describe("upsertReport archive flow", () => {
     const mocks = createSupabaseMock({ role: "guide", isGuide: true });
     createClientMock.mockResolvedValue(mocks.supabase);
 
-    const { upsertReport } = await import("@/app/actions/reports");
+    const { upsertReport } = await import("@/app/actions/reports.server");
 
     const result = await upsertReport(
       buildFormData({
@@ -137,7 +137,7 @@ describe("upsertReport archive flow", () => {
     const mocks = createSupabaseMock({ role: "guide", isGuide: true });
     createClientMock.mockResolvedValue(mocks.supabase);
 
-    const { upsertReport } = await import("@/app/actions/reports");
+    const { upsertReport } = await import("@/app/actions/reports.server");
 
     const result = await upsertReport(
       buildFormData({

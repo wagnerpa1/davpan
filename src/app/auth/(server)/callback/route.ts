@@ -24,12 +24,13 @@ export async function GET(request: Request) {
           typeof metadata.full_name === "string" ? metadata.full_name : null;
         const birthdate =
           typeof metadata.birthdate === "string" ? metadata.birthdate : null;
+        const isParent = metadata.is_parent === true;
 
         const { error: upsertError } = await supabase.from("profiles").upsert(
           {
             id: user.id,
             full_name: fullName,
-            role: "member",
+            role: isParent ? "parent" : "member",
             birthdate,
             is_activated: false,
           },

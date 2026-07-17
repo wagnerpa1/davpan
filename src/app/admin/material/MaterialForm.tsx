@@ -3,7 +3,7 @@
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { createOrUpdateMaterialGroup } from "@/app/actions/admin-material";
+import { createOrUpdateMaterialGroup } from "@/app/actions/admin-material.server";
 import { Button } from "@/components/ui/button";
 
 interface InventoryItem {

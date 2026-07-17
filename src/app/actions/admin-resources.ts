@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { canBookStandaloneResource, isAdminRole } from "@/lib/permissions";
 import { createClient } from "@/utils/supabase/server";
+import { requireAuth } from "./auth-guards";
 
 async function isUserGuideForTour(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -22,7 +23,17 @@ async function isUserGuideForTour(
 // ----- RESOURCES -----
 
 export async function getResources() {
-  const supabase = await createClient();
+  const { supabase, user } = await requireAuth();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (!canBookStandaloneResource(profile?.role)) {
+    return [];
+  }
+
   const { data, error } = await supabase
     .from("resources")
     .select("*")
@@ -179,7 +190,25 @@ export async function checkAndBookResource(
   endDate: string,
   userId: string,
 ) {
-  const supabase = await createClient();
+  const { supabase, user } = await requireAuth();
+
+  if (user.id !== userId) {
+    return { error: "Keine Berechtigung." };
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  const isAdmin = isAdminRole(profile?.role);
+  const canBookForTour =
+    isAdmin || (await isUserGuideForTour(supabase, tourId, user.id));
+
+  if (!canBookForTour) {
+    return { error: "Keine Berechtigung für diese Tour." };
+  }
 
   // Use new atomic RPC (handles conflict checking + upsert in one transaction)
   const { data, error } = await supabase.rpc("book_resource_for_tour_atomic", {

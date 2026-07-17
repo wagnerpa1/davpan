@@ -3,22 +3,16 @@
 import { revalidatePath } from "next/cache";
 import { runAction } from "@/lib/action-runner";
 import { DomainError } from "@/lib/errors";
-import { createClient } from "@/utils/supabase/server";
+import { requireAuth } from "./auth-guards";
 
 export async function createChildProfileInvite(childId: string) {
+  const auth = await requireAuth();
   return runAction(async () => {
-    const supabase = await createClient();
-    const { data: userData, error: authError } = await supabase.auth.getUser();
-
-    if (authError || !userData?.user) {
-      throw new DomainError("unauthorized", "Nicht autorisiert");
-    }
-
     // Verify parent is linked to the child
-    const { data: hasLink, error: linkError } = await supabase
+    const { data: hasLink, error: linkError } = await auth.supabase
       .from("parent_child_relations")
       .select("child_id")
-      .eq("parent_id", userData.user.id)
+      .eq("parent_id", auth.user.id)
       .eq("child_id", childId)
       .single();
 
@@ -26,10 +20,10 @@ export async function createChildProfileInvite(childId: string) {
 
     // Fallback if relations table is missing or empty for this link
     if (linkError || !hasLink) {
-      const { data: isLegacyParent } = await supabase
+      const { data: isLegacyParent } = await auth.supabase
         .from("child_profiles")
         .select("id")
-        .eq("parent_id", userData.user.id)
+        .eq("parent_id", auth.user.id)
         .eq("id", childId)
         .single();
 
@@ -45,10 +39,10 @@ export async function createChildProfileInvite(childId: string) {
 
     // Backfill relation row for legacy children so invite insert passes RLS.
     if (!hasLink && hasLegacyLink) {
-      const { error: relationInsertError } = await supabase
+      const { error: relationInsertError } = await auth.supabase
         .from("parent_child_relations")
         .insert({
-          parent_id: userData.user.id,
+          parent_id: auth.user.id,
           child_id: childId,
         });
 
@@ -67,11 +61,11 @@ export async function createChildProfileInvite(childId: string) {
       }
     }
 
-    const { data: invite, error } = await supabase
+    const { data: invite, error } = await auth.supabase
       .from("child_profile_invites")
       .insert({
         child_id: childId,
-        created_by: userData.user.id,
+        created_by: auth.user.id,
       })
       .select()
       .single();
@@ -93,8 +87,8 @@ export async function redeemChildProfileInvite(
   code: string,
   birthdate: string,
 ) {
+  const auth = await requireAuth();
   return runAction(async () => {
-    const supabase = await createClient();
     const normalizedCode = code.trim();
 
     const uuidLikeRegex =
@@ -105,7 +99,7 @@ export async function redeemChildProfileInvite(
 
     // RLS will normally block selecting an invite they didn't create,
     // but the RPC function `redeem_child_invite` runs with SECURITY DEFINER
-    const { data, error } = await supabase.rpc("redeem_child_invite", {
+    const { data, error } = await auth.supabase.rpc("redeem_child_invite", {
       p_code: normalizedCode,
       p_birthdate: birthdate,
     });
@@ -137,9 +131,32 @@ export async function redeemChildProfileInvite(
 }
 
 export async function getActiveInvites(childId: string) {
+  const auth = await requireAuth();
   return runAction(async () => {
-    const supabase = await createClient();
-    const { data: invites, error } = await supabase
+    const { data: hasLink, error: linkError } = await auth.supabase
+      .from("parent_child_relations")
+      .select("child_id")
+      .eq("parent_id", auth.user.id)
+      .eq("child_id", childId)
+      .single();
+
+    if (linkError || !hasLink) {
+      const { data: isLegacyParent } = await auth.supabase
+        .from("child_profiles")
+        .select("id")
+        .eq("parent_id", auth.user.id)
+        .eq("id", childId)
+        .single();
+
+      if (!isLegacyParent) {
+        throw new DomainError(
+          "unauthorized",
+          "Keine Berechtigung für dieses Kind",
+        );
+      }
+    }
+
+    const { data: invites, error } = await auth.supabase
       .from("child_profile_invites")
       .select("*")
       .eq("child_id", childId);

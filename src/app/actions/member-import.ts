@@ -264,6 +264,12 @@ export async function previewMemberImport(
   fileContent: string,
   fileType: string,
 ) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Nicht autorisiert.");
+
   const rows =
     fileType === "csv" ? parseCsv(fileContent) : JSON.parse(fileContent);
 
@@ -272,11 +278,10 @@ export async function previewMemberImport(
   }
 
   const importedRows = rows.slice(0, 25).map((row) => normalizeImportRow(row));
-  const membershipNumbers = importedRows
-    .map((row) => row.membership_number)
-    .filter(Boolean);
+  const membershipNumbers = importedRows.flatMap((row) =>
+    row.membership_number ? [row.membership_number] : [],
+  );
 
-  const supabase = await createClient();
   const { data: existingRows } = membershipNumbers.length
     ? await supabase
         .from("section_members")

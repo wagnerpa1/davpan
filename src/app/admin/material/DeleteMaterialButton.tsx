@@ -3,7 +3,7 @@
 import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { deleteMaterialType } from "@/app/actions/admin-material";
+import { deleteMaterialType } from "@/app/actions/admin-material.server";
 import { Button } from "@/components/ui/button";
 
 export function DeleteMaterialButton({ id }: { id: string }) {

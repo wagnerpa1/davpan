@@ -3,7 +3,7 @@ import { de } from "date-fns/locale";
 import { Calendar, MapPin, Mountain, MoveLeft } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getTourParticipantsForListing } from "@/app/actions/reports";
+import { getTourParticipantsForListing } from "@/app/actions/reports.server";
 import { ReportForm } from "@/components/reports/ReportForm";
 import { isAdminRole } from "@/lib/permissions";
 import { createClient } from "@/utils/supabase/server";

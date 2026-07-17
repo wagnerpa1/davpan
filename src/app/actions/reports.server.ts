@@ -179,6 +179,11 @@ export async function uploadReportImage(
 export async function deleteReportImage(imageId: string, imageUrl: string) {
   const supabase = await createClient();
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Nicht autorisiert.");
+
   // Extract path from URL
   // Expected: .../storage/v1/object/public/tour-reports/REPROT_ID/filename
   const parts = imageUrl.split("/tour-reports/");
@@ -202,12 +207,19 @@ export async function updateImageOrder(
 ) {
   const supabase = await createClient();
 
-  for (const img of images) {
-    await supabase
-      .from("report_images")
-      .update({ order_index: img.order_index })
-      .eq("id", img.id);
-  }
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Nicht autorisiert.");
+
+  await Promise.all(
+    images.map((img) =>
+      supabase
+        .from("report_images")
+        .update({ order_index: img.order_index })
+        .eq("id", img.id),
+    ),
+  );
 
   return { success: true };
 }
