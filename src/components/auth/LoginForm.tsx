@@ -24,7 +24,7 @@ export function LoginForm({ className }: { className?: string }) {
           data: { user },
         } = await supabase.auth.getUser();
         if (user) {
-          router.push("/");
+          router.push("/auth/activation-review");
           router.refresh();
         }
       }

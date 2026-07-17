@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "biome check src tests scripts",
     "format": "biome format src tests scripts --write",
+    "import:members": "node scripts/import-section-members.mjs",
     "test:api": "vitest run --config vitest.config.ts",
     "test:api:watch": "vitest --config vitest.config.ts",
     "test:e2e": "playwright test",

@@ -277,6 +277,7 @@ alter table "public"."processed_events" enable row level security;
     "emergency_phone" text,
     "role" public.user_role default 'member'::public.user_role,
     "image_consent" boolean default false,
+    "is_activated" boolean not null default false,
     "created_at" timestamp without time zone default now(),
     "membership_number" character varying(11)
       );

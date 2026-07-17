@@ -127,11 +127,10 @@ export function RegisterForm({ className }: { className?: string }) {
         )}
 
         <fieldset>
-          <legend className="block text-sm font-semibold text-slate-900 mb-3">
-            Was ist dein Konto-Typ?
+          <legend className="block mb-3 text-sm font-semibold text-slate-900">
+            Wie möchtest du starten?
           </legend>
           <div className="grid grid-cols-2 gap-3">
-            {/* Member Card */}
             <button
               type="button"
               onClick={() => setIsParent(false)}
@@ -155,9 +154,11 @@ export function RegisterForm({ className }: { className?: string }) {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-900">
-                    Eigenes Konto
+                    Mitglied aktivieren
                   </p>
-                  <p className="text-xs text-slate-600">Für mich</p>
+                  <p className="text-xs text-slate-600">
+                    Mit Mitgliedsnummer und Geburtsdatum
+                  </p>
                 </div>
               </div>
               {!isParent && (
@@ -190,9 +191,11 @@ export function RegisterForm({ className }: { className?: string }) {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-900">
-                    Eltern-Konto
+                    Familienzugang
                   </p>
-                  <p className="text-xs text-slate-600">Für Kinder</p>
+                  <p className="text-xs text-slate-600">
+                    Für Eltern und Familienverwaltung
+                  </p>
                 </div>
               </div>
               {isParent && (
@@ -226,9 +229,9 @@ export function RegisterForm({ className }: { className?: string }) {
             htmlFor="register-membership"
             className="block text-sm font-medium text-slate-700"
           >
-            Mitgliedsnummer{" "}
+            Mitgliedsnummer
             <span className="text-xs text-slate-500">
-              (Sektion-Ortsgruppe-Nummer)
+              (Sektionsmitglied oder Familienzugang)
             </span>
           </label>
           <input

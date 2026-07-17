@@ -31,10 +31,6 @@ function formatMembershipNumber(value: string | null | undefined) {
   return `${value.slice(0, 3)}-${value.slice(3, 5)}-${value.slice(5)}`;
 }
 
-function isProtectedRole(role: string | null | undefined) {
-  return role === "guide" || role === "materialwart" || role === "admin";
-}
-
 function mapChildProfileRow(
   row: ChildProfile & { parent_child_relations?: unknown },
 ) {
@@ -225,28 +221,34 @@ export default async function ProfilePage() {
             >
               Konto-Typ / Rolle
             </label>
-            {isProtectedRole(profile?.role) ? (
-              <input
-                id="profile-role-read-only"
-                disabled
-                defaultValue={getRoleDisplayName(profile?.role)}
-                className="block w-full rounded-input border border-slate-300 bg-slate-50 px-3 py-1.5 text-sm text-slate-500 capitalize"
-              />
-            ) : (
-              <select
-                id="profile-role"
-                name="role"
-                defaultValue={profile?.role || "member"}
-                className="block w-full rounded-input border border-slate-300 px-3 py-1.5 text-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
-              >
-                <option value="member">Mitglied</option>
-                <option value="parent">Elternkonto</option>
-              </select>
-            )}
+            <input
+              id="profile-role-read-only"
+              disabled
+              defaultValue={getRoleDisplayName(profile?.role)}
+              className="block w-full rounded-input border border-slate-300 bg-slate-50 px-3 py-1.5 text-sm text-slate-500 capitalize"
+            />
             <p className="pt-0.5 text-xs text-slate-500">
-              {isProtectedRole(profile?.role)
-                ? "Deine Rolle wird durch Administratoren verwaltet"
-                : "Wähle zwischen Mitgliedskonto und Elternkonto"}
+              Deine Rolle wird zentral verwaltet und nicht im Self-Service
+              geändert.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label
+              htmlFor="profile-activation-status"
+              className="block text-sm font-medium text-slate-700"
+            >
+              Aktivierungsstatus
+            </label>
+            <input
+              id="profile-activation-status"
+              disabled
+              defaultValue={profile?.is_activated ? "Aktiviert" : "Offen"}
+              className="block w-full rounded-input border border-slate-300 bg-slate-50 px-3 py-1.5 text-sm text-slate-500"
+            />
+            <p className="pt-0.5 text-xs text-slate-500">
+              Erst nach dem Datenreview wird das Konto vollständig
+              freigeschaltet.
             </p>
           </div>
 
