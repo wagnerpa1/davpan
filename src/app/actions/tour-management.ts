@@ -4,8 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
-import { isAdminRole, isGuideRole } from "@/lib/permissions";
 import { notifyTourOpenForSubscribers } from "@/lib/notifications/targets";
+import { isAdminRole, isGuideRole } from "@/lib/permissions";
 import { createClient } from "@/utils/supabase/server";
 import { checkAndBookResource } from "./admin-resources";
 
