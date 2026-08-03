@@ -31,34 +31,39 @@ export default async function EditReportPage({ params, searchParams }: Props) {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: tour, error: tourError } = await supabase
-    .from("tours")
-    .select(`
-      *,
-      tour_guides (user_id)
-    `)
-    .eq("id", tourId)
-    .single();
+  // Optimize: Parallelize independent DB queries using Promise.all to eliminate sequential waterfall loading
+  const [tourRes, reportRes, profileRes, participants] = await Promise.all([
+    supabase
+      .from("tours")
+      .select(`
+        *,
+        tour_guides (user_id)
+      `)
+      .eq("id", tourId)
+      .single(),
+    supabase
+      .from("tour_reports")
+      .select(`
+        *,
+        report_images (id, image_url, order_index)
+      `)
+      .eq("id", reportId)
+      .single(),
+    supabase.from("profiles").select("role").eq("id", user.id).single(),
+    getTourParticipantsForListing(tourId),
+  ]);
 
-  const { data: report, error: reportError } = await supabase
-    .from("tour_reports")
-    .select(`
-      *,
-      report_images (id, image_url, order_index)
-    `)
-    .eq("id", reportId)
-    .single();
+  const tour = tourRes.data;
+  const tourError = tourRes.error;
+  const report = reportRes.data;
+  const reportError = reportRes.error;
 
   if (tourError || !tour || reportError || !report)
     redirect("/guide/dashboard");
 
-  // Permission check
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
+  const profile = profileRes.data;
 
+  // Permission check
   const isGuide = (tour.tour_guides as TourGuide[] | undefined)?.some(
     (tg) => tg.user_id === user.id,
   );
@@ -67,8 +72,6 @@ export default async function EditReportPage({ params, searchParams }: Props) {
   if (!isGuide && !isAdmin) {
     redirect("/guide/dashboard");
   }
-
-  const participants = await getTourParticipantsForListing(tourId);
 
   return (
     <div className="mx-auto max-w-site px-4 py-8">

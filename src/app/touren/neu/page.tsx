@@ -9,8 +9,8 @@ import {
   getTourGroups,
 } from "@/app/actions/tour-management";
 import { TourForm } from "@/components/tours/TourForm";
+import { getCurrentUserProfile } from "@/lib/auth";
 import { canCreateTour } from "@/lib/permissions";
-import { createClient } from "@/utils/supabase/server";
 
 export default async function NewTourPage({
   searchParams,
@@ -23,36 +23,35 @@ export default async function NewTourPage({
   const error = Array.isArray(errorRaw) ? errorRaw[0] : errorRaw;
   const debug = Array.isArray(debugRaw) ? debugRaw[0] : debugRaw;
 
-  const supabase = await createClient();
-  const guides = await getAvailableGuides();
-  const availableMaterials = await getAvailableMaterials();
-  const tourGroups = await getTourGroups();
-  const tourCategories = await getTourCategories();
-  const availableResources = await getResources();
+  // Optimize: Check authentication and permissions first before making metadata DB queries
+  const authContext = await getCurrentUserProfile();
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
+  if (!authContext.user) {
     redirect("/login");
   }
 
-  // Check role and get name
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, full_name, role")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile || !canCreateTour(profile.role)) {
+  if (!authContext.role || !canCreateTour(authContext.role)) {
     redirect("/touren");
   }
 
+  // Optimize: Parallelize independent DB/API calls using Promise.all to eliminate sequential waterfall loading
+  const [
+    guides,
+    availableMaterials,
+    tourGroups,
+    tourCategories,
+    availableResources,
+  ] = await Promise.all([
+    getAvailableGuides(),
+    getAvailableMaterials(),
+    getTourGroups(),
+    getTourCategories(),
+    getResources(),
+  ]);
+
   const currentUser = {
-    id: profile.id,
-    full_name: profile.full_name,
+    id: authContext.user.id,
+    full_name: authContext.fullName ?? "",
   };
 
   const errorTextMap: Record<string, string> = {
