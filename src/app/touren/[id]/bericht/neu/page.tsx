@@ -25,31 +25,29 @@ export default async function NewReportPage({ params }: Props) {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: tour, error: tourError } = await supabase
-    .from("tours")
-    .select(`
-      *,
-      tour_guides (user_id),
-      tour_reports (id)
-    `)
-    .eq("id", tourId)
-    .single();
+  // Optimize: Parallelize independent DB queries using Promise.all to eliminate sequential waterfall loading
+  const [tourRes, profileRes, participants] = await Promise.all([
+    supabase
+      .from("tours")
+      .select(`
+        *,
+        tour_guides (user_id),
+        tour_reports (id)
+      `)
+      .eq("id", tourId)
+      .single(),
+    supabase.from("profiles").select("role").eq("id", user.id).single(),
+    getTourParticipantsForListing(tourId),
+  ]);
+
+  const tour = tourRes.data;
+  const tourError = tourRes.error;
 
   if (tourError || !tour) redirect("/guide/dashboard");
 
-  // Check if report already exists - we don't redirect anymore to prevent unmounting during background uploads
-  // If it exists, we could ideally load it, but for now we just let the user create a new one or handle it via the UI
-  // if (tour.tour_reports && tour.tour_reports.length > 0) {
-  //   redirect(`/berichte/${tour.tour_reports[0].id}/edit`);
-  // }
+  const profile = profileRes.data;
 
   // Permission check
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
   const isGuide = (tour.tour_guides as TourGuide[] | undefined)?.some(
     (tg) => tg.user_id === user.id,
   );
@@ -58,8 +56,6 @@ export default async function NewReportPage({ params }: Props) {
   if (!isGuide && !isAdmin) {
     redirect("/guide/dashboard");
   }
-
-  const participants = await getTourParticipantsForListing(tourId);
 
   return (
     <div className="mx-auto max-w-site px-4 py-8">
