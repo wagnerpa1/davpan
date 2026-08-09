@@ -2,6 +2,8 @@ create extension if not exists "pg_cron" with schema "pg_catalog";
 
 create extension if not exists "btree_gist" with schema "extensions";
 
+drop extension if exists "pg_net";
+
 create type "public"."materal_typ" as enum ('Klettergurt/Sitz– u.Brustgurt', 'Klettersteigset', 'Steinschlaghelm', 'Steigeisen', 'Eispickel/Eisbeil', 'Grödel', 'Biwaksack', 'LVS-Set', 'Schneeschuhe', 'Kraxn für Zwergerl');
 
 create type "public"."material_size" as enum ('S', 'M', 'L', '39', '40', '41', '42', '43', '44', '45');

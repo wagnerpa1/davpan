@@ -56,7 +56,7 @@ BEGIN
   ALTER TABLE public.profiles
     ADD CONSTRAINT profiles_membership_number_key UNIQUE (membership_number);
 EXCEPTION
-  WHEN duplicate_object OR duplicate_table THEN NULL;
+  WHEN duplicate_object THEN NULL;
 END$$;
 
 DO $$

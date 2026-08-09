@@ -31,7 +31,7 @@ function toBaseUrl(origin: string): string {
   return `${origin}/`;
 }
 
-export function getURL() {
+function getURL() {
   const origin =
     normalizeOrigin(process.env.SITE_URL) ||
     normalizeOrigin(process.env.NEXT_PUBLIC_SITE_URL) ||

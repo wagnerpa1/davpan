@@ -122,17 +122,17 @@ export function MemberImportForm() {
           </p>
         </div>
 
-        {error && (
+        {error ? (
           <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
             {error}
           </div>
-        )}
+        ) : null}
 
-        {status && (
+        {status ? (
           <div className="rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-800">
             {status}
           </div>
-        )}
+        ) : null}
 
         <button
           type="button"
@@ -144,11 +144,12 @@ export function MemberImportForm() {
         </button>
       </div>
 
-      {previewRows.length > 0 && (
+      {previewRows.length > 0 ? (
         <div className="mt-6 overflow-hidden rounded-xl border border-slate-200">
           <div className="border-b border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700">
             Erste Vorschauzeilen mit Änderungen
           </div>
+
           <div className="max-h-90 overflow-auto">
             <table className="w-full text-left text-xs">
               <thead className="bg-white text-slate-500">
@@ -163,43 +164,48 @@ export function MemberImportForm() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 bg-white">
-                {previewRows.map((row) => (
-                  <tr
-                    key={`${row.membership_number}-${row.birthdate}`}
-                    className="align-top"
-                  >
-                    <td className="px-4 py-3 font-mono">
-                      {row.membership_number}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={cn(
-                          "rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-wide",
-                          row.status === "new"
-                            ? "bg-blue-50 text-blue-700"
+                {previewRows.map((row) => {
+                  const statusClassName =
+                    row.status === "new"
+                      ? "bg-blue-50 text-blue-700"
+                      : row.status === "update"
+                        ? "bg-amber-50 text-amber-700"
+                        : "bg-slate-100 text-slate-600";
+
+                  return (
+                    <tr
+                      key={`${row.membership_number}-${row.birthdate}-${row.family_number}-${row.category_code}`}
+                      className="align-top"
+                    >
+                      <td className="px-4 py-3 font-mono">
+                        {row.membership_number}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={cn(
+                            "rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-wide",
+                            statusClassName,
+                          )}
+                        >
+                          {row.status === "new"
+                            ? "Neu"
                             : row.status === "update"
-                              ? "bg-amber-50 text-amber-700"
-                              : "bg-slate-100 text-slate-600",
-                        )}
-                      >
-                        {row.status === "new"
-                          ? "Neu"
-                          : row.status === "update"
-                            ? "Änderung"
-                            : "Unverändert"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 font-medium text-slate-700">
-                      {row.changeCount}
-                    </td>
-                    <td className="px-4 py-3">
-                      {row.first_name} {row.last_name}
-                    </td>
-                    <td className="px-4 py-3">{row.birthdate}</td>
-                    <td className="px-4 py-3">{row.family_number || "-"}</td>
-                    <td className="px-4 py-3">{row.category_code || "-"}</td>
-                  </tr>
-                ))}
+                              ? "Änderung"
+                              : "Unverändert"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 font-medium text-slate-700">
+                        {row.changeCount}
+                      </td>
+                      <td className="px-4 py-3">
+                        {row.first_name} {row.last_name}
+                      </td>
+                      <td className="px-4 py-3">{row.birthdate}</td>
+                      <td className="px-4 py-3">{row.family_number || "-"}</td>
+                      <td className="px-4 py-3">{row.category_code || "-"}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -210,47 +216,52 @@ export function MemberImportForm() {
             </h3>
             {previewRows[0]?.diffs.length ? (
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                {previewRows[0].diffs.map((diff) => (
-                  <div
-                    key={diff.label}
-                    className={cn(
-                      "rounded-xl border p-3 text-xs",
-                      diff.changed
-                        ? "border-amber-200 bg-amber-50"
-                        : "border-slate-200 bg-white",
-                    )}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="font-semibold text-slate-900">
-                        {diff.label}
-                      </p>
-                      <span
-                        className={cn(
-                          "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
-                          diff.changed
-                            ? "bg-amber-100 text-amber-800"
-                            : "bg-slate-100 text-slate-500",
-                        )}
-                      >
-                        {diff.changed ? "Ändert sich" : "Unverändert"}
-                      </span>
+                {previewRows[0].diffs.map((diff) => {
+                  const diffClassName = diff.changed
+                    ? "border-amber-200 bg-amber-50"
+                    : "border-slate-200 bg-white";
+                  const diffBadgeClassName = diff.changed
+                    ? "bg-amber-100 text-amber-800"
+                    : "bg-slate-100 text-slate-500";
+
+                  return (
+                    <div
+                      key={diff.label}
+                      className={cn(
+                        "rounded-xl border p-3 text-xs",
+                        diffClassName,
+                      )}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="font-semibold text-slate-900">
+                          {diff.label}
+                        </p>
+                        <span
+                          className={cn(
+                            "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                            diffBadgeClassName,
+                          )}
+                        >
+                          {diff.changed ? "Ändert sich" : "Unverändert"}
+                        </span>
+                      </div>
+                      <div className="mt-2 space-y-1 text-slate-600">
+                        <p>
+                          <span className="font-medium text-slate-900">
+                            Aktuell:
+                          </span>{" "}
+                          {diff.currentValue}
+                        </p>
+                        <p>
+                          <span className="font-medium text-slate-900">
+                            Import:
+                          </span>{" "}
+                          {diff.incomingValue}
+                        </p>
+                      </div>
                     </div>
-                    <div className="mt-2 space-y-1 text-slate-600">
-                      <p>
-                        <span className="font-medium text-slate-900">
-                          Aktuell:
-                        </span>{" "}
-                        {diff.currentValue}
-                      </p>
-                      <p>
-                        <span className="font-medium text-slate-900">
-                          Import:
-                        </span>{" "}
-                        {diff.incomingValue}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <p className="mt-2 text-xs text-slate-500">
@@ -259,7 +270,7 @@ export function MemberImportForm() {
             )}
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

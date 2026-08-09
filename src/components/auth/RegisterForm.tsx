@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import type { ChangeEvent, FormEvent } from "react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { getAuthCallbackUrl } from "@/lib/auth-client";
+import { getAuthCallbackUrl } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/client";
 
@@ -59,9 +59,9 @@ export function RegisterForm({ className }: { className?: string }) {
     try {
       const finalData = {
         full_name: name,
+        role: isParent ? "parent" : "member",
         birthdate: birthdate || null,
         membership_number: membershipNumber.replace(/-/g, ""),
-        is_parent: isParent,
       };
 
       const { error: signUpError } = await supabase.auth.signUp({

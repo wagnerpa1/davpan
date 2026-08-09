@@ -17,7 +17,7 @@ export function calculateAge(birthdate?: string | null): number | null {
 /**
  * Formats an ISO-like date string into DD.MM.YYYY.
  */
-export function formatDate(value?: string | null): string {
+function formatDate(value?: string | null): string {
   if (!value) {
     return "";
   }

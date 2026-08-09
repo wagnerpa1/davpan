@@ -1,4 +1,4 @@
-﻿"use server";
+"use server";
 
 import { revalidatePath } from "next/cache";
 import { buildIdempotencyKey } from "@/lib/idempotency";
@@ -354,29 +354,31 @@ export async function cancelRegistration(participantId: string) {
     .neq("status", "cancelled");
 
   if (resItems && resItems.length > 0) {
-    for (const resItem of resItems) {
-      // Bestand nur zur�ckgeben, wenn die Anfrage bereits reserviert/ausgegeben wurde.
-      if (resItem.status === "reserved" || resItem.status === "on loan") {
-        const { data: inv } = await supabase
-          .from("material_inventory")
-          .select("quantity_available")
-          .eq("id", resItem.material_inventory_id)
-          .single();
-
-        if (inv) {
-          await supabase
+    await Promise.all(
+      resItems.map(async (resItem) => {
+        // Bestand nur zurckgeben, wenn die Anfrage bereits reserviert/ausgegeben wurde.
+        if (resItem.status === "reserved" || resItem.status === "on loan") {
+          const { data: inv } = await supabase
             .from("material_inventory")
-            .update({ quantity_available: inv.quantity_available + 1 })
-            .eq("id", resItem.material_inventory_id);
-        }
-      }
+            .select("quantity_available")
+            .eq("id", resItem.material_inventory_id)
+            .single();
 
-      // Update reservation status
-      await supabase
-        .from("material_reservations")
-        .update({ status: "cancelled" })
-        .eq("id", resItem.id);
-    }
+          if (inv) {
+            await supabase
+              .from("material_inventory")
+              .update({ quantity_available: inv.quantity_available + 1 })
+              .eq("id", resItem.material_inventory_id);
+          }
+        }
+
+        // Update reservation status
+        await supabase
+          .from("material_reservations")
+          .update({ status: "cancelled" })
+          .eq("id", resItem.id);
+      }),
+    );
   }
 
   const tourId = reg.tour_id;
@@ -411,10 +413,7 @@ export async function cancelRegistration(participantId: string) {
   return { success: true };
 }
 
-export async function confirmWaitlistSpot(
-  participantId: string,
-  tourId: string,
-) {
+async function confirmWaitlistSpot(participantId: string, tourId: string) {
   const supabase = await createClient();
 
   const {
@@ -441,7 +440,7 @@ export async function confirmWaitlistSpot(
   return { success: true };
 }
 
-export async function updateParticipantMaterials(
+async function updateParticipantMaterials(
   tourId: string,
   childId: string | null,
   materials: { material_inventory_id: string; quantity: number }[],

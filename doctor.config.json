@@ -1,7 +1,8 @@
 {
   "ignore": {
     "files": [
-      "load/**"
+      "load/**",
+      ".next/**"
     ]
   }
 }

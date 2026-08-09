@@ -83,27 +83,28 @@ export async function POST(req: NextRequest) {
   const bodyPreview =
     content.length > 200 ? `${content.slice(0, 197)}...` : content;
 
-  for (const profile of profilesResult.data ?? []) {
-    await dispatchNotification(auth.supabase, {
-      type: "news",
-      title: titlePrefix,
-      body: bodyPreview,
-      payload: { news_post_id: insertedNews.id },
-      recipientUserId: profile.id,
-      newsPostId: insertedNews.id,
-    });
-  }
-
-  for (const child of childResult.data ?? []) {
-    await dispatchNotification(auth.supabase, {
-      type: "news",
-      title: titlePrefix,
-      body: bodyPreview,
-      payload: { news_post_id: insertedNews.id },
-      recipientChildId: child.id,
-      newsPostId: insertedNews.id,
-    });
-  }
+  await Promise.all([
+    ...(profilesResult.data ?? []).map((profile) =>
+      dispatchNotification(auth.supabase, {
+        type: "news",
+        title: titlePrefix,
+        body: bodyPreview,
+        payload: { news_post_id: insertedNews.id },
+        recipientUserId: profile.id,
+        newsPostId: insertedNews.id,
+      }),
+    ),
+    ...(childResult.data ?? []).map((child) =>
+      dispatchNotification(auth.supabase, {
+        type: "news",
+        title: titlePrefix,
+        body: bodyPreview,
+        payload: { news_post_id: insertedNews.id },
+        recipientChildId: child.id,
+        newsPostId: insertedNews.id,
+      }),
+    ),
+  ]);
 
   return NextResponse.redirect(new URL("/admin/news", await getServerURL()), {
     status: 303,

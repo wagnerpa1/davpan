@@ -103,35 +103,36 @@ export async function POST(req: NextRequest) {
     groupIds,
   );
 
-  for (const userId of userIds) {
-    await dispatchNotification(supabase, {
-      type: "system",
-      title,
-      body: message,
-      payload: {
-        source: "admin_system_notification",
-        target_mode: targetMode,
-      },
-      recipientUserId: userId,
-      relatedTourId: null,
-      relatedGroupId: null,
-    });
-  }
-
-  for (const childId of childIds) {
-    await dispatchNotification(supabase, {
-      type: "system",
-      title,
-      body: message,
-      payload: {
-        source: "admin_system_notification",
-        target_mode: targetMode,
-      },
-      recipientChildId: childId,
-      relatedTourId: null,
-      relatedGroupId: null,
-    });
-  }
+  await Promise.all([
+    ...userIds.map((userId) =>
+      dispatchNotification(supabase, {
+        type: "system",
+        title,
+        body: message,
+        payload: {
+          source: "admin_system_notification",
+          target_mode: targetMode,
+        },
+        recipientUserId: userId,
+        relatedTourId: null,
+        relatedGroupId: null,
+      }),
+    ),
+    ...childIds.map((childId) =>
+      dispatchNotification(supabase, {
+        type: "system",
+        title,
+        body: message,
+        payload: {
+          source: "admin_system_notification",
+          target_mode: targetMode,
+        },
+        recipientChildId: childId,
+        relatedTourId: null,
+        relatedGroupId: null,
+      }),
+    ),
+  ]);
 
   await supabase.from("admin_system_notification_audit").insert({
     sent_by: user.id,

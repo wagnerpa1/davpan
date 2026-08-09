@@ -17,7 +17,7 @@ export async function activateCurrentProfile() {
 
   const { error } = await supabase
     .from("profiles")
-    .update({ is_activated: true })
+    .update({ is_activated: true, activated: true })
     .eq("id", user.id);
 
   if (error) {
@@ -26,5 +26,5 @@ export async function activateCurrentProfile() {
 
   revalidatePath("/profile");
   revalidatePath("/");
-  redirect("/profile?saved=activation");
+  redirect("/");
 }

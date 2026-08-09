@@ -35,6 +35,17 @@ export default async function ActivationReviewPage() {
     redirect("/login");
   }
 
+  const supabase = await createClient();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("activated")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (profile?.activated) {
+    redirect("/");
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-green-50 px-4 py-10">
       <div className="w-full max-w-2xl rounded-3xl border border-green-100 bg-white p-8 shadow-xl shadow-green-100/60 sm:p-10">

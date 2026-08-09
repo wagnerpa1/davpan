@@ -289,20 +289,24 @@ export async function bulkUpdateTourReservations(
     return { success: true, count: 0 };
   }
 
+  const results = await Promise.all(
+    reservations.map((res) => {
+      const expectedStatus = res.status || currentStatus;
+      return applyMaterialTransitionRpc(
+        supabase,
+        res.id,
+        expectedStatus,
+        newStatus,
+        "bulk-material-status",
+      );
+    }),
+  );
+
   let successCount = 0;
   let failedCount = 0;
   const errors: string[] = [];
 
-  for (const res of reservations) {
-    const expectedStatus = res.status || currentStatus;
-    const { error: rpcError } = await applyMaterialTransitionRpc(
-      supabase,
-      res.id,
-      expectedStatus,
-      newStatus,
-      "bulk-material-status",
-    );
-
+  for (const { error: rpcError } of results) {
     if (!rpcError) {
       successCount++;
       continue;

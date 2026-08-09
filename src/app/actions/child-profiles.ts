@@ -130,7 +130,7 @@ export async function redeemChildProfileInvite(
   });
 }
 
-export async function getActiveInvites(childId: string) {
+async function getActiveInvites(childId: string) {
   const auth = await requireAuth();
   return runAction(async () => {
     const { data: hasLink, error: linkError } = await auth.supabase
