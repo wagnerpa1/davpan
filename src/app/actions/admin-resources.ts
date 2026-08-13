@@ -226,7 +226,7 @@ export async function checkAndBookResource(
   return { success: true, booking_id: data.booking_id };
 }
 
-async function releaseResourceBooking(resourceBookingId: string) {
+async function _releaseResourceBooking(resourceBookingId: string) {
   const supabase = await createClient();
 
   const {

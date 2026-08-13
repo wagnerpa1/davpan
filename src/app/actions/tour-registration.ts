@@ -413,7 +413,7 @@ export async function cancelRegistration(participantId: string) {
   return { success: true };
 }
 
-async function confirmWaitlistSpot(participantId: string, tourId: string) {
+async function _confirmWaitlistSpot(participantId: string, tourId: string) {
   const supabase = await createClient();
 
   const {
@@ -440,7 +440,7 @@ async function confirmWaitlistSpot(participantId: string, tourId: string) {
   return { success: true };
 }
 
-async function updateParticipantMaterials(
+async function _updateParticipantMaterials(
   tourId: string,
   childId: string | null,
   materials: { material_inventory_id: string; quantity: number }[],

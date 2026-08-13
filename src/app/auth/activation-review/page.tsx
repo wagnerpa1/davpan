@@ -3,6 +3,7 @@ import { activateCurrentProfile } from "@/app/actions/profile-activation";
 import { getCurrentUserProfile } from "@/lib/auth";
 import { getRoleDisplayName } from "@/lib/permissions";
 import { siteConfig } from "@/lib/site-config";
+import { createClient } from "@/utils/supabase/server";
 
 function buildDataReportMailto(params: {
   fullName: string | null;

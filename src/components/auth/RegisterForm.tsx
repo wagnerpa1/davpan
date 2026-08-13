@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import type { ChangeEvent, FormEvent } from "react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { getAuthCallbackUrl } from "@/lib/auth";
+import { getAuthCallbackUrl } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/client";
 
