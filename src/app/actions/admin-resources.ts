@@ -349,17 +349,14 @@ export async function deleteResourceBooking(resourceBookingId: string) {
   if (!user) return { error: "Nicht eingeloggt." };
 
   // Permission check
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  const { data: booking } = await supabase
-    .from("resource_bookings")
-    .select("tour_id, created_by")
-    .eq("id", resourceBookingId)
-    .single();
+  const [{ data: profile }, { data: booking }] = await Promise.all([
+    supabase.from("profiles").select("role").eq("id", user.id).single(),
+    supabase
+      .from("resource_bookings")
+      .select("tour_id, created_by")
+      .eq("id", resourceBookingId)
+      .single(),
+  ]);
 
   if (!booking) return { error: "Buchung nicht gefunden." };
 

@@ -37,8 +37,10 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminMaterialPage() {
-  const supabase = await createClient();
-  const authContext = await getCurrentUserProfile();
+  const [supabase, authContext] = await Promise.all([
+    createClient(),
+    getCurrentUserProfile(),
+  ]);
   const canEditInventory = canManageMaterial(authContext.role);
   const tableColumns = canEditInventory ? 5 : 4;
 

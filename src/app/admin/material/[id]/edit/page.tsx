@@ -14,8 +14,10 @@ export default async function EditMaterialPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
-  const authContext = await getCurrentUserProfile();
+  const [{ id }, authContext] = await Promise.all([
+    params,
+    getCurrentUserProfile(),
+  ]);
   if (!canManageMaterial(authContext.role)) {
     redirect("/admin/material");
   }

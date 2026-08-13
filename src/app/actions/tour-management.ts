@@ -6,6 +6,7 @@ import { cache } from "react";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
 import { notifyTourOpenForSubscribers } from "@/lib/notifications/targets";
 import { isAdminRole, isGuideRole } from "@/lib/permissions";
+import { shouldThrottleSync } from "@/lib/tours/sync-throttle";
 import { createClient } from "@/utils/supabase/server";
 import { checkAndBookResource } from "./admin-resources";
 
@@ -532,14 +533,10 @@ export async function deleteTour(tourId: string) {
   redirect(`/touren/${tourId}`);
 }
 
-let _lastSyncTs = 0;
-
 async function _doSyncTourStatuses() {
-  const now = Date.now();
-  if (now - _lastSyncTs < 60_000) {
+  if (shouldThrottleSync()) {
     return { completedCount: 0, skipped: true };
   }
-  _lastSyncTs = now;
 
   const supabase = await createClient();
   const today = new Date().toISOString().split("T")[0];

@@ -127,8 +127,10 @@ export default async function AdminMaterialReservationsPage({
 }) {
   const params = await searchParams;
   const activeView = params.view === "problematic" ? "problematic" : "all";
-  const supabase = await createClient();
-  const authContext = await getCurrentUserProfile();
+  const [supabase, authContext] = await Promise.all([
+    createClient(),
+    getCurrentUserProfile(),
+  ]);
 
   if (!canAccessMaterialAdmin(authContext.role)) {
     redirect("/");

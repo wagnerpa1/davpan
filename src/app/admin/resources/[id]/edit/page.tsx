@@ -9,8 +9,10 @@ export default async function EditResourcePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
-  const authContext = await getCurrentUserProfile();
+  const [{ id }, authContext] = await Promise.all([
+    params,
+    getCurrentUserProfile(),
+  ]);
 
   if (!isAdminRole(authContext.role)) {
     redirect("/admin/resources");

@@ -113,8 +113,10 @@ function formatPriceRow(
 }
 
 export default async function MaterialPage() {
-  const supabase = await createClient();
-  const authContext = await getCurrentUserProfile();
+  const [supabase, authContext] = await Promise.all([
+    createClient(),
+    getCurrentUserProfile(),
+  ]);
 
   const canOpenMaterialAdmin = canAccessMaterialAdmin(authContext.role);
 

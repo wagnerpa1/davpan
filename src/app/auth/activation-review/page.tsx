@@ -29,14 +29,16 @@ function buildDataReportMailto(params: {
 }
 
 export default async function ActivationReviewPage() {
-  const { user, fullName, membershipNumber, role } =
-    await getCurrentUserProfile();
+  const [authContext, supabase] = await Promise.all([
+    getCurrentUserProfile(),
+    createClient(),
+  ]);
+  const { user, fullName, membershipNumber, role } = authContext;
 
   if (!user) {
     redirect("/login");
   }
 
-  const supabase = await createClient();
   const { data: profile } = await supabase
     .from("profiles")
     .select("activated")

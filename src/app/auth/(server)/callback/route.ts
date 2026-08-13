@@ -30,6 +30,7 @@ export async function GET(request: Request) {
           {
             id: user.id,
             full_name: fullName,
+            // react-doctor-disable-next-line supabase-client-owned-authz-field -- Server callback setting initial default profile role
             role: isParent ? "parent" : "member",
             birthdate,
             is_activated: false,

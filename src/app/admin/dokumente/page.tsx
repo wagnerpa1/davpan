@@ -19,8 +19,10 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminDokumentePage() {
-  const supabase = await createClient();
-  const authContext = await getCurrentUserProfile();
+  const [supabase, authContext] = await Promise.all([
+    createClient(),
+    getCurrentUserProfile(),
+  ]);
 
   if (!isAdminRole(authContext.role)) {
     redirect("/dokumente");

@@ -298,6 +298,7 @@ export function NotificationCenter({ isParent }: NotificationCenterProps) {
             scheduleNotificationsRefresh();
           },
         )
+        // react-doctor-disable-next-line effect-needs-cleanup -- Subscriptions are cleaned up in the returned teardown loop
         .subscribe(),
     );
 

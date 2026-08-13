@@ -14,6 +14,9 @@ export function OfflineIndicator() {
   const [syncComplete, setSyncComplete] = useState(false);
 
   useEffect(() => {
+    let syncTimer: NodeJS.Timeout | null = null;
+    let syncCompleteTimer: NodeJS.Timeout | null = null;
+
     // Initial state
     setIsOffline(!navigator.onLine);
 
@@ -21,7 +24,8 @@ export function OfflineIndicator() {
       setIsOffline(false);
       // When coming back online, background sync might trigger
       setSyncing(true);
-      setTimeout(() => setSyncing(false), 5000); // Hide syncing after 5s unless SW says otherwise
+      if (syncTimer) clearTimeout(syncTimer);
+      syncTimer = setTimeout(() => setSyncing(false), 5000); // Hide syncing after 5s unless SW says otherwise
     };
 
     const handleOffline = () => setIsOffline(true);
@@ -34,7 +38,8 @@ export function OfflineIndicator() {
       if (event.data && event.data.type === "OFFLINE_SYNC_COMPLETE") {
         setSyncing(false);
         setSyncComplete(true);
-        setTimeout(() => setSyncComplete(false), 4000);
+        if (syncCompleteTimer) clearTimeout(syncCompleteTimer);
+        syncCompleteTimer = setTimeout(() => setSyncComplete(false), 4000);
       }
     };
     navigator.serviceWorker?.addEventListener("message", handleSWMessage);
@@ -43,6 +48,8 @@ export function OfflineIndicator() {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
       navigator.serviceWorker?.removeEventListener("message", handleSWMessage);
+      if (syncTimer) clearTimeout(syncTimer);
+      if (syncCompleteTimer) clearTimeout(syncCompleteTimer);
     };
   }, []);
 

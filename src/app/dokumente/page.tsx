@@ -13,9 +13,10 @@ interface DocumentItem {
 }
 
 export default async function DokumentePage() {
-  const supabase = await createClient();
-
-  const authContext = await getCurrentUserProfile();
+  const [supabase, authContext] = await Promise.all([
+    createClient(),
+    getCurrentUserProfile(),
+  ]);
 
   if (!authContext.user) {
     redirect("/login");
