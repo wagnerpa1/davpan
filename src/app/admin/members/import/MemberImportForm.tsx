@@ -1,7 +1,7 @@
 "use client";
 
 import { Upload } from "lucide-react";
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import {
   previewMemberImport,
   runMemberImport,
@@ -28,7 +28,7 @@ type PreviewRow = {
 export function MemberImportForm() {
   const [isPending, startTransition] = useTransition();
   const [fileContent, setFileContent] = useState<string>("");
-  const [fileType, setFileType] = useState<"csv" | "json">("csv");
+  const fileTypeRef = useRef<"csv" | "json">("csv");
   const [previewRows, setPreviewRows] = useState<PreviewRow[]>([]);
   const [totalRows, setTotalRows] = useState(0);
   const [status, setStatus] = useState<string | null>(null);
@@ -48,7 +48,7 @@ export function MemberImportForm() {
       : "json";
 
     setFileContent(text);
-    setFileType(inferredType);
+    fileTypeRef.current = inferredType;
 
     startTransition(async () => {
       setError(null);
@@ -78,7 +78,7 @@ export function MemberImportForm() {
 
     startTransition(async () => {
       try {
-        const result = await runMemberImport(fileContent, fileType);
+        const result = await runMemberImport(fileContent, fileTypeRef.current);
         if (!result.success) {
           setError(result.error ?? "Import fehlgeschlagen.");
           return;

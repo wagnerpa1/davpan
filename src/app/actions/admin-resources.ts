@@ -5,6 +5,24 @@ import { canBookStandaloneResource, isAdminRole } from "@/lib/permissions";
 import { createClient } from "@/utils/supabase/server";
 import { requireAuth } from "./auth-guards";
 
+async function requireResourceAdmin() {
+  const auth = await requireAuth();
+  const { data: profile } = await auth.supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", auth.user.id)
+    .single();
+
+  if (!isAdminRole(profile?.role)) {
+    return {
+      error: "Keine Berechtigung (nur Admin).",
+      auth: null,
+    } as const;
+  }
+
+  return { error: null, auth } as const;
+}
+
 async function isUserGuideForTour(
   supabase: Awaited<ReturnType<typeof createClient>>,
   tourId: string,
@@ -47,23 +65,12 @@ export async function getResources() {
 }
 
 export async function createOrUpdateResource(formData: FormData) {
-  const supabase = await createClient();
-
-  // Security Check
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Nicht eingeloggt." };
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (!isAdminRole(profile?.role)) {
-    return { error: "Keine Berechtigung (nur Admin)." };
+  const admin = await requireResourceAdmin();
+  if (admin.error || !admin.auth) {
+    return { error: admin.error ?? "Nicht autorisiert." };
   }
+
+  const { supabase, user } = admin.auth;
 
   const id = formData.get("id") as string | null;
   const name = formData.get("name") as string;
@@ -99,22 +106,12 @@ export async function createOrUpdateResource(formData: FormData) {
 }
 
 export async function deleteResource(id: string) {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Nicht eingeloggt." };
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (!isAdminRole(profile?.role)) {
-    return { error: "Keine Berechtigung (nur Admin)." };
+  const admin = await requireResourceAdmin();
+  if (admin.error || !admin.auth) {
+    return { error: admin.error ?? "Nicht autorisiert." };
   }
+
+  const { supabase } = admin.auth;
 
   const { error } = await supabase.from("resources").delete().eq("id", id);
   if (error)
@@ -273,12 +270,7 @@ export async function bookResourceStandalone(
   endDate: string,
   reason: string,
 ) {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Nicht eingeloggt." };
+  const { supabase, user } = await requireAuth();
 
   // Permission check: Allow Guide, Materialwart, or Admin
   const { data: profile } = await supabase

@@ -296,6 +296,7 @@ export function TourForm({
         <div className="space-y-3">
           <div className="flex gap-2">
             <select
+              aria-label="Leiter hinzufügen"
               className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-jdav-green"
               onChange={(e) => {
                 const select = e.currentTarget;
@@ -323,6 +324,7 @@ export function TourForm({
                 <span>{g.name}</span>
                 <button
                   type="button"
+                  aria-label={`Leiter ${g.name} entfernen`}
                   className="hover:text-red-600 transition-colors ml-1"
                   onClick={() => removeGuide(g.id)}
                 >
@@ -407,7 +409,7 @@ export function TourForm({
                 <label
                   key={res.id}
                   className={cn(
-                    "flex items-center gap-3 rounded-xl border p-3 cursor-pointer transition-all hover:bg-slate-50",
+                    "flex items-center gap-3 rounded-xl border p-3 cursor-pointer transition-colors hover:bg-slate-50",
                     isSelected
                       ? "border-jdav-green bg-jdav-green/5 ring-1 ring-jdav-green"
                       : "border-slate-200",

@@ -68,8 +68,7 @@ export default async function PublicToursPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const supabase = await createClient();
-  const params = await searchParams;
+  const [supabase, params] = await Promise.all([createClient(), searchParams]);
 
   const categoryFilter = params.category as string;
   const difficultyFilter = params.difficulty as string;
@@ -102,19 +101,24 @@ export default async function PublicToursPage({
     .neq("status", "completed");
 
   const difficulties = Array.from(
-    new Set(allToursData?.map((t) => t.difficulty).filter(Boolean)),
+    new Set(
+      (allToursData ?? []).reduce<string[]>((values, tour) => {
+        if (tour.difficulty) {
+          values.push(tour.difficulty);
+        }
+        return values;
+      }, []),
+    ),
   ) as string[];
 
-  const { data: guides } = await supabase
-    .from("profiles")
-    .select("id, full_name")
-    .in("role", ["guide", "admin"])
-    .order("full_name");
-
-  const { data: tourGroups } = await supabase
-    .from("tour_groups")
-    .select("id, group_name")
-    .order("group_name");
+  const [{ data: guides }, { data: tourGroups }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, full_name")
+      .in("role", ["guide", "admin"])
+      .order("full_name"),
+    supabase.from("tour_groups").select("id, group_name").order("group_name"),
+  ]);
 
   let query = supabase
     .from("tours")

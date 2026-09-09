@@ -16,11 +16,15 @@ export function DeleteDocumentButton({
   const handleDelete = async () => {
     if (!confirm("Dokument wirklich löschen?")) return;
     setIsDeleting(true);
-    const result = await deleteDocument(id, fileUrl);
-    if (result?.error) {
-      alert(result.error);
+
+    try {
+      const result = await deleteDocument(id, fileUrl);
+      if (result?.error) {
+        alert(result.error);
+      }
+    } finally {
+      setIsDeleting(false);
     }
-    setIsDeleting(false);
   };
 
   return (

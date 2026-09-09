@@ -38,6 +38,16 @@ function mapChildProfileRow(
   return rest as ChildProfile;
 }
 
+const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreference = {
+  news_enabled: true,
+  system_enabled: true,
+  material_enabled: true,
+  comments_enabled: true,
+  group_notifications_enabled: true,
+  push_enabled: false,
+  tour_group_ids: [],
+};
+
 export default async function ProfilePage() {
   const supabase = await createClient();
 
@@ -78,16 +88,6 @@ export default async function ProfilePage() {
     children = Array.from(childrenMap.values());
   }
 
-  const defaultPreferences: NotificationPreference = {
-    news_enabled: true,
-    system_enabled: true,
-    material_enabled: true,
-    comments_enabled: true,
-    group_notifications_enabled: true,
-    push_enabled: false,
-    tour_group_ids: [],
-  };
-
   const [{ data: userNotificationPreferences }, { data: tourGroups }] =
     await Promise.all([
       supabase
@@ -104,7 +104,7 @@ export default async function ProfilePage() {
     ]);
 
   const ownPreferences: NotificationPreference = {
-    ...defaultPreferences,
+    ...DEFAULT_NOTIFICATION_PREFERENCES,
     ...userNotificationPreferences,
     tour_group_ids: userNotificationPreferences?.tour_group_ids ?? [],
   };
@@ -136,7 +136,8 @@ export default async function ProfilePage() {
   const childNotificationPreferences = children.map((child) => ({
     id: child.id,
     full_name: child.full_name,
-    preferences: childPreferenceById.get(child.id) ?? defaultPreferences,
+    preferences:
+      childPreferenceById.get(child.id) ?? DEFAULT_NOTIFICATION_PREFERENCES,
   }));
 
   return (
@@ -590,7 +591,7 @@ export default async function ProfilePage() {
               <AnimatedSubmitButton
                 successKey="child_created"
                 successLabel="Kind hinzugefügt"
-                className="inline-flex w-full items-center justify-center rounded-card bg-jdav-green px-4 py-2.5 text-sm font-black text-white shadow-md transition-all hover:bg-jdav-green-dark hover:shadow-lg"
+                className="inline-flex w-full items-center justify-center rounded-card bg-jdav-green px-4 py-2.5 text-sm font-black text-white shadow-md transition-colors hover:bg-jdav-green-dark hover:shadow-lg"
               >
                 Kind hinzufügen
               </AnimatedSubmitButton>

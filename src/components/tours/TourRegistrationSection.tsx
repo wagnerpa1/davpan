@@ -8,6 +8,7 @@ import {
   X,
   XCircle,
 } from "lucide-react";
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { cancelRegistration } from "@/app/actions/tour-registration";
 import { Button } from "@/components/ui/button";
@@ -126,6 +127,7 @@ function CancelConfirmModal({
       <div className="relative w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl">
         <button
           type="button"
+          aria-label="Tourabsage schließen"
           onClick={onClose}
           className="absolute right-4 top-4 rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
         >
@@ -190,14 +192,14 @@ export function TourRegistrationSection({
         <p className="mb-4 text-amber-800 font-medium">
           Du musst angemeldet sein, um dich für Touren einzuschreiben.
         </p>
-        <a href="/login">
+        <Link href="/login">
           <Button
             variant="outline"
             className="border-amber-200 bg-white text-amber-800 hover:bg-amber-100"
           >
             Zum Login
           </Button>
-        </a>
+        </Link>
       </div>
     );
   }

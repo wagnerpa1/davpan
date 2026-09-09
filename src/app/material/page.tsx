@@ -229,7 +229,7 @@ export default async function MaterialPage() {
         {canOpenMaterialAdmin && (
           <Link
             href="/admin/material"
-            className="flex items-center gap-1.5 rounded-xl bg-jdav-green-dark px-4 py-2 text-sm font-bold text-white shadow-sm transition-all hover:bg-jdav-green"
+            className="flex items-center gap-1.5 rounded-xl bg-jdav-green-dark px-4 py-2 text-sm font-bold text-white shadow-sm transition-colors hover:bg-jdav-green"
           >
             <Settings className="h-4 w-4" /> Materialverwaltung
           </Link>

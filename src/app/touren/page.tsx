@@ -200,7 +200,14 @@ export default async function TourenPage({
   );
 
   const difficulties = Array.from(
-    new Set(allToursData?.map((t) => t.difficulty).filter(Boolean)),
+    new Set(
+      (allToursData ?? []).reduce<string[]>((values, tour) => {
+        if (tour.difficulty) {
+          values.push(tour.difficulty);
+        }
+        return values;
+      }, []),
+    ),
   ) as string[];
 
   const guides = guidesData || [];

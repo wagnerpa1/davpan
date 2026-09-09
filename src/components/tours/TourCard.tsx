@@ -116,7 +116,7 @@ export function TourCard({ tour }: TourCardProps) {
     <Link href={`/touren/${tour.id}`} className="motion-press block">
       <div
         className={cn(
-          "motion-card motion-enter group relative overflow-hidden rounded-2xl border shadow-sm transition-all",
+          "motion-card motion-enter group relative overflow-hidden rounded-2xl border shadow-sm transition-colors",
           isCancelled
             ? "border-slate-200 bg-slate-50 text-slate-500"
             : "border-slate-200 bg-white hover:border-jdav-green hover:shadow-md",

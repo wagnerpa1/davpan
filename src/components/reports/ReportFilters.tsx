@@ -54,7 +54,7 @@ export function ReportFilters({
           type="button"
           onClick={() => setIsOpen(!isOpen)}
           className={cn(
-            "flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-2 text-sm font-bold transition-all shadow-sm sm:w-auto",
+            "flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-2 text-sm font-bold transition-colors shadow-sm sm:w-auto",
             isOpen || hasActiveFilters
               ? "border-jdav-green bg-jdav-green/5 text-jdav-green"
               : "border-slate-200 bg-white text-slate-600 hover:border-slate-300",
@@ -180,7 +180,7 @@ export function ReportFilters({
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="rounded-xl bg-jdav-green px-4 py-2 text-sm font-bold text-white shadow-md transition-all hover:bg-jdav-green-dark"
+              className="rounded-xl bg-jdav-green px-4 py-2 text-sm font-bold text-white shadow-md transition-colors hover:bg-jdav-green-dark"
             >
               Anwenden
             </button>

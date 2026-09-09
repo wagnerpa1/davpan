@@ -17,23 +17,30 @@ interface TourGuide {
 }
 
 export default async function NewReportPage({ params }: Props) {
-  const { id: tourId } = await params;
-  const supabase = await createClient();
+  const [{ id: tourId }, supabase] = await Promise.all([
+    params,
+    createClient(),
+  ]);
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const [
+    {
+      data: { user },
+    },
+    { data: tour, error: tourError },
+  ] = await Promise.all([
+    supabase.auth.getUser(),
+    supabase
+      .from("tours")
+      .select(`
+        *,
+        tour_guides (user_id),
+        tour_reports (id)
+      `)
+      .eq("id", tourId)
+      .single(),
+  ]);
+
   if (!user) redirect("/login");
-
-  const { data: tour, error: tourError } = await supabase
-    .from("tours")
-    .select(`
-      *,
-      tour_guides (user_id),
-      tour_reports (id)
-    `)
-    .eq("id", tourId)
-    .single();
 
   if (tourError || !tour) redirect("/guide/dashboard");
 

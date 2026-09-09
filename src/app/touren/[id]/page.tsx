@@ -163,8 +163,7 @@ export default async function TourDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
-  const supabase = await createClient();
+  const [{ id }, supabase] = await Promise.all([params, createClient()]);
 
   const { data: tour, error } = await supabase
     .from("tours")

@@ -14,6 +14,14 @@ interface AdminDocument {
   file_url: string;
 }
 
+const DOCUMENT_CATEGORIES = [
+  "Allgemein",
+  "Formulare",
+  "Packlisten",
+  "Vereinsregeln",
+  "JDAV",
+];
+
 export const metadata: Metadata = {
   title: "Admin - Dokumente verwalten",
 };
@@ -33,14 +41,6 @@ export default async function AdminDokumentePage() {
     .select("*")
     .order("category", { ascending: true });
 
-  const categories = [
-    "Allgemein",
-    "Formulare",
-    "Packlisten",
-    "Vereinsregeln",
-    "JDAV",
-  ];
-
   return (
     <div className="mx-auto max-w-site px-4 py-8">
       <div className="mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 lg:mb-12">
@@ -57,7 +57,7 @@ export default async function AdminDokumentePage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* Upload Form (Client Component) */}
         <div className="md:col-span-1">
-          <DocumentUploadForm categories={categories} />
+          <DocumentUploadForm categories={DOCUMENT_CATEGORIES} />
         </div>
 
         {/* Documents List */}

@@ -57,6 +57,20 @@ function normalizeTours(
   });
 }
 
+const TOUR_STATUS_MAP: Record<string, { label: string; classes: string }> = {
+  planning: { label: "Planung", classes: "bg-blue-100 text-blue-700" },
+  open: { label: "Anmeldung offen", classes: "bg-green-100 text-green-700" },
+  full: { label: "Ausgebucht", classes: "bg-amber-100 text-amber-700" },
+  cancelled: {
+    label: "Abgesagt",
+    classes: "bg-red-100 text-red-700",
+  },
+  completed: {
+    label: "Abgeschlossen",
+    classes: "bg-slate-100 text-slate-600",
+  },
+};
+
 export default async function GuideDashboardPage() {
   const supabase = await createClient();
 
@@ -101,20 +115,6 @@ export default async function GuideDashboardPage() {
     tours = normalizeTours(data as RawGuideDashboardTour[] | null);
   }
 
-  const statusMap: Record<string, { label: string; classes: string }> = {
-    planning: { label: "Planung", classes: "bg-blue-100 text-blue-700" },
-    open: { label: "Anmeldung offen", classes: "bg-green-100 text-green-700" },
-    full: { label: "Ausgebucht", classes: "bg-amber-100 text-amber-700" },
-    cancelled: {
-      label: "Abgesagt",
-      classes: "bg-red-100 text-red-700",
-    },
-    completed: {
-      label: "Abgeschlossen",
-      classes: "bg-slate-100 text-slate-600",
-    },
-  };
-
   // Filter for active vs archived
   const activeTours = tours.filter(
     (t) =>
@@ -132,7 +132,7 @@ export default async function GuideDashboardPage() {
   const TourItem = ({ tour }: { tour: GuideDashboardTour }) => (
     <div
       className={cn(
-        "group overflow-hidden rounded-2xl border bg-white shadow-sm transition-all hover:border-jdav-green hover:shadow-md",
+        "group overflow-hidden rounded-2xl border bg-white shadow-sm transition-colors hover:border-jdav-green hover:shadow-md",
         tour.status === "completed" &&
           (!tour.tour_reports || tour.tour_reports.length === 0)
           ? "border-red-500 shadow-md shadow-red-50/50"
@@ -147,11 +147,11 @@ export default async function GuideDashboardPage() {
             <span
               className={cn(
                 "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
-                statusMap[tour.status]?.classes ||
+                TOUR_STATUS_MAP[tour.status]?.classes ||
                   "bg-slate-100 text-slate-600",
               )}
             >
-              {statusMap[tour.status]?.label || tour.status}
+              {TOUR_STATUS_MAP[tour.status]?.label || tour.status}
             </span>
             <span className="text-xs text-slate-400 capitalize">
               {tour.tour_categorys?.category || "Tour"}

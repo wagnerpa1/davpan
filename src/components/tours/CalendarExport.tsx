@@ -49,7 +49,12 @@ export function CalendarExport({
     description,
     isEstimatedEnd ? "Hinweis: Das Ende der Tour ist nicht festgesetzt." : null,
   ]
-    .filter(Boolean)
+    .reduce((lines, segment) => {
+      if (segment) {
+        lines.push(segment);
+      }
+      return lines;
+    }, [] as string[])
     .join("\n\n");
 
   const event = {

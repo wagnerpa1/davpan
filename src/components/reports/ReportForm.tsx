@@ -313,9 +313,10 @@ export function ReportForm({
             <div className="flex rounded-lg border border-slate-200 p-0.5">
               <button
                 type="button"
+                aria-label="Editor anzeigen"
                 onClick={() => setIsPreview(false)}
                 className={cn(
-                  "flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-bold transition-all",
+                  "flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-bold transition-colors",
                   !isPreview
                     ? "bg-slate-100 text-slate-900 shadow-sm"
                     : "text-slate-500 hover:text-slate-700",
@@ -325,9 +326,10 @@ export function ReportForm({
               </button>
               <button
                 type="button"
+                aria-label="Vorschau anzeigen"
                 onClick={() => setIsPreview(true)}
                 className={cn(
-                  "flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-bold transition-all",
+                  "flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-bold transition-colors",
                   isPreview
                     ? "bg-slate-100 text-slate-900 shadow-sm"
                     : "text-slate-500 hover:text-slate-700",
@@ -437,6 +439,7 @@ export function ReportForm({
                     <div className="flex gap-1">
                       <button
                         type="button"
+                        aria-label={`Bild nach oben verschieben ${idx + 1}`}
                         onClick={() => moveImage(idx, "up")}
                         disabled={idx === 0}
                         className="rounded-md bg-white/20 p-1 hover:bg-white/40 disabled:opacity-30"
@@ -445,6 +448,7 @@ export function ReportForm({
                       </button>
                       <button
                         type="button"
+                        aria-label={`Bild nach unten verschieben ${idx + 1}`}
                         onClick={() => moveImage(idx, "down")}
                         disabled={idx === images.length - 1}
                         className="rounded-md bg-white/20 p-1 hover:bg-white/40 disabled:opacity-30"
@@ -454,6 +458,7 @@ export function ReportForm({
                     </div>
                     <button
                       type="button"
+                      aria-label={`Bild ${idx + 1} entfernen`}
                       onClick={() => removeImage(img.id, img.image_url)}
                       className="rounded-md bg-red-500/80 p-1 hover:bg-red-600"
                     >
@@ -484,9 +489,10 @@ export function ReportForm({
             {images.length < 20 && (
               <button
                 type="button"
+                aria-label="Foto hinzufügen"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploadingCount > 0}
-                className="flex aspect-square flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-300 bg-white text-slate-500 transition-all hover:border-jdav-green hover:text-jdav-green"
+                className="flex aspect-square flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-300 bg-white text-slate-500 transition-colors hover:border-jdav-green hover:text-jdav-green"
               >
                 {uploadingCount > 0 ? (
                   <>

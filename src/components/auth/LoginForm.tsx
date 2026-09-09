@@ -2,6 +2,7 @@
 
 import { Auth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getAuthCallbackUrl } from "@/lib/auth-client";
@@ -105,21 +106,21 @@ export function LoginForm({ className }: { className?: string }) {
       />
       <div className="space-y-3 text-center text-sm">
         <div>
-          <a
+          <Link
             href="/auth/reset-password"
             className="text-slate-600 hover:text-jdav-green hover:underline"
           >
             Passwort vergessen?
-          </a>
+          </Link>
         </div>
         <div className="pt-2">
           <span className="text-slate-500">Du hast noch kein Konto? </span>
-          <a
+          <Link
             href="/register"
             className="font-medium text-jdav-green-dark hover:underline"
           >
             Registrieren
-          </a>
+          </Link>
         </div>
       </div>
     </div>

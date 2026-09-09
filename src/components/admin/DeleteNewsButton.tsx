@@ -18,19 +18,21 @@ export function DeleteNewsButton({ id }: DeleteNewsButtonProps) {
 
     setIsDeleting(true);
 
-    const response = await fetch(`/api/admin/news?id=${id}`, {
-      method: "DELETE",
-      credentials: "same-origin",
-    });
+    try {
+      const response = await fetch(`/api/admin/news?id=${id}`, {
+        method: "DELETE",
+        credentials: "same-origin",
+      });
 
-    setIsDeleting(false);
+      if (!response.ok) {
+        window.alert("Löschen fehlgeschlagen.");
+        return;
+      }
 
-    if (!response.ok) {
-      window.alert("Löschen fehlgeschlagen.");
-      return;
+      router.refresh();
+    } finally {
+      setIsDeleting(false);
     }
-
-    router.refresh();
   };
 
   return (

@@ -12,6 +12,13 @@ import { TourForm } from "@/components/tours/TourForm";
 import { canCreateTour } from "@/lib/permissions";
 import { createClient } from "@/utils/supabase/server";
 
+const ERROR_TEXT_MAP: Record<string, string> = {
+  missing_required: "Bitte fülle mindestens Titel und Startdatum aus.",
+  create_failed:
+    "Die Tour konnte nicht gespeichert werden. Bitte prüfe die Eingaben.",
+  forbidden: "Du hast keine Berechtigung, Touren zu erstellen.",
+};
+
 export default async function NewTourPage({
   searchParams,
 }: {
@@ -23,12 +30,21 @@ export default async function NewTourPage({
   const error = Array.isArray(errorRaw) ? errorRaw[0] : errorRaw;
   const debug = Array.isArray(debugRaw) ? debugRaw[0] : debugRaw;
 
-  const supabase = await createClient();
-  const guides = await getAvailableGuides();
-  const availableMaterials = await getAvailableMaterials();
-  const tourGroups = await getTourGroups();
-  const tourCategories = await getTourCategories();
-  const availableResources = await getResources();
+  const [
+    supabase,
+    guides,
+    availableMaterials,
+    tourGroups,
+    tourCategories,
+    availableResources,
+  ] = await Promise.all([
+    createClient(),
+    getAvailableGuides(),
+    getAvailableMaterials(),
+    getTourGroups(),
+    getTourCategories(),
+    getResources(),
+  ]);
 
   const {
     data: { user },
@@ -55,15 +71,8 @@ export default async function NewTourPage({
     full_name: profile.full_name,
   };
 
-  const errorTextMap: Record<string, string> = {
-    missing_required: "Bitte fülle mindestens Titel und Startdatum aus.",
-    create_failed:
-      "Die Tour konnte nicht gespeichert werden. Bitte prüfe die Eingaben.",
-    forbidden: "Du hast keine Berechtigung, Touren zu erstellen.",
-  };
-
   const errorMessage = error
-    ? (errorTextMap[error] ?? "Unbekannter Fehler.")
+    ? (ERROR_TEXT_MAP[error] ?? "Unbekannter Fehler.")
     : null;
 
   return (

@@ -31,12 +31,163 @@ interface MaterialFormProps {
   };
 }
 
+function MaterialFormSection({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-6 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+      <div className="border-b border-slate-200 pb-2">
+        <h3 className="font-bold text-slate-900">{title}</h3>
+        {description && (
+          <p className="mt-1 text-xs text-slate-500">{description}</p>
+        )}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function InventoryItemRow({
+  item,
+  isOnlyEntry,
+  onSizeChange,
+  onQuantityChange,
+  onRemove,
+}: {
+  item: InventoryItem;
+  isOnlyEntry: boolean;
+  onSizeChange: (value: string) => void;
+  onQuantityChange: (value: string) => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="flex gap-4 items-end bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+      <div className="flex-1 space-y-1">
+        <label
+          htmlFor={`inventory-size-${item.id}`}
+          className="text-xs font-bold text-slate-500 uppercase tracking-wider"
+        >
+          Größe / Variante
+        </label>
+        <input
+          id={`inventory-size-${item.id}`}
+          type="text"
+          value={item.size}
+          onChange={(e) => onSizeChange(e.target.value)}
+          className="w-full rounded-lg border border-slate-200 px-3 py-1.5 focus:border-jdav-green focus:outline-none"
+          placeholder='Wenn leer = "Universal"'
+        />
+      </div>
+      <div className="w-32 space-y-1">
+        <label
+          htmlFor={`inventory-quantity-${item.id}`}
+          className="text-xs font-bold text-slate-500 uppercase tracking-wider"
+        >
+          Menge *
+        </label>
+        <input
+          id={`inventory-quantity-${item.id}`}
+          type="number"
+          min="0"
+          required
+          value={item.quantity_total}
+          onChange={(e) => onQuantityChange(e.target.value)}
+          className="w-full rounded-lg border border-slate-200 px-3 py-1.5 focus:border-jdav-green focus:outline-none"
+        />
+      </div>
+      <div>
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={onRemove}
+          disabled={isOnlyEntry}
+          className="text-red-500 hover:text-red-700 hover:bg-red-50 px-2"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function PricingSection({
+  initialData,
+}: {
+  initialData?: MaterialFormProps["initialData"];
+}) {
+  return (
+    <div className="space-y-6 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+      <h3 className="font-bold text-slate-900 border-b border-slate-200 pb-2">
+        Gebühren (Optional)
+      </h3>
+      <div className="grid gap-6 sm:grid-cols-3">
+        <div className="space-y-2">
+          <label
+            htmlFor="price-day"
+            className="text-sm font-bold text-slate-700"
+          >
+            Tagespreis (€)
+          </label>
+          <input
+            id="price-day"
+            type="number"
+            name="price_day"
+            defaultValue={initialData?.pricing?.price_day ?? ""}
+            min="0"
+            step="0.01"
+            className="w-full rounded-xl border border-slate-200 px-4 py-2 focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
+          />
+        </div>
+        <div className="space-y-2">
+          <label
+            htmlFor="price-extra-day"
+            className="text-sm font-bold text-slate-700"
+          >
+            Ab 2. Tag (€)
+          </label>
+          <input
+            id="price-extra-day"
+            type="number"
+            name="price_extra_day"
+            defaultValue={initialData?.pricing?.price_extra_day ?? ""}
+            min="0"
+            step="0.01"
+            className="w-full rounded-xl border border-slate-200 px-4 py-2 focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
+          />
+        </div>
+        <div className="space-y-2">
+          <label
+            htmlFor="price-week"
+            className="text-sm font-bold text-slate-700"
+          >
+            Wochenpreis (€)
+          </label>
+          <input
+            id="price-week"
+            type="number"
+            name="price_week"
+            defaultValue={initialData?.pricing?.price_week ?? ""}
+            min="0"
+            step="0.01"
+            className="w-full rounded-xl border border-slate-200 px-4 py-2 focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function MaterialForm({ initialData }: MaterialFormProps) {
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Initialize inventory items with a unique ID for React keys
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>(() => {
     if (initialData?.inventory && initialData.inventory.length > 0) {
       return initialData.inventory.map((inv) => ({
@@ -49,15 +200,17 @@ export function MaterialForm({ initialData }: MaterialFormProps) {
   });
 
   const addInventoryItem = () => {
-    setInventoryItems([
-      ...inventoryItems,
+    setInventoryItems((items) => [
+      ...items,
       { id: crypto.randomUUID(), size: "", quantity_total: 1 },
     ]);
   };
 
   const removeInventoryItem = (id: string) => {
-    if (inventoryItems.length === 1) return; // keep at least one
-    setInventoryItems(inventoryItems.filter((item) => item.id !== id));
+    setInventoryItems((items) => {
+      if (items.length === 1) return items;
+      return items.filter((item) => item.id !== id);
+    });
   };
 
   const updateInventoryItem = (
@@ -65,8 +218,8 @@ export function MaterialForm({ initialData }: MaterialFormProps) {
     field: keyof InventoryItem,
     value: InventoryItem[keyof InventoryItem],
   ) => {
-    setInventoryItems(
-      inventoryItems.map((item) =>
+    setInventoryItems((items) =>
+      items.map((item) =>
         item.id === id ? { ...item, [field]: value } : item,
       ),
     );
@@ -77,48 +230,64 @@ export function MaterialForm({ initialData }: MaterialFormProps) {
     setIsPending(true);
     setError(null);
 
-    const formData = new FormData(e.currentTarget);
+    try {
+      const formData = new FormData(e.currentTarget);
 
-    const typeData = {
-      id: initialData?.id,
-      name: formData.get("name") as string,
-      category: formData.get("category") as string,
-      description: formData.get("description") as string,
-    };
+      const typeData = {
+        id: initialData?.id,
+        name: formData.get("name") as string,
+        category: formData.get("category") as string,
+        description: formData.get("description") as string,
+      };
 
-    const price_day = formData.get("price_day")
-      ? parseFloat(formData.get("price_day") as string)
-      : null;
-    const price_extra_day = formData.get("price_extra_day")
-      ? parseFloat(formData.get("price_extra_day") as string)
-      : null;
-    const price_week = formData.get("price_week")
-      ? parseFloat(formData.get("price_week") as string)
-      : null;
+      const rawPriceDay = formData.get("price_day");
+      const rawPriceExtraDay = formData.get("price_extra_day");
+      const rawPriceWeek = formData.get("price_week");
 
-    const pricingData = {
-      price_day,
-      price_extra_day,
-      price_week,
-    };
+      const price_day =
+        rawPriceDay &&
+        rawPriceDay !== "" &&
+        Number.isFinite(Number(rawPriceDay))
+          ? Number(rawPriceDay)
+          : null;
+      const price_extra_day =
+        rawPriceExtraDay &&
+        rawPriceExtraDay !== "" &&
+        Number.isFinite(Number(rawPriceExtraDay))
+          ? Number(rawPriceExtraDay)
+          : null;
+      const price_week =
+        rawPriceWeek &&
+        rawPriceWeek !== "" &&
+        Number.isFinite(Number(rawPriceWeek))
+          ? Number(rawPriceWeek)
+          : null;
 
-    const inventoryData = inventoryItems.map((item) => ({
-      size: item.size.trim() || null,
-      quantity_total: item.quantity_total,
-    }));
+      const pricingData = {
+        price_day,
+        price_extra_day,
+        price_week,
+      };
 
-    const result = await createOrUpdateMaterialGroup(
-      typeData,
-      pricingData,
-      inventoryData,
-    );
+      const inventoryData = inventoryItems.map((item) => ({
+        size: item.size.trim() || null,
+        quantity_total: item.quantity_total,
+      }));
 
-    setIsPending(false);
-    if (result.error) {
-      setError(result.error);
-    } else {
-      router.push("/admin/material");
-      router.refresh();
+      const result = await createOrUpdateMaterialGroup(
+        typeData,
+        pricingData,
+        inventoryData,
+      );
+
+      if (result.error) {
+        setError(result.error);
+      } else {
+        router.push("/admin/material");
+        router.refresh();
+      }
+    } finally {
+      setIsPending(false);
     }
   }
 
@@ -130,11 +299,7 @@ export function MaterialForm({ initialData }: MaterialFormProps) {
         </div>
       )}
 
-      {/* Basisdaten */}
-      <div className="space-y-6 bg-slate-50 p-6 rounded-2xl border border-slate-100">
-        <h3 className="font-bold text-slate-900 border-b border-slate-200 pb-2">
-          Allgemein
-        </h3>
+      <MaterialFormSection title="Allgemein">
         <div className="grid gap-6 sm:grid-cols-2">
           <div className="space-y-2">
             <label
@@ -185,76 +350,32 @@ export function MaterialForm({ initialData }: MaterialFormProps) {
             />
           </div>
         </div>
-      </div>
+      </MaterialFormSection>
 
-      {/* Inventar / Größen */}
-      <div className="space-y-6 bg-slate-50 p-6 rounded-2xl border border-slate-100">
-        <div className="flex justify-between items-center border-b border-slate-200 pb-2">
-          <h3 className="font-bold text-slate-900">Bestand / Größen</h3>
-          <p className="text-xs text-slate-500">
-            Mindestens ein Bestandseintrag erforderlich.
-          </p>
-        </div>
-
+      <MaterialFormSection
+        title="Bestand / Größen"
+        description="Mindestens ein Bestandseintrag erforderlich."
+      >
         <div className="space-y-3">
           {inventoryItems.map((item) => (
-            <div
+            <InventoryItemRow
               key={item.id}
-              className="flex gap-4 items-end bg-white p-3 rounded-xl border border-slate-200 shadow-sm"
-            >
-              <div className="flex-1 space-y-1">
-                <label
-                  htmlFor={`inventory-size-${item.id}`}
-                  className="text-xs font-bold text-slate-500 uppercase tracking-wider"
-                >
-                  Größe / Variante
-                </label>
-                <input
-                  id={`inventory-size-${item.id}`}
-                  type="text"
-                  value={item.size}
-                  onChange={(e) =>
-                    updateInventoryItem(item.id, "size", e.target.value)
-                  }
-                  className="w-full rounded-lg border border-slate-200 px-3 py-1.5 focus:border-jdav-green focus:outline-none"
-                  placeholder='Wenn leer = "Universal"'
-                />
-              </div>
-              <div className="w-32 space-y-1">
-                <label
-                  htmlFor={`inventory-quantity-${item.id}`}
-                  className="text-xs font-bold text-slate-500 uppercase tracking-wider"
-                >
-                  Menge *
-                </label>
-                <input
-                  id={`inventory-quantity-${item.id}`}
-                  type="number"
-                  min="0"
-                  required
-                  value={item.quantity_total}
-                  onChange={(e) =>
-                    updateInventoryItem(
-                      item.id,
-                      "quantity_total",
-                      parseInt(e.target.value, 10),
-                    )
-                  }
-                  className="w-full rounded-lg border border-slate-200 px-3 py-1.5 focus:border-jdav-green focus:outline-none"
-                />
-              </div>
-              <div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => removeInventoryItem(item.id)}
-                  disabled={inventoryItems.length <= 1}
-                  className="text-red-500 hover:text-red-700 hover:bg-red-50 px-2"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+              item={item}
+              isOnlyEntry={inventoryItems.length <= 1}
+              onSizeChange={(value) =>
+                updateInventoryItem(item.id, "size", value)
+              }
+              onQuantityChange={(value) => {
+                const parsedValue =
+                  value === "" ? 0 : Number.parseInt(value, 10);
+                updateInventoryItem(
+                  item.id,
+                  "quantity_total",
+                  Number.isFinite(parsedValue) ? parsedValue : 0,
+                );
+              }}
+              onRemove={() => removeInventoryItem(item.id)}
+            />
           ))}
 
           <Button
@@ -266,67 +387,9 @@ export function MaterialForm({ initialData }: MaterialFormProps) {
             <Plus className="h-4 w-4" /> Weitere Größe / Variante hinzufügen
           </Button>
         </div>
-      </div>
+      </MaterialFormSection>
 
-      {/* Gebühren */}
-      <div className="space-y-6 bg-slate-50 p-6 rounded-2xl border border-slate-100">
-        <h3 className="font-bold text-slate-900 border-b border-slate-200 pb-2">
-          Gebühren (Optional)
-        </h3>
-        <div className="grid gap-6 sm:grid-cols-3">
-          <div className="space-y-2">
-            <label
-              htmlFor="price-day"
-              className="text-sm font-bold text-slate-700"
-            >
-              Tagespreis (€)
-            </label>
-            <input
-              id="price-day"
-              type="number"
-              name="price_day"
-              defaultValue={initialData?.pricing?.price_day || ""}
-              min="0"
-              step="0.01"
-              className="w-full rounded-xl border border-slate-200 px-4 py-2 focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
-            />
-          </div>
-          <div className="space-y-2">
-            <label
-              htmlFor="price-extra-day"
-              className="text-sm font-bold text-slate-700"
-            >
-              Ab 2. Tag (€)
-            </label>
-            <input
-              id="price-extra-day"
-              type="number"
-              name="price_extra_day"
-              defaultValue={initialData?.pricing?.price_extra_day || ""}
-              min="0"
-              step="0.01"
-              className="w-full rounded-xl border border-slate-200 px-4 py-2 focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
-            />
-          </div>
-          <div className="space-y-2">
-            <label
-              htmlFor="price-week"
-              className="text-sm font-bold text-slate-700"
-            >
-              Wochenpreis (€)
-            </label>
-            <input
-              id="price-week"
-              type="number"
-              name="price_week"
-              defaultValue={initialData?.pricing?.price_week || ""}
-              min="0"
-              step="0.01"
-              className="w-full rounded-xl border border-slate-200 px-4 py-2 focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
-            />
-          </div>
-        </div>
-      </div>
+      <PricingSection initialData={initialData} />
 
       <div className="flex justify-end gap-3 pt-6">
         <Button

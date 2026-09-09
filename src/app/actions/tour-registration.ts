@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { buildIdempotencyKey } from "@/lib/idempotency";
 import {
   dispatchNotification,
@@ -38,7 +39,9 @@ export async function registerForTour(formData: FormData) {
   try {
     materials = materialsDataRaw ? JSON.parse(materialsDataRaw) : [];
   } catch (e) {
-    console.warn("Could not parse materials JSON", e);
+    after(() => {
+      console.warn("Could not parse materials JSON", e);
+    });
   }
 
   if (!tourId) {
@@ -206,47 +209,52 @@ export async function registerForTour(formData: FormData) {
 
     if (!isIdempotencyReplay) {
       // Teilnehmer bei Anmeldung NICHT benachrichtigen; nur Verantwortliche informieren.
-      const managerIds = await resolveTourManagerUserIds(
-        supabase,
-        tourId,
-        tour.created_by ?? null,
-      );
+      const [managerIds, materialManagerIds] = await Promise.all([
+        resolveTourManagerUserIds(supabase, tourId, tour.created_by ?? null),
+        materials.length > 0
+          ? resolveMaterialManagerUserIds(supabase)
+          : Promise.resolve([]),
+      ]);
 
-      await dispatchToUsers(supabase, managerIds, {
-        type: status === "waitlist" ? "waitlist" : "registration",
-        title:
-          status === "waitlist"
-            ? "Neue Wartelisten-Anmeldung"
-            : "Neue Tour-Anmeldung",
-        body:
-          status === "waitlist"
-            ? `${actorDisplayName} steht jetzt auf der Warteliste f�r "${tour.title}".`
-            : `${actorDisplayName} hat sich f�r "${tour.title}" angemeldet (pending).`,
-        payload: {
-          tour_id: tourId,
-          status,
-          url: `/touren/${tourId}`,
-        },
-        relatedTourId: tourId,
-        relatedGroupId: tour.group,
-      });
-
-      if (materials.length > 0) {
-        const materialManagerIds =
-          await resolveMaterialManagerUserIds(supabase);
-        await dispatchToUsers(supabase, materialManagerIds, {
-          type: "material",
-          title: "Neue Materialreservierung",
-          body: `${actorDisplayName} hat Material f�r "${tour.title}" angefragt.`,
+      const notificationJobs = [
+        dispatchToUsers(supabase, managerIds, {
+          type: status === "waitlist" ? "waitlist" : "registration",
+          title:
+            status === "waitlist"
+              ? "Neue Wartelisten-Anmeldung"
+              : "Neue Tour-Anmeldung",
+          body:
+            status === "waitlist"
+              ? `${actorDisplayName} steht jetzt auf der Warteliste f�r "${tour.title}".`
+              : `${actorDisplayName} hat sich f�r "${tour.title}" angemeldet (pending).`,
           payload: {
             tour_id: tourId,
             status,
-            url: "/admin/material/reservations",
+            url: `/touren/${tourId}`,
           },
           relatedTourId: tourId,
           relatedGroupId: tour.group,
-        });
+        }),
+      ];
+
+      if (materials.length > 0) {
+        notificationJobs.push(
+          dispatchToUsers(supabase, materialManagerIds, {
+            type: "material",
+            title: "Neue Materialreservierung",
+            body: `${actorDisplayName} hat Material f�r "${tour.title}" angefragt.`,
+            payload: {
+              tour_id: tourId,
+              status,
+              url: "/admin/material/reservations",
+            },
+            relatedTourId: tourId,
+            relatedGroupId: tour.group,
+          }),
+        );
       }
+
+      await Promise.all(notificationJobs);
     }
 
     revalidatePath(`/touren/${tourId}`);
@@ -281,17 +289,18 @@ export async function cancelRegistration(participantId: string) {
   if (regError || !reg) return { error: "Anmeldung nicht gefunden." };
   if (reg.user_id !== user.id) return { error: "Keine Berechtigung." };
 
-  // Fetch tour info for notifications
-  const { data: tourData } = await supabase
-    .from("tours")
-    .select("title, group")
-    .eq("id", reg.tour_id)
-    .single();
-
-  const { error } = await supabase
-    .from("tour_participants")
-    .update({ status: "cancelled" })
-    .eq("id", participantId);
+  // Fetch tour info for notifications and cancel the registration in parallel.
+  const [{ data: tourData }, { error }] = await Promise.all([
+    supabase
+      .from("tours")
+      .select("title, group")
+      .eq("id", reg.tour_id)
+      .single(),
+    supabase
+      .from("tour_participants")
+      .update({ status: "cancelled" })
+      .eq("id", participantId),
+  ]);
 
   if (error) return { error: "Absage fehlgeschlagen." };
 
@@ -383,20 +392,22 @@ export async function cancelRegistration(participantId: string) {
 
   const tourId = reg.tour_id;
 
-  // If the tour was full & status was confirmed, open it up again
-  const { data: tour } = await supabase
-    .from("tours")
-    .select("max_participants, status, title, group")
-    .eq("id", tourId)
-    .single();
-
-  if (tour?.max_participants && tour.status === "full") {
-    const { count } = await supabase
+  // If the tour was full & status was confirmed, open it up again.
+  // These reads are independent and can be fetched in parallel.
+  const [{ data: tour }, { count }] = await Promise.all([
+    supabase
+      .from("tours")
+      .select("max_participants, status, title, group")
+      .eq("id", tourId)
+      .single(),
+    supabase
       .from("tour_participants")
       .select("*", { count: "exact", head: true })
       .eq("tour_id", tourId)
-      .in("status", ["confirmed", "pending"]);
+      .in("status", ["confirmed", "pending"]),
+  ]);
 
+  if (tour?.max_participants && tour.status === "full") {
     if ((count || 0) < tour.max_participants) {
       await supabase.from("tours").update({ status: "open" }).eq("id", tourId);
       if (tour.group && tour.title) {

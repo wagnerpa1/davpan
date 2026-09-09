@@ -133,9 +133,10 @@ export function RegisterForm({ className }: { className?: string }) {
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
+              aria-label="Mitglied aktivieren"
               onClick={() => setIsParent(false)}
               className={cn(
-                "relative p-4 rounded-2xl border-2 transition-all duration-200 hover:shadow-md",
+                "relative p-4 rounded-2xl border-2 transition-shadow duration-200 hover:shadow-md",
                 !isParent
                   ? "border-jdav-green bg-green-50 shadow-md shadow-green-200"
                   : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm",
@@ -144,7 +145,7 @@ export function RegisterForm({ className }: { className?: string }) {
               <div className="flex flex-col items-center text-center gap-2">
                 <div
                   className={cn(
-                    "p-2 rounded-xl transition-all duration-200",
+                    "p-2 rounded-xl transition-colors duration-200",
                     !isParent
                       ? "bg-jdav-green text-white"
                       : "bg-slate-100 text-slate-600",
@@ -170,9 +171,10 @@ export function RegisterForm({ className }: { className?: string }) {
 
             <button
               type="button"
+              aria-label="Familienzugang"
               onClick={() => setIsParent(true)}
               className={cn(
-                "relative p-4 rounded-2xl border-2 transition-all duration-200 hover:shadow-md",
+                "relative p-4 rounded-2xl border-2 transition-shadow duration-200 hover:shadow-md",
                 isParent
                   ? "border-jdav-green bg-green-50 shadow-md shadow-green-200"
                   : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm",
@@ -181,7 +183,7 @@ export function RegisterForm({ className }: { className?: string }) {
               <div className="flex flex-col items-center text-center gap-2">
                 <div
                   className={cn(
-                    "p-2 rounded-xl transition-all duration-200",
+                    "p-2 rounded-xl transition-colors duration-200",
                     isParent
                       ? "bg-jdav-green text-white"
                       : "bg-slate-100 text-slate-600",
@@ -303,7 +305,7 @@ export function RegisterForm({ className }: { className?: string }) {
 
         <Button
           type="submit"
-          className="w-full mt-6 bg-jdav-green hover:bg-jdav-green-dark text-white shadow-md hover:shadow-lg transition-all duration-200"
+          className="w-full mt-6 bg-jdav-green hover:bg-jdav-green-dark text-white shadow-md hover:shadow-lg transition-colors duration-200"
           disabled={isLoading}
         >
           {isLoading ? "Registriere..." : "Konto erstellen"}

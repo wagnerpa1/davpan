@@ -135,15 +135,20 @@ export async function getAvailableMaterials() {
     `)
     .order("name");
 
-  return ((data || []) as MaterialTypeWithInventory[]).map((mt) => ({
-    id: mt.id,
-    name: mt.name,
-    size:
-      mt.material_inventory
-        ?.map((i) => i.size)
-        .filter(Boolean)
-        .join(", ") || "Universal",
-  }));
+  return ((data || []) as MaterialTypeWithInventory[]).map((mt) => {
+    const size = mt.material_inventory?.reduce<string[]>((sizes, item) => {
+      if (item.size) {
+        sizes.push(item.size);
+      }
+      return sizes;
+    }, []);
+
+    return {
+      id: mt.id,
+      name: mt.name,
+      size: size?.join(", ") || "Universal",
+    };
+  });
 }
 
 export async function getAvailableGuides() {
@@ -326,13 +331,14 @@ export async function updateTour(tourId: string, formData: FormData) {
   if (userError || !user) throw new Error("Unauthorized");
 
   const payload: TourUpdatePayload = {};
-  const { data: previousTour } = await supabase
-    .from("tours")
-    .select("title, group, start_date, end_date, status")
-    .eq("id", tourId)
-    .maybeSingle();
-
-  const audienceTargets = await getTourAudienceTargets(tourId, supabase);
+  const [{ data: previousTour }, audienceTargets] = await Promise.all([
+    supabase
+      .from("tours")
+      .select("title, group, start_date, end_date, status")
+      .eq("id", tourId)
+      .maybeSingle(),
+    getTourAudienceTargets(tourId, supabase),
+  ]);
   const fields = [
     "title",
     "description",

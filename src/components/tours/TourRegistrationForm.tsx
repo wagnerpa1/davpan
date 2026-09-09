@@ -83,44 +83,44 @@ export function TourRegistrationForm({
     setIsPending(true);
     setError(null);
 
-    const formData = new FormData();
-    formData.append("tourId", tourId);
-    formData.append("childId", selectedChild);
-    formData.append("clientRequestId", clientRequestIdRef.current);
+    try {
+      const formData = new FormData();
+      formData.append("tourId", tourId);
+      formData.append("childId", selectedChild);
+      formData.append("clientRequestId", clientRequestIdRef.current);
 
-    // Pass materials: material_type_id and selected size
-    const materialsData = Object.entries(selectedMaterials).map(
-      ([typeId, size]) => ({
-        material_type_id: typeId,
-        size: size,
-      }),
-    );
-    formData.append("materialsData", JSON.stringify(materialsData));
-
-    const result = await runClientAction(() => registerForTour(formData));
-
-    setIsPending(false);
-
-    if ("offlineQueued" in result && result.offlineQueued) {
-      setSuccess(
-        "Du bist offline. Deine Anmeldung wurde gespeichert und wird synchronisiert, sobald Du wieder verbunden bist.",
+      const materialsData = Object.entries(selectedMaterials).map(
+        ([typeId, size]) => ({
+          material_type_id: typeId,
+          size: size,
+        }),
       );
-      setTimeout(() => {
-        router.refresh();
-        if (onSuccess) onSuccess();
-      }, 3500);
-      return;
-    }
+      formData.append("materialsData", JSON.stringify(materialsData));
 
-    if ("error" in result && result.error) {
-      setError(result.error);
-    } else if ("success" in result && result.success) {
-      setSuccess(result.message || "Erfolgreich angemeldet.");
-      // Refresh the page to update tour registrations
-      router.refresh();
-      if (onSuccess) {
-        setTimeout(onSuccess, 2000);
+      const result = await runClientAction(() => registerForTour(formData));
+
+      if ("offlineQueued" in result && result.offlineQueued) {
+        setSuccess(
+          "Du bist offline. Deine Anmeldung wurde gespeichert und wird synchronisiert, sobald Du wieder verbunden bist.",
+        );
+        setTimeout(() => {
+          router.refresh();
+          if (onSuccess) onSuccess();
+        }, 3500);
+        return;
       }
+
+      if ("error" in result && result.error) {
+        setError(result.error);
+      } else if ("success" in result && result.success) {
+        setSuccess(result.message || "Erfolgreich angemeldet.");
+        router.refresh();
+        if (onSuccess) {
+          setTimeout(onSuccess, 2000);
+        }
+      }
+    } finally {
+      setIsPending(false);
     }
   }
 
@@ -175,8 +175,9 @@ export function TourRegistrationForm({
         <div className="grid grid-cols-1 gap-2">
           <button
             type="button"
+            aria-label="Ich selbst auswählen"
             onClick={() => setSelectedChild("self")}
-            className={`flex items-center justify-between rounded-xl border p-4 text-left transition-all ${
+            className={`flex items-center justify-between rounded-xl border p-4 text-left transition-colors ${
               selectedChild === "self"
                 ? "border-jdav-green bg-green-50 ring-1 ring-jdav-green"
                 : "border-slate-200 hover:border-slate-300 bg-white"
@@ -192,8 +193,9 @@ export function TourRegistrationForm({
             <button
               key={child.id}
               type="button"
+              aria-label={`${child.full_name} auswählen`}
               onClick={() => setSelectedChild(child.id)}
-              className={`flex items-center justify-between rounded-xl border p-4 text-left transition-all ${
+              className={`flex items-center justify-between rounded-xl border p-4 text-left transition-colors ${
                 selectedChild === child.id
                   ? "border-jdav-green bg-green-50 ring-1 ring-jdav-green"
                   : "border-slate-200 hover:border-slate-300 bg-white"
@@ -240,7 +242,7 @@ export function TourRegistrationForm({
               return (
                 <div
                   key={material.id}
-                  className={`flex flex-col rounded-xl border p-4 transition-all ${
+                  className={`flex flex-col rounded-xl border p-4 transition-colors ${
                     isSelected
                       ? "border-jdav-green bg-green-50"
                       : "border-slate-200 hover:border-slate-300 bg-white"

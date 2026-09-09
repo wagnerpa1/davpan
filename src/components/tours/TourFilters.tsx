@@ -65,7 +65,7 @@ export function TourFilters({
           type="button"
           onClick={() => setIsOpen(!isOpen)}
           className={cn(
-            "flex items-center justify-center gap-2 rounded-xl border px-4 py-2 text-sm font-bold transition-all shadow-sm w-full sm:w-auto",
+            "flex items-center justify-center gap-2 rounded-xl border px-4 py-2 text-sm font-bold transition-colors shadow-sm w-full sm:w-auto",
             isOpen || hasActiveFilters
               ? "border-jdav-green bg-jdav-green/5 text-jdav-green"
               : "border-slate-200 bg-white text-slate-600 hover:border-slate-300",
@@ -232,7 +232,7 @@ export function TourFilters({
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="bg-jdav-green text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md hover:bg-jdav-green-dark transition-all"
+              className="bg-jdav-green text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md hover:bg-jdav-green-dark transition-colors"
             >
               Anwenden
             </button>

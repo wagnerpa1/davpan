@@ -18,36 +18,40 @@ interface TourGuide {
 }
 
 export default async function EditReportPage({ params, searchParams }: Props) {
-  const { id: tourId } = await params;
-  const sParams = await searchParams;
+  const [{ id: tourId }, sParams] = await Promise.all([params, searchParams]);
   const reportId = sParams.id as string;
 
   if (!reportId) redirect("/guide/dashboard");
 
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const [
+    {
+      data: { user },
+    },
+    { data: tour, error: tourError },
+    { data: report, error: reportError },
+  ] = await Promise.all([
+    supabase.auth.getUser(),
+    supabase
+      .from("tours")
+      .select(`
+        *,
+        tour_guides (user_id)
+      `)
+      .eq("id", tourId)
+      .single(),
+    supabase
+      .from("tour_reports")
+      .select(`
+        *,
+        report_images (id, image_url, order_index)
+      `)
+      .eq("id", reportId)
+      .single(),
+  ]);
+
   if (!user) redirect("/login");
-
-  const { data: tour, error: tourError } = await supabase
-    .from("tours")
-    .select(`
-      *,
-      tour_guides (user_id)
-    `)
-    .eq("id", tourId)
-    .single();
-
-  const { data: report, error: reportError } = await supabase
-    .from("tour_reports")
-    .select(`
-      *,
-      report_images (id, image_url, order_index)
-    `)
-    .eq("id", reportId)
-    .single();
 
   if (tourError || !tour || reportError || !report)
     redirect("/guide/dashboard");

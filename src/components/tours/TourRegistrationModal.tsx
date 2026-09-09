@@ -66,7 +66,7 @@ export function TourRegistrationModal({
       />
 
       {/* Modal Content */}
-      <div className="relative w-full max-w-lg transform overflow-hidden rounded-3xl bg-white shadow-2xl transition-all animate-in slide-in-from-bottom-4 duration-300">
+      <div className="relative w-full max-w-lg transform overflow-hidden rounded-3xl bg-white shadow-2xl transition-transform animate-in slide-in-from-bottom-4 duration-300">
         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
           <div>
             <h2 className="text-xl font-bold text-slate-900">Touranmeldung</h2>
@@ -76,6 +76,7 @@ export function TourRegistrationModal({
           </div>
           <button
             type="button"
+            aria-label="Touranmeldung schließen"
             onClick={onClose}
             className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
           >

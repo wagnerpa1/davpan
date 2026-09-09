@@ -259,9 +259,10 @@ export function ParticipantManagement({
         <div className="flex bg-slate-100 p-1 rounded-xl w-fit">
           <button
             type="button"
+            aria-label="Alle Teilnehmer anzeigen"
             onClick={() => setFilter("all")}
             className={cn(
-              "px-4 py-1.5 rounded-lg text-xs font-bold transition-all",
+              "px-4 py-1.5 rounded-lg text-xs font-bold transition-colors",
               filter === "all"
                 ? "bg-white text-slate-900 shadow-sm"
                 : "text-slate-500 hover:text-slate-700",
@@ -271,9 +272,10 @@ export function ParticipantManagement({
           </button>
           <button
             type="button"
+            aria-label="Bestätigte Teilnehmer anzeigen"
             onClick={() => setFilter("confirmed")}
             className={cn(
-              "px-4 py-1.5 rounded-lg text-xs font-bold transition-all",
+              "px-4 py-1.5 rounded-lg text-xs font-bold transition-colors",
               filter === "confirmed"
                 ? "bg-white text-jdav-green shadow-sm"
                 : "text-slate-500 hover:text-slate-700",
@@ -283,9 +285,10 @@ export function ParticipantManagement({
           </button>
           <button
             type="button"
+            aria-label="Wartelisten anzeigen"
             onClick={() => setFilter("waitlist")}
             className={cn(
-              "px-4 py-1.5 rounded-lg text-xs font-bold transition-all",
+              "px-4 py-1.5 rounded-lg text-xs font-bold transition-colors",
               filter === "waitlist"
                 ? "bg-white text-amber-600 shadow-sm"
                 : "text-slate-500 hover:text-slate-700",
@@ -418,11 +421,12 @@ export function ParticipantManagement({
                       {/* Info Button for Desktop users to see details */}
                       <button
                         type="button"
+                        aria-label={`Teilnehmerdetails für ${p.child_profiles?.full_name || p.profiles?.full_name} anzeigen`}
                         onClick={(event) => {
                           event.stopPropagation();
                           setSelectedParticipant(p);
                         }}
-                        className="hidden lg:flex bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-900 p-2 rounded-lg transition-all"
+                        className="hidden lg:flex bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-900 p-2 rounded-lg transition-colors"
                       >
                         <Info className="h-4 w-4" />
                       </button>
@@ -430,24 +434,26 @@ export function ParticipantManagement({
                       {p.status !== "confirmed" && (
                         <button
                           type="button"
+                          aria-label={`Teilnehmer ${p.child_profiles?.full_name || p.profiles?.full_name} bestätigen`}
                           disabled={!!isUpdating}
                           onClick={(event) => {
                             event.stopPropagation();
                             handleStatusUpdate(p.id, "confirmed");
                           }}
-                          className="bg-jdav-green/10 hover:bg-jdav-green text-jdav-green hover:text-white p-2 rounded-lg transition-all"
+                          className="bg-jdav-green/10 hover:bg-jdav-green text-jdav-green hover:text-white p-2 rounded-lg transition-colors"
                         >
                           <Check className="h-4 w-4" />
                         </button>
                       )}
                       <button
                         type="button"
+                        aria-label={`Teilnehmer ${p.child_profiles?.full_name || p.profiles?.full_name} absagen`}
                         disabled={!!isUpdating}
                         onClick={(event) => {
                           event.stopPropagation();
                           handleStatusUpdate(p.id, "cancelled");
                         }}
-                        className="bg-red-50 hover:bg-red-500 text-red-500 hover:text-white p-2 rounded-lg transition-all"
+                        className="bg-red-50 hover:bg-red-500 text-red-500 hover:text-white p-2 rounded-lg transition-colors"
                       >
                         <UserMinus className="h-4 w-4" />
                       </button>
@@ -465,7 +471,7 @@ export function ParticipantManagement({
 
       {/* Participant Detail Modal */}
       {selectedParticipant && (
-        <div className="fixed inset-0 z-100 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/40 backdrop-blur-sm transition-all animate-in fade-in">
+        <div className="fixed inset-0 z-100 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/40 backdrop-blur-sm transition-opacity animate-in fade-in">
           <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom flex flex-col max-h-[90vh]">
             <div className="p-6 border-b border-slate-100 flex justify-between items-start">
               <div>
@@ -483,6 +489,7 @@ export function ParticipantManagement({
               </div>
               <button
                 type="button"
+                aria-label="Teilnehmerdetails schließen"
                 onClick={() => setSelectedParticipant(null)}
                 className="p-2 bg-slate-100 rounded-full text-slate-400 hover:text-slate-900"
               >
@@ -647,7 +654,7 @@ export function ParticipantManagement({
 
       {/* Cancelled section */}
       {cancelledParticipants.length > 0 && (
-        <details className="group rounded-2xl border border-slate-200 bg-slate-50/30 print:hidden overflow-hidden transition-all">
+        <details className="group rounded-2xl border border-slate-200 bg-slate-50/30 print:hidden overflow-hidden transition-colors">
           <summary className="flex cursor-pointer list-none items-center justify-between p-4 font-bold text-slate-500 hover:text-slate-800 transition-colors">
             <span>Abgemeldete Teilnehmer ({cancelledParticipants.length})</span>
             <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />

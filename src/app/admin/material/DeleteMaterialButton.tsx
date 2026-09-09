@@ -15,13 +15,17 @@ export function DeleteMaterialButton({ id }: { id: string }) {
       return;
 
     setIsPending(true);
-    const result = await deleteMaterialType(id);
-    setIsPending(false);
 
-    if (result.error) {
-      alert(result.error);
-    } else {
-      router.refresh();
+    try {
+      const result = await deleteMaterialType(id);
+
+      if (result.error) {
+        alert(result.error);
+      } else {
+        router.refresh();
+      }
+    } finally {
+      setIsPending(false);
     }
   }
 

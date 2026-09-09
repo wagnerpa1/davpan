@@ -273,9 +273,12 @@ export async function previewMemberImport(
   }
 
   const importedRows = rows.slice(0, 25).map((row) => normalizeImportRow(row));
-  const membershipNumbers = importedRows
-    .map((row) => row.membership_number)
-    .filter(Boolean);
+  const membershipNumbers = importedRows.reduce<string[]>((values, row) => {
+    if (row.membership_number) {
+      values.push(row.membership_number);
+    }
+    return values;
+  }, []);
 
   const supabase = await createClient();
   const { data: existingRows } = membershipNumbers.length

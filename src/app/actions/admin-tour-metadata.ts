@@ -94,18 +94,34 @@ async function upsertLookupEntry(
   return { success: true };
 }
 
-async function deleteLookupEntry(
-  auth: Awaited<ReturnType<typeof requireAuth>>,
-  tableName: LookupTableName,
-  id: string,
-) {
+export async function saveTourCategory(formData: FormData) {
+  const auth = await requireAuth();
   const admin = await requireAdmin(auth);
 
   if (admin.error) {
     return { error: admin.error };
   }
 
-  const { error } = await admin.supabase.from(tableName).delete().eq("id", id);
+  return upsertLookupEntry(auth, "tour_categorys", "category", formData);
+}
+
+export async function deleteTourCategory(id: string) {
+  const auth = await requireAuth();
+
+  if (!id) {
+    return { error: "ID fehlt." };
+  }
+
+  const admin = await requireAdmin(auth);
+
+  if (admin.error) {
+    return { error: admin.error };
+  }
+
+  const { error } = await admin.supabase
+    .from("tour_categorys")
+    .delete()
+    .eq("id", id);
 
   if (error) {
     if (error.code === "23503") {
@@ -122,30 +138,46 @@ async function deleteLookupEntry(
   return { success: true };
 }
 
-export async function saveTourCategory(formData: FormData) {
-  const auth = await requireAuth();
-  return upsertLookupEntry(auth, "tour_categorys", "category", formData);
-}
-
-export async function deleteTourCategory(id: string) {
-  const auth = await requireAuth();
-  if (!id) {
-    return { error: "ID fehlt." };
-  }
-
-  return deleteLookupEntry(auth, "tour_categorys", id);
-}
-
 export async function saveTourGroup(formData: FormData) {
   const auth = await requireAuth();
+  const admin = await requireAdmin(auth);
+
+  if (admin.error) {
+    return { error: admin.error };
+  }
+
   return upsertLookupEntry(auth, "tour_groups", "group_name", formData);
 }
 
 export async function deleteTourGroup(id: string) {
   const auth = await requireAuth();
+
   if (!id) {
     return { error: "ID fehlt." };
   }
 
-  return deleteLookupEntry(auth, "tour_groups", id);
+  const admin = await requireAdmin(auth);
+
+  if (admin.error) {
+    return { error: admin.error };
+  }
+
+  const { error } = await admin.supabase
+    .from("tour_groups")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    if (error.code === "23503") {
+      return {
+        error:
+          "Der Eintrag wird noch von Touren verwendet und kann deshalb nicht gelöscht werden.",
+      };
+    }
+
+    return { error: `Löschen fehlgeschlagen: ${error.message}` };
+  }
+
+  revalidateTourMetadataPaths();
+  return { success: true };
 }
