@@ -1,7 +1,7 @@
 "use client";
 
 import { Calendar, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useReducer, useState } from "react";
 import { bookResourceStandalone } from "@/app/actions/admin-resources";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,48 +20,76 @@ interface StandaloneBookingFormProps {
   onSuccess?: () => void;
   onCancel?: () => void;
 }
+type FormState = {
+  resourceId: string;
+  startDate: string;
+  endDate: string;
+  reason: string;
+};
+
+type FormAction =
+  | { type: "set"; field: keyof FormState; value: string }
+  | { type: "reset"; initialResourceId: string };
+
+function formReducer(state: FormState, action: FormAction): FormState {
+  switch (action.type) {
+    case "set":
+      return { ...state, [action.field]: action.value };
+    case "reset":
+      return {
+        resourceId: action.initialResourceId,
+        startDate: "",
+        endDate: "",
+        reason: "",
+      };
+    default:
+      return state;
+  }
+}
 
 export function StandaloneBookingForm({
   resources,
   onSuccess,
   onCancel,
 }: StandaloneBookingFormProps) {
-  const [resourceId, setResourceId] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [reason, setReason] = useState("");
+  const [formState, dispatch] = useReducer(formReducer, {
+    resourceId: resources[0]?.id ?? "",
+    startDate: "",
+    endDate: "",
+    reason: "",
+  });
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  useEffect(() => {
-    if (resources.length > 0 && !resourceId) {
-      setResourceId(resources[0].id);
-    }
-  }, [resources, resourceId]);
+  const selectedResourceId =
+    resources.some((resource) => resource.id === formState.resourceId)
+      ? formState.resourceId
+      : resources[0]?.id ?? "";
 
   const validateForm = () => {
-    if (!resourceId) {
+    if (!formState.resourceId) {
       setError("Bitte wählen Sie eine Ressource.");
       return false;
     }
-    if (!startDate) {
+    if (!formState.startDate) {
       setError("Bitte geben Sie das Startdatum ein.");
       return false;
     }
-    if (!endDate) {
+    if (!formState.endDate) {
       setError("Bitte geben Sie das Enddatum ein.");
       return false;
     }
-    if (new Date(startDate) >= new Date(endDate)) {
+    if (new Date(formState.startDate) >= new Date(formState.endDate)) {
       setError("Das Enddatum muss nach dem Startdatum liegen.");
       return false;
     }
-    if (!reason.trim()) {
+    if (!formState.reason.trim()) {
       setError("Bitte geben Sie einen Grund für die Reservierung ein.");
       return false;
     }
-    if (reason.trim().length < 20) {
+    if (formState.reason.trim().length < 20) {
       setError("Der Grund sollte mindestens 20 Zeichen lang sein.");
       return false;
     }
@@ -79,21 +107,17 @@ export function StandaloneBookingForm({
 
     try {
       const result = await bookResourceStandalone(
-        resourceId,
-        startDate,
-        endDate,
-        reason,
+        formState.resourceId,
+        formState.startDate,
+        formState.endDate,
+        formState.reason,
       );
 
       if (result?.error) {
         setError(result.error);
       } else {
         setSuccess(true);
-        setResourceId(resources[0]?.id || "");
-        setStartDate("");
-        setEndDate("");
-        setReason("");
-
+        dispatch({ type: "reset", initialResourceId: resources[0]?.id || "" });
         setTimeout(() => {
           onSuccess?.();
         }, 1500);
@@ -124,6 +148,7 @@ export function StandaloneBookingForm({
               <button
                 type="button"
                 onClick={onCancel}
+                aria-label="Reservierungsformular schließen"
                 className="rounded-lg p-1 hover:bg-slate-100 transition-colors"
                 disabled={isLoading}
               >
@@ -142,8 +167,8 @@ export function StandaloneBookingForm({
             </Label>
             <select
               id="resourceSelect"
-              value={resourceId}
-              onChange={(e) => setResourceId(e.target.value)}
+              value={selectedResourceId}
+              onChange={(e) => dispatch({ type: "set", field: "resourceId", value: e.target.value })}
               disabled={isLoading}
               className="mt-2 flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-jdav-green disabled:bg-slate-50 disabled:text-slate-500"
             >
@@ -166,8 +191,8 @@ export function StandaloneBookingForm({
               <Input
                 id="startDate"
                 type="datetime-local"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                value={formState.startDate}
+                onChange={(e) => dispatch({ type: "set", field: "startDate", value: e.target.value })}
                 disabled={isLoading}
                 className="mt-2"
                 required
@@ -180,8 +205,8 @@ export function StandaloneBookingForm({
               <Input
                 id="endDate"
                 type="datetime-local"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                value={formState.endDate}
+                onChange={(e) => dispatch({ type: "set", field: "endDate", value: e.target.value })}
                 disabled={isLoading}
                 className="mt-2"
                 required
@@ -196,8 +221,8 @@ export function StandaloneBookingForm({
             </Label>
             <Textarea
               id="reason"
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
+              value={formState.reason}
+              onChange={(e) => dispatch({ type: "set", field: "reason", value: e.target.value })}
               disabled={isLoading}
               placeholder="z.B. Vereinsevent am 15. Juni, Tourenleiter-Schulung, etc."
               maxLength={300}
@@ -205,7 +230,7 @@ export function StandaloneBookingForm({
               className="mt-2 resize-none"
             />
             <p className="mt-1 text-xs text-slate-500">
-              {reason.length}/300 Zeichen
+              {formState.reason.length}/300 Zeichen
             </p>
           </div>
 

@@ -51,6 +51,7 @@ function BookingHeader({
       <button
         type="button"
         onClick={onClose}
+        aria-label="Reservierungsdetails schließen"
         className="rounded-lg p-1 hover:bg-slate-100"
       >
         <X className="h-5 w-5 text-slate-600" />

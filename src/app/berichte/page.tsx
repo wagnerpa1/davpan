@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import { Suspense } from "react";
 import { Calendar, ChevronRight, FileText, Mountain, User } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -157,7 +158,9 @@ export default async function BerichtePage({ searchParams }: Props) {
         </p>
       </div>
 
-      <ReportFilters categories={categories} groups={groups} years={years} />
+      <Suspense fallback={<div />}>
+        <ReportFilters categories={categories} groups={groups} years={years} />
+      </Suspense>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {filteredReports && filteredReports.length > 0 ? (

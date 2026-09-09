@@ -1,3 +1,5 @@
+"use server";
+
 import { DomainError } from "@/lib/errors";
 import { createClient } from "@/utils/supabase/server";
 

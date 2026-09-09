@@ -48,16 +48,17 @@ export async function POST(req: NextRequest) {
   const title = formData.get("title")?.toString().trim();
   const message = formData.get("message")?.toString().trim();
   const targetModeRaw = formData.get("target_mode")?.toString().trim() ?? "all";
-  const roles = formData
-    .getAll("roles")
-    .map((value) => value.toString().trim())
-    .filter((value): value is SystemTargetRole =>
-      (SYSTEM_TARGET_ROLES as readonly string[]).includes(value),
-    );
-  const groupIds = formData
-    .getAll("group_ids")
-    .map((value) => value.toString().trim())
-    .filter((value) => UUID_REGEX.test(value));
+  const roles = formData.getAll("roles").reduce<SystemTargetRole[]>((acc, value) => {
+    const v = value.toString().trim();
+    if ((SYSTEM_TARGET_ROLES as readonly string[]).includes(v)) acc.push(v as SystemTargetRole);
+    return acc;
+  }, []);
+
+  const groupIds = formData.getAll("group_ids").reduce<string[]>((acc, value) => {
+    const v = value.toString().trim();
+    if (UUID_REGEX.test(v)) acc.push(v);
+    return acc;
+  }, []);
 
   if (!title || !message) {
     return NextResponse.json(

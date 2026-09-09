@@ -26,10 +26,14 @@ export async function POST(req: NextRequest) {
   }
 
   const formData = await req.formData();
-  const selectedGroupIds = formData
-    .getAll("tour_group_ids")
-    .map((value) => value.toString())
-    .filter(Boolean);
+  const selectedGroupIds = formData.getAll("tour_group_ids").reduce<string[]>(
+    (acc, value) => {
+      const v = value.toString();
+      if (v) acc.push(v);
+      return acc;
+    },
+    [],
+  );
 
   const upsertPayload = {
     user_id: user.id,

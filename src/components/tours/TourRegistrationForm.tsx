@@ -264,10 +264,15 @@ export function TourRegistrationForm({
 
                   {isSelected && material.sizes.length > 0 && (
                     <div className="mt-3 ml-8 flex items-center gap-2">
-                      <span className="text-xs font-semibold text-slate-600">
+                      <label
+                        htmlFor={`material-size-${material.id}`}
+                        className="text-xs font-semibold text-slate-600"
+                      >
                         Größe:
-                      </span>
+                      </label>
                       <select
+                        id={`material-size-${material.id}`}
+                        aria-label={`Größe für ${material.name}`}
                         className="text-sm rounded-lg border-slate-200 py-1 px-2 focus:ring-jdav-green focus:border-jdav-green bg-white shadow-sm"
                         value={
                           selectedMaterials[material.id] || material.sizes[0]
@@ -295,6 +300,7 @@ export function TourRegistrationForm({
       <div className="flex flex-col gap-3 pt-4 sm:flex-row-reverse">
         <Button
           type="submit"
+          aria-label="Anmeldung abschicken"
           disabled={isPending}
           size="lg"
           className="w-full bg-jdav-green hover:bg-jdav-green-dark text-white font-black h-12 rounded-xl shadow-lg shadow-green-900/10"
@@ -310,6 +316,7 @@ export function TourRegistrationForm({
         </Button>
         <Button
           type="button"
+          aria-label="Abbrechen"
           variant="ghost"
           onClick={onCancel}
           className="w-full text-slate-500 hover:text-slate-900 font-medium"

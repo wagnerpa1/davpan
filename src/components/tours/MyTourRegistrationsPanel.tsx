@@ -14,6 +14,13 @@ interface MyTourRegistrationsPanelProps {
   tabs: RegistrationTab[];
 }
 
+const archiveDateFormatter = new Intl.DateTimeFormat("de-DE", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  timeZone: "Europe/Berlin",
+});
+
 function sortRegistrations(registrations: UserTourRegistration[]) {
   return [...registrations].sort((left, right) => {
     const leftDate = left.tour.start_date
@@ -182,11 +189,7 @@ function ArchiveRow({
   const relevantDate =
     registration.tour.end_date ?? registration.tour.start_date;
   const formattedDate = relevantDate
-    ? new Intl.DateTimeFormat("de-DE", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      }).format(new Date(relevantDate))
+    ? archiveDateFormatter.format(new Date(relevantDate))
     : "Ohne Datum";
 
   return (

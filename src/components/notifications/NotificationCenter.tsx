@@ -1,29 +1,18 @@
 "use client";
 
-import { Bell, Check } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Bell } from "lucide-react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { createClient as createBrowserClient } from "@/utils/supabase/client";
-
-interface NotificationItem {
-  id: string;
-  type: string;
-  title: string;
-  body: string;
-  created_at: string;
-  read_at: string | null;
-  payload: {
-    url?: string;
-  };
-}
-
-interface NotificationTab {
-  id: string;
-  label: string;
-  targetType: "self" | "child";
-  targetId: string;
-  unreadCount: number;
-  items: NotificationItem[];
-}
+import type { NotificationItem } from "./NotificationItemRow";
+import { NotificationItemRow } from "./NotificationItemRow";
+import type { NotificationTab } from "./NotificationTabsHeader";
+import { NotificationTabsHeader } from "./NotificationTabsHeader";
 
 interface NotificationCenterResponse {
   tabs: NotificationTab[];
@@ -73,6 +62,7 @@ export function NotificationCenter({ isParent }: NotificationCenterProps) {
   const [error, setError] = useState<string | null>(null);
   const [tabs, setTabs] = useState<NotificationTab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string>("self");
+  const [isMarkingTabAsRead, setIsMarkingTabAsRead] = useState(false);
 
   const totalUnread = tabs.reduce((sum, tab) => sum + tab.unreadCount, 0);
 
@@ -81,13 +71,14 @@ export function NotificationCenter({ isParent }: NotificationCenterProps) {
 
   const hasTabNavigation = isParent && tabs.length > 1;
 
-  const realtimeFilters = tabs
-    .map((tab) =>
+  const realtimeFilters = tabs.reduce<string[]>((acc, tab) => {
+    const filter =
       tab.targetType === "self"
         ? `recipient_user_id=eq.${tab.targetId}`
-        : `recipient_child_id=eq.${tab.targetId}`,
-    )
-    .filter(Boolean);
+        : `recipient_child_id=eq.${tab.targetId}`;
+    if (filter) acc.push(filter);
+    return acc;
+  }, []);
 
   const loadNotifications = useCallback(async () => {
     setIsLoading(true);
@@ -113,8 +104,12 @@ export function NotificationCenter({ isParent }: NotificationCenterProps) {
 
       if (data.tabs.length === 0) {
         setActiveTabId("self");
-      } else if (!data.tabs.some((tab) => tab.id === activeTabId)) {
-        setActiveTabId(data.tabs[0].id);
+      } else {
+        setActiveTabId((currentId) =>
+          data.tabs.some((tab) => tab.id === currentId)
+            ? currentId
+            : data.tabs[0].id,
+        );
       }
     } catch (err) {
       console.error("Notification center load failed:", err);
@@ -122,7 +117,7 @@ export function NotificationCenter({ isParent }: NotificationCenterProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [activeTabId]);
+  }, []);
 
   const scheduleNotificationsRefresh = useCallback(() => {
     if (refreshTimerRef.current) {
@@ -199,43 +194,51 @@ export function NotificationCenter({ isParent }: NotificationCenterProps) {
   );
 
   const markActiveTabAsRead = useCallback(async () => {
-    if (!activeTab) return;
-
-    const response = await fetch("/api/notifications/mark-read", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-      },
-      credentials: "same-origin",
-      body: JSON.stringify({
-        scope: "all",
-        targetType: activeTab.targetType,
-        targetId: activeTab.targetId,
-      }),
-    });
-
-    if (!response.ok) {
+    if (!activeTab || isMarkingTabAsRead) {
       return;
     }
 
-    setTabs((currentTabs) =>
-      currentTabs.map((tab) => {
-        if (tab.id !== activeTab.id) {
-          return tab;
-        }
+    setIsMarkingTabAsRead(true);
 
-        return {
-          ...tab,
-          unreadCount: 0,
-          items: tab.items.map((item) =>
-            item.read_at
-              ? item
-              : { ...item, read_at: new Date().toISOString() },
-          ),
-        };
-      }),
-    );
-  }, [activeTab]);
+    try {
+      const response = await fetch("/api/notifications/mark-read", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          scope: "all",
+          targetType: activeTab.targetType,
+          targetId: activeTab.targetId,
+        }),
+      });
+
+      if (!response.ok) {
+        return;
+      }
+
+      setTabs((currentTabs) =>
+        currentTabs.map((tab) => {
+          if (tab.id !== activeTab.id) {
+            return tab;
+          }
+
+          return {
+            ...tab,
+            unreadCount: 0,
+            items: tab.items.map((item) =>
+              item.read_at
+                ? item
+                : { ...item, read_at: new Date().toISOString() },
+            ),
+          };
+        }),
+      );
+    } finally {
+      setIsMarkingTabAsRead(false);
+    }
+  }, [activeTab, isMarkingTabAsRead]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -268,7 +271,7 @@ export function NotificationCenter({ isParent }: NotificationCenterProps) {
     };
 
     document.addEventListener("mousedown", onPointerDown);
-    document.addEventListener("touchstart", onPointerDown);
+    document.addEventListener("touchstart", onPointerDown, { passive: true });
     document.addEventListener("keydown", onKeyDown);
 
     return () => {
@@ -280,32 +283,31 @@ export function NotificationCenter({ isParent }: NotificationCenterProps) {
 
   useEffect(() => {
     if (!isOpen || realtimeFilters.length === 0) {
-      return;
+      return () => {};
     }
 
-    const subscriptions = realtimeFilters.map((filter) =>
-      supabase
-        .channel(`notification-center-${filter}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "notifications",
-            filter,
-          },
-          () => {
-            scheduleNotificationsRefresh();
-          },
-        )
-        // react-doctor-disable-next-line effect-needs-cleanup -- Subscriptions are cleaned up in the returned teardown loop
-        .subscribe(),
-    );
+    const channel = supabase.channel("notification-center");
+
+    for (const filter of realtimeFilters) {
+      channel.on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+          filter,
+        },
+        () => {
+          scheduleNotificationsRefresh();
+        },
+      );
+    }
+
+    channel.subscribe();
 
     return () => {
-      for (const channel of subscriptions) {
-        void supabase.removeChannel(channel);
-      }
+      channel.unsubscribe();
+      supabase.removeChannel(channel);
 
       if (refreshTimerRef.current) {
         clearTimeout(refreshTimerRef.current);
@@ -331,7 +333,7 @@ export function NotificationCenter({ isParent }: NotificationCenterProps) {
       </button>
 
       {isOpen && (
-        <div className="fixed inset-x-0 bottom-0 top-14 z-[60] sm:top-16">
+        <div className="fixed inset-x-0 bottom-0 top-14 z-60 sm:top-16">
           <button
             type="button"
             aria-label="Benachrichtigungen schließen"
@@ -341,52 +343,14 @@ export function NotificationCenter({ isParent }: NotificationCenterProps) {
 
           <div className="absolute inset-0 flex items-start justify-center px-4 pb-6 pt-4 md:justify-end md:px-6 md:pt-4">
             <div className="relative flex max-h-[calc(100vh-8rem)] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
-              <div className="border-b border-slate-100 px-4 py-3">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-bold text-slate-900">
-                    Benachrichtigungen
-                  </h2>
-                  <button
-                    type="button"
-                    onClick={markActiveTabAsRead}
-                    className="text-xs font-semibold text-jdav-green hover:underline"
-                  >
-                    {hasTabNavigation
-                      ? "Tab als gelesen markieren"
-                      : "Alle gelesen"}
-                  </button>
-                </div>
-
-                {hasTabNavigation && (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {tabs.map((tab) => (
-                      <button
-                        key={tab.id}
-                        type="button"
-                        onClick={() => setActiveTabId(tab.id)}
-                        className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-                          tab.id === activeTabId
-                            ? "bg-jdav-green text-white"
-                            : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                        }`}
-                      >
-                        {tab.label}
-                        {tab.unreadCount > 0 && (
-                          <span
-                            className={`rounded-full px-1.5 py-0.5 text-[10px] ${
-                              tab.id === activeTabId
-                                ? "bg-white/20 text-white"
-                                : "bg-slate-200 text-slate-700"
-                            }`}
-                          >
-                            {tab.unreadCount}
-                          </span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <NotificationTabsHeader
+                tabs={tabs}
+                activeTabId={activeTabId}
+                hasTabNavigation={hasTabNavigation}
+                isMarkingTabAsRead={isMarkingTabAsRead}
+                onSelectTab={setActiveTabId}
+                onMarkTabAsRead={() => void markActiveTabAsRead()}
+              />
 
               <div className="min-h-0 flex-1 overflow-y-auto p-3">
                 {isLoading && (
@@ -416,63 +380,14 @@ export function NotificationCenter({ isParent }: NotificationCenterProps) {
                   activeTab.items.length > 0 && (
                     <ul className="space-y-2">
                       {activeTab.items.map((item) => (
-                        <li
+                        <NotificationItemRow
                           key={item.id}
-                          className={`rounded-xl border p-3 ${
-                            item.read_at
-                              ? "border-slate-100 bg-slate-50"
-                              : "border-jdav-green/30 bg-green-50"
-                          }`}
-                        >
-                          <div className="mb-1 flex items-start justify-between gap-3">
-                            <button
-                              type="button"
-                              onClick={() => void openNotification(item)}
-                              className="min-w-0 text-left"
-                            >
-                              <h3 className="text-sm font-semibold text-slate-900 transition-colors hover:text-jdav-green">
-                                {item.title}
-                              </h3>
-                            </button>
-                            <span className="shrink-0 text-[10px] text-slate-500">
-                              {formatRelative(item.created_at)}
-                            </span>
-                          </div>
-
-                          <button
-                            type="button"
-                            className="cursor-pointer text-left text-xs leading-relaxed text-slate-600"
-                            onClick={() => void openNotification(item)}
-                          >
-                            {item.body}
-                          </button>
-
-                          <div className="mt-2 flex items-center justify-between gap-2">
-                            {!item.read_at ? (
-                              <button
-                                type="button"
-                                onClick={() => void markSingleAsRead(item.id)}
-                                className="inline-flex items-center gap-1 rounded-full border border-jdav-green/30 bg-white px-2 py-1 text-[10px] font-semibold text-jdav-green hover:bg-jdav-green/5"
-                                aria-label="Als gelesen markieren"
-                              >
-                                <Check className="h-3 w-3" />
-                                Gelesen
-                              </button>
-                            ) : (
-                              <span />
-                            )}
-
-                            {sanitizeClientPath(item.payload?.url) && (
-                              <button
-                                type="button"
-                                onClick={() => void openNotification(item)}
-                                className="text-[11px] font-semibold text-jdav-green hover:underline"
-                              >
-                                Zur Tour
-                              </button>
-                            )}
-                          </div>
-                        </li>
+                          item={item}
+                          formatRelative={formatRelative}
+                          sanitizeClientPath={sanitizeClientPath}
+                          onOpenNotification={openNotification}
+                          onMarkSingleAsRead={markSingleAsRead}
+                        />
                       ))}
                     </ul>
                   )}

@@ -15,6 +15,17 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { TourRegistrationModal } from "./TourRegistrationModal";
 
+const registrationDeadlineFormatter = new Intl.DateTimeFormat("de-DE", {
+  dateStyle: "medium",
+  timeStyle: "short",
+  timeZone: "Europe/Berlin",
+});
+
+const tourStartDateFormatter = new Intl.DateTimeFormat("de-DE", {
+  dateStyle: "medium",
+  timeZone: "Europe/Berlin",
+});
+
 interface Material {
   id: string; // material_type_id
   name: string;
@@ -274,7 +285,7 @@ export function TourRegistrationSection({
             {registrationDeadline && (
               <p className="mt-1 text-xs text-slate-400">
                 Anmeldeschluss:{" "}
-                {new Date(registrationDeadline).toLocaleString("de-DE")}
+                {registrationDeadlineFormatter.format(new Date(registrationDeadline))}
               </p>
             )}
           </div>
@@ -300,7 +311,7 @@ export function TourRegistrationSection({
               </p>
               <p className="text-xs text-orange-700 mt-1">
                 Diese Tour erfordert ein Mindestalter von {minAge} Jahren zum
-                Tourstart ({new Date(tourStartDate).toLocaleDateString("de-DE")}
+                Tourstart ({tourStartDateFormatter.format(new Date(tourStartDate))}
                 ). Du kannst eine Ausnahme anfragen.
               </p>
               <Button

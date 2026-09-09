@@ -2,18 +2,14 @@
 
 import { Auth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { getAuthCallbackUrl } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/client";
 
 export function ResetPasswordForm({ className }: { className?: string }) {
   const [supabase] = useState(() => createClient());
-  const [redirectTo, setRedirectTo] = useState<string>("");
-
-  useEffect(() => {
-    setRedirectTo(getAuthCallbackUrl());
-  }, []);
+  const [redirectTo] = useState(() => getAuthCallbackUrl());
 
   return (
     <div className={cn("grid gap-6", className)}>

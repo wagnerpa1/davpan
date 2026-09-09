@@ -1,4 +1,5 @@
 import { Search } from "lucide-react";
+import { Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { ComponentProps } from "react";
@@ -149,24 +150,11 @@ function normalizeTourRows(rows: RawTourCardItem[] | null): TourCardItem[] {
  * Displays all active and recently cancelled tours, supports filtering by category, difficulty, guide, and group.
  * Server Component: fetches data and filters mostly via Supabase query, with some in-memory fallback for complex calculations (e.g. capacity).
  */
-export default async function TourenPage({
-  searchParams,
-}: {
-  searchParams: Promise<TourSearchParams>;
-}) {
-  const [supabase, params, authContext] = await Promise.all([
-    createClient(),
-    searchParams,
-    getCurrentUserProfile(),
-  ]);
-
-  // Sync statuses before fetching
-  await syncTourStatuses();
-
-  if (!authContext.user) {
-    redirect("/login");
-  }
-
+async function getTourenPageData(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  params: TourSearchParams,
+  authRole: string | undefined,
+) {
   const categoryFilter = getSearchParam(params, "category");
   const difficultyFilter = getSearchParam(params, "difficulty");
   const guideFilter = getSearchParam(params, "guide");
@@ -240,7 +228,7 @@ export default async function TourenPage({
         category
       )
     `)
-    .neq("status", "completed"); // Keep cancelled visible until end date
+    .neq("status", "completed");
 
   if (normalizedCategoryFilter) {
     query = query.eq("category", normalizedCategoryFilter);
@@ -248,11 +236,9 @@ export default async function TourenPage({
   if (difficultyFilter) query = query.eq("difficulty", difficultyFilter);
   if (groupFilter) query = query.eq("group", groupFilter);
 
-  // Business logic: Filter future tours by visibility date for members.
   const visibilityDateLimit = getTourVisibilityDateLimit(new Date());
 
-  // Hide future "planung" or regular tours from non-guides if date limit exceeded
-  if (shouldApplyTourVisibilityLimit(authContext.role)) {
+  if (shouldApplyTourVisibilityLimit(authRole)) {
     query = query.lt("start_date", visibilityDateLimit);
   }
 
@@ -282,9 +268,6 @@ export default async function TourenPage({
       row.confirmed_count || 0,
     ]),
   );
-
-  // Check if user is logged in for "Create" button (session already fetched above)
-  const canCreate = canCreateTour(authContext.role);
 
   let filteredTours: TourCardItem[] = normalizeTourRows(
     tours as RawTourCardItem[] | null,
@@ -321,6 +304,37 @@ export default async function TourenPage({
     );
   }
 
+  return {
+    categories,
+    difficulties,
+    guides,
+    tourGroups,
+    filteredTours,
+  };
+}
+
+export default async function TourenPage({
+  searchParams,
+}: {
+  searchParams: Promise<TourSearchParams>;
+}) {
+  const [supabase, params, authContext] = await Promise.all([
+    createClient(),
+    searchParams,
+    getCurrentUserProfile(),
+  ]);
+
+  // Sync statuses before fetching
+  await syncTourStatuses();
+
+  if (!authContext.user) {
+    redirect("/login");
+  }
+
+  const canCreate = canCreateTour(authContext.role);
+  const { categories, difficulties, guides, tourGroups, filteredTours } =
+    await getTourenPageData(supabase, params, authContext.role);
+
   return (
     <div className="mx-auto max-w-site px-4 py-8">
       <div className="mb-10 flex flex-col gap-4 xs:flex-row xs:items-center xs:justify-between lg:mb-12">
@@ -345,12 +359,14 @@ export default async function TourenPage({
         </div>
       </div>
 
-      <TourFilters
-        categories={categories}
-        difficulties={difficulties}
-        guides={guides || []}
-        tourGroups={tourGroups || []}
-      />
+      <Suspense fallback={<div />}>
+        <TourFilters
+          categories={categories}
+          difficulties={difficulties}
+          guides={guides || []}
+          tourGroups={tourGroups || []}
+        />
+      </Suspense>
 
       <div className="space-y-4">
         {filteredTours.length > 0 ? (

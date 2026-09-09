@@ -75,23 +75,27 @@ export async function GET() {
         .limit(200);
 
       for (const child of children) {
-        const items =
-          childNotifications
-            ?.filter(
-              (notification) => notification.recipient_child_id === child.id,
-            )
-            .map(
-              ({ recipient_child_id: _recipientChildId, ...item }) => item,
-            ) ?? [];
+        const reduced =
+          childNotifications?.reduce(
+            (acc, notification) => {
+              if (notification.recipient_child_id === child.id) {
+                const { recipient_child_id: _recipientChildId, ...item } =
+                  notification as any;
+                acc.items.push(item);
+                if (!notification.read_at) acc.unreadCount += 1;
+              }
+              return acc;
+            },
+            { items: [] as NotificationTab[0]["items"], unreadCount: 0 },
+          ) ?? { items: [], unreadCount: 0 };
 
         tabs.push({
           id: `child-${child.id}`,
           label: child.full_name,
           targetType: "child",
           targetId: child.id,
-          unreadCount: items.filter((notification) => !notification.read_at)
-            .length,
-          items,
+          unreadCount: reduced.unreadCount,
+          items: reduced.items,
         });
       }
     }

@@ -2,7 +2,7 @@
 
 import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 interface DeleteNewsButtonProps {
   id: string;
@@ -11,11 +11,17 @@ interface DeleteNewsButtonProps {
 export function DeleteNewsButton({ id }: DeleteNewsButtonProps) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
+  const isDeletingRef = useRef(false);
 
   const handleDelete = async () => {
+    if (isDeletingRef.current) {
+      return;
+    }
+
     const confirmed = window.confirm("Diese News wirklich löschen?");
     if (!confirmed) return;
 
+    isDeletingRef.current = true;
     setIsDeleting(true);
 
     try {
@@ -31,6 +37,7 @@ export function DeleteNewsButton({ id }: DeleteNewsButtonProps) {
 
       router.refresh();
     } finally {
+      isDeletingRef.current = false;
       setIsDeleting(false);
     }
   };
@@ -47,3 +54,4 @@ export function DeleteNewsButton({ id }: DeleteNewsButtonProps) {
     </button>
   );
 }
+

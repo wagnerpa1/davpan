@@ -1,27 +1,16 @@
 import { format } from "date-fns";
-import {
-  Baby,
-  Calendar,
-  Clock,
-  Edit,
-  Euro,
-  MapPin,
-  Mountain,
-  Ruler,
-  ShieldCheck,
-  Tag,
-  Users,
-} from "lucide-react";
+import { Edit } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CalendarExport } from "@/components/tours/CalendarExport";
 import { DeleteTourButton } from "@/components/tours/DeleteTourButton";
 import { ParticipantManagement } from "@/components/tours/ParticipantManagement";
+import { TourDetailsContent } from "@/components/tours/TourDetailsContent";
+import { TourHero } from "@/components/tours/TourHero";
+import { TourInfoGrid } from "@/components/tours/TourInfoGrid";
 import { TourRegistrationSection } from "@/components/tours/TourRegistrationSection";
 import { getCurrentUserProfile } from "@/lib/auth";
 import { isAdminRole, isParentRole } from "@/lib/permissions";
-import { siteConfig } from "@/lib/site-config";
-import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/server";
 
 interface AvailableMaterial {
@@ -57,46 +46,60 @@ interface TourParticipant {
   status: string;
   user_id: string;
   child_profile_id: string | null;
-  waitlist_position?: number | null;
-  age_override?: boolean;
-  created_at?: string | null;
+  waitlist_position: number | null;
+  age_override: number | null;
+  created_at: string;
   profiles?: {
-    full_name?: string | null;
-    phone?: string | null;
-    emergency_phone?: string | null;
-    medical_notes?: string | null;
-    birthdate?: string | null;
+    full_name: string | null;
+    phone: string | null;
+    emergency_phone: string | null;
+    medical_notes: string | null;
+    birthdate: string | null;
   } | null;
   child_profiles?: {
-    full_name?: string | null;
-    medical_notes?: string | null;
-    birthdate?: string | null;
+    full_name: string | null;
+    medical_notes: string | null;
+    birthdate: string | null;
     profiles?: {
-      full_name?: string | null;
+      full_name: string | null;
     } | null;
   } | null;
 }
 
 interface TourDetailUiState {
-  created_by: string;
-  max_participants?: number | null;
-  tour_guides?: TourGuide[];
-  tour_participants?: TourParticipant[];
-}
-
-interface TourMaterialInventory {
-  size: string | null;
-  quantity_available: number;
-}
-
-interface TourMaterialType {
   id: string;
-  name: string;
-  inventory: TourMaterialInventory[];
+  title: string;
+  description: string | null;
+  target_area: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  meeting_point: string | null;
+  meeting_time: string | null;
+  duration_hours: number | null;
+  max_participants: number | null;
+  min_age: number | null;
+  status: string;
+  difficulty: string | null;
+  distance: number | null;
+  cost_info: string | null;
+  requirements: string | null;
+  created_by: string | null;
+  registration_deadline: string | null;
+  tour_guides?: TourGuide[] | null;
+  tour_participants?: TourParticipant[] | null;
 }
 
 interface TourMaterialRequirementRow {
-  material_types: TourMaterialType | null;
+  material_type_id: string;
+  material_types: {
+    id: string;
+    name: string;
+    inventory?: Array<{
+      id: string;
+      size: string | null;
+      quantity_available: number;
+    }> | null;
+  } | null;
 }
 
 interface ReservationQueryRow {
@@ -129,42 +132,10 @@ interface TourParticipantCountRow {
   confirmed_count: number;
 }
 
-const statusLabel = (status: string) => {
-  switch (status) {
-    case "planning":
-      return "In Planung";
-    case "open":
-      return "Anmeldung offen";
-    case "full":
-      return "Ausgebucht";
-    case "completed":
-      return "Abgeschlossen";
-    case "cancelled":
-      return "Abgesagt";
-    default:
-      return status;
-  }
-};
-
-function formatTourDate(startDate?: string | null, endDate?: string | null) {
-  if (!startDate) {
-    return "TBA";
-  }
-
-  if (endDate && startDate !== endDate) {
-    return `${format(new Date(startDate), "dd.MM.")} – ${format(new Date(endDate), "dd.MM.yy")}`;
-  }
-
-  return format(new Date(startDate), "dd.MM.yy");
-}
-
-export default async function TourDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const [{ id }, supabase] = await Promise.all([params, createClient()]);
-
+async function getTourDetailData(
+  id: string,
+  supabase: Awaited<ReturnType<typeof createClient>>,
+) {
   const { data: tour, error } = await supabase
     .from("tours")
     .select(`
@@ -210,35 +181,49 @@ export default async function TourDetailPage({
     .eq("id", id)
     .single();
 
-  if (error || !tour) notFound();
+  if (error || !tour) return null;
+
   const tourData = tour as typeof tour & TourDetailUiState;
 
-  const authContext = await getCurrentUserProfile();
-  const isLoggedIn = !!authContext.user;
+  const [authContext, { data: tmData }, { data: reservationsData }] =
+    await Promise.all([
+      getCurrentUserProfile(),
+      supabase
+        .from("tour_material_requirements")
+        .select(`
+        material_type_id,
+        material_types(
+          id,
+          name,
+          inventory:material_inventory(id, size, quantity_available)
+        )
+      `)
+        .eq("tour_id", id),
+      supabase
+        .from("material_reservations")
+        .select(`
+        id, material_inventory_id, user_id, child_profile_id,
+        material_inventory (
+          id, size,
+          material_types (name)
+        )
+      `)
+        .eq("tour_id", id),
+    ]);
 
-  const { data: tmData } = await supabase
-    .from("tour_material_requirements")
-    .select(`
-      material_type_id,
-      material_types(
-        id,
-        name,
-        inventory:material_inventory(id, size, quantity_available)
-      )
-    `)
-    .eq("tour_id", id);
+  const isLoggedIn = !!authContext.user;
 
   const materialMap = new Map<string, AvailableMaterial>();
   (tmData as TourMaterialRequirementRow[] | null)?.forEach((row) => {
     const type = row.material_types;
     if (type?.inventory) {
-      const sizes: string[] = [];
+      const sizesSet = new Set<string>();
       type.inventory.forEach((inv) => {
         if (inv.quantity_available > 0 && inv.size) {
-          if (!sizes.includes(inv.size)) sizes.push(inv.size);
+          sizesSet.add(inv.size);
         }
       });
-      // Fallback for types without specific inventory sizes but still required
+      const sizes = Array.from(sizesSet);
       if (sizes.length === 0 && type.inventory.length > 0) {
         sizes.push("Universal");
       }
@@ -254,21 +239,10 @@ export default async function TourDetailPage({
   });
   const availableMaterials = Array.from(materialMap.values());
 
-  const { data: reservationsData } = await supabase
-    .from("material_reservations")
-    .select(`
-      id, material_inventory_id, user_id, child_profile_id,
-      material_inventory (
-        id, size,
-        material_types (name)
-      )
-    `)
-    .eq("tour_id", id);
-  // Map back to expected structure (size, materials(name))
   const reservations = ((reservationsData || []) as ReservationQueryRow[]).map(
     (r) => ({
       id: r.id,
-      material_id: r.material_inventory_id, // the frontend component probably expects material_id
+      material_id: r.material_inventory_id,
       user_id: r.user_id,
       child_profile_id: r.child_profile_id,
       size: r.material_inventory?.size ?? undefined,
@@ -286,20 +260,22 @@ export default async function TourDetailPage({
   if (authContext.user) {
     userBirthdate = authContext.birthdate;
 
-    if (isParentRole(authContext.role)) {
-      const { data: cData } = await supabase
-        .from("child_profiles")
-        .select("id, full_name, birthdate")
-        .eq("parent_id", authContext.user.id);
-      childrenProfiles = cData || [];
-    }
+    const [cRes, rRes] = await Promise.all([
+      isParentRole(authContext.role)
+        ? supabase
+            .from("child_profiles")
+            .select("id, full_name, birthdate")
+            .eq("parent_id", authContext.user.id)
+        : Promise.resolve({ data: null }),
+      supabase
+        .from("tour_participants")
+        .select("id, user_id, child_profile_id, status, waitlist_position")
+        .eq("tour_id", id)
+        .eq("user_id", authContext.user.id),
+    ]);
 
-    const { data: rData } = await supabase
-      .from("tour_participants")
-      .select("id, user_id, child_profile_id, status, waitlist_position")
-      .eq("tour_id", id)
-      .eq("user_id", authContext.user.id);
-    userRegistrations = rData || [];
+    childrenProfiles = cRes.data || [];
+    userRegistrations = rRes.data || [];
 
     const userRole = authContext.role;
     const isLead = tourData.tour_guides?.some(
@@ -333,6 +309,51 @@ export default async function TourDetailPage({
   const cLabel =
     (tour as TourCategoryRelation).tour_categorys?.category || "n.A.";
 
+  return {
+    tour: tourData,
+    isLoggedIn,
+    availableMaterials,
+    reservations,
+    childrenProfiles,
+    userRegistrations,
+    userBirthdate,
+    canManageTour,
+    guides,
+    participants,
+    confirmedParticipantCount,
+    isFull,
+    gLabel,
+    cLabel,
+  };
+}
+
+export default async function TourDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const [{ id }, supabase] = await Promise.all([params, createClient()]);
+
+  const detailData = await getTourDetailData(id, supabase);
+  if (!detailData) notFound();
+
+  const {
+    tour,
+    isLoggedIn,
+    availableMaterials,
+    reservations,
+    childrenProfiles,
+    userRegistrations,
+    userBirthdate,
+    canManageTour,
+    guides,
+    participants,
+    confirmedParticipantCount,
+    isFull,
+    gLabel,
+    cLabel,
+  } = detailData;
+
   return (
     <div className="mx-auto max-w-site px-4 py-8">
       <div className="mb-6 flex items-center justify-between text-sm print:hidden">
@@ -363,192 +384,39 @@ export default async function TourDetailPage({
       </div>
 
       <div className="overflow-hidden rounded-3xl bg-white shadow-xl ring-1 ring-slate-200 print:shadow-none print:ring-0">
-        {/* HERO */}
-        <div className="bg-jdav-green p-8 sm:p-12 text-center text-white relative print:hidden">
-          <h1 className="mb-2 text-3xl font-bold tracking-tight sm:text-4xl">
-            {tour.title}
-          </h1>
-          <p className="text-lg font-medium opacity-90">
-            {tour.target_area || siteConfig.appName}
-          </p>
-
-          {/* Guides */}
-          {tour.tour_guides && tour.tour_guides.length > 0 && (
-            <div className="mt-4 flex flex-wrap justify-center gap-4 text-sm font-medium">
-              <div className="flex items-center gap-1.5 text-white/90">
-                <span className="opacity-70 font-normal">Leitung:</span>
-                {tour.tour_guides.map((tg: TourGuide, idx: number) => (
-                  <span
-                    key={
-                      tg.user_id ||
-                      tg.profiles?.id ||
-                      `${tg.profiles?.full_name || "guide"}-${idx}`
-                    }
-                    className="bg-white/10 px-2 py-0.5 rounded-lg"
-                  >
-                    {tg.profiles?.full_name || "Tourenleitung"}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Status & Group Badges — below guides */}
-          <div className="mt-4 flex flex-wrap justify-center gap-2">
-            <div className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
-              {statusLabel(tour.status)}
-            </div>
-            {gLabel && (
-              <div className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                {gLabel}
-              </div>
-            )}
-            {isFull && (
-              <div className="bg-red-500 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-lg animate-pulse">
-                Warteliste aktiv
-              </div>
-            )}
-          </div>
-        </div>
+        <TourHero
+          title={tour.title}
+          targetArea={tour.target_area}
+          guides={tour.tour_guides}
+          status={tour.status}
+          groupLabel={gLabel}
+          isFull={isFull}
+        />
 
         <div className="p-6 sm:p-10 text-slate-700">
-          {/* Info Grid */}
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 mb-8 print:hidden">
-            <div className="flex flex-col items-center justify-center rounded-2xl bg-slate-50 p-4 text-center">
-              <Calendar className="mb-2 h-6 w-6 text-jdav-green" />
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                Datum
-              </span>
-              <span className="mt-1 font-medium text-sm">
-                {formatTourDate(tour.start_date, tour.end_date)}
-              </span>
-            </div>
-            <div className="flex flex-col items-center justify-center rounded-2xl bg-slate-50 p-4 text-center">
-              <Tag className="mb-2 h-6 w-6 text-jdav-green" />
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                Kategorie
-              </span>
-              <span className="mt-1 font-medium text-sm capitalize">
-                {cLabel}
-              </span>
-            </div>
-            <div className="flex flex-col items-center justify-center rounded-2xl bg-slate-50 p-4 text-center">
-              <Mountain className="mb-2 h-6 w-6 text-jdav-green" />
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                Schwierigkeit
-              </span>
-              <span className="mt-1 font-medium text-sm">
-                {tour.difficulty || "Keine"}
-              </span>
-            </div>
-            <div
-              className={cn(
-                "flex flex-col items-center justify-center rounded-2xl p-4 text-center",
-                isFull ? "bg-red-50" : "bg-slate-50",
-              )}
-            >
-              <Users
-                className={cn(
-                  "mb-2 h-6 w-6",
-                  isFull ? "text-red-500" : "text-jdav-green",
-                )}
-              />
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                Plätze
-              </span>
-              <span
-                className={cn(
-                  "mt-1 font-medium text-sm",
-                  isFull && "text-red-600 font-black",
-                )}
-              >
-                {confirmedParticipantCount} / {tour.max_participants || "∞"}
-              </span>
-            </div>
-            <div className="flex flex-col items-center justify-center rounded-2xl bg-slate-50 p-4 text-center">
-              <Ruler className="mb-2 h-6 w-6 text-jdav-green" />
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                Strecke
-              </span>
-              <span className="mt-1 font-medium text-sm">
-                {tour.distance ? `${tour.distance} km` : "–"}
-              </span>
-            </div>
-            <div className="flex flex-col items-center justify-center rounded-2xl bg-slate-50 p-4 text-center">
-              <Clock className="mb-2 h-6 w-6 text-jdav-green" />
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                Gehzeit
-              </span>
-              <span className="mt-1 font-medium text-sm">
-                {tour.duration_hours ? `${tour.duration_hours} h` : "–"}
-              </span>
-            </div>
-            {tour.cost_info && (
-              <div className="flex flex-col items-center justify-center rounded-2xl bg-slate-50 p-4 text-center">
-                <Euro className="mb-2 h-6 w-6 text-jdav-green" />
-                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  Kosten
-                </span>
-                <span className="mt-1 font-medium text-sm line-clamp-2">
-                  {tour.cost_info}
-                </span>
-              </div>
-            )}
-            {tour.min_age && (
-              <div className="flex flex-col items-center justify-center rounded-2xl bg-slate-50 p-4 text-center">
-                <Baby className="mb-2 h-6 w-6 text-jdav-green" />
-                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  Mindestalter
-                </span>
-                <span className="mt-1 font-medium text-sm">
-                  {tour.min_age} Jahre
-                </span>
-              </div>
-            )}
-          </div>
+          <TourInfoGrid
+            startDate={tour.start_date}
+            endDate={tour.end_date}
+            categoryLabel={cLabel}
+            difficulty={tour.difficulty}
+            isFull={isFull}
+            confirmedParticipantCount={confirmedParticipantCount}
+            maxParticipants={tour.max_participants}
+            distance={tour.distance}
+            durationHours={tour.duration_hours}
+            costInfo={tour.cost_info}
+            minAge={tour.min_age}
+          />
 
           <div className="space-y-8">
-            {/* Description */}
-            <section className="print:hidden">
-              <h3 className="mb-2 text-lg font-bold text-slate-900 group-hover:text-jdav-green leading-snug">
-                Beschreibung
-              </h3>
-              <div className="mb-2 text-[10px] text-slate-400 font-medium">
-                {(tour as TourCategoryRelation).tour_categorys?.category ||
-                  "Tour"}
-              </div>
-              <div className="prose prose-slate max-w-none text-slate-600 leading-relaxed whitespace-pre-wrap">
-                {tour.description || "Keine Beschreibung vorhanden."}
-              </div>
-            </section>
+            <TourDetailsContent
+              categoryLabel={cLabel}
+              description={tour.description}
+              meetingPoint={tour.meeting_point}
+              meetingTime={tour.meeting_time}
+              requirements={tour.requirements}
+            />
 
-            {/* Meeting Point + Requirements */}
-            <section className="grid gap-6 sm:grid-cols-2 print:hidden">
-              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-5">
-                <h4 className="mb-3 flex items-center gap-2 font-semibold text-slate-900">
-                  <MapPin className="h-5 w-5 text-jdav-green" /> Treffpunkt
-                </h4>
-                <p className="text-sm text-slate-600 leading-relaxed">
-                  {tour.meeting_point || siteConfig.defaultMeetingPoint} <br />
-                  <span className="font-bold text-jdav-green">
-                    {tour.meeting_time
-                      ? `Um ${tour.meeting_time.substring(0, 5)} Uhr`
-                      : "Zeit noch unklar"}
-                  </span>
-                </p>
-              </div>
-              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-5">
-                <h4 className="mb-3 flex items-center gap-2 font-semibold text-slate-900">
-                  <ShieldCheck className="h-5 w-5 text-jdav-green" />{" "}
-                  Voraussetzungen
-                </h4>
-                <div className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">
-                  {tour.requirements || "Keine besonderen Voraussetzungen."}
-                </div>
-              </div>
-            </section>
-
-            {/* Guide Management - Interactive Client Component */}
             {canManageTour && (
               <section className="pt-10 border-t border-slate-100 space-y-6">
                 <div className="flex items-center justify-between">
@@ -581,7 +449,6 @@ export default async function TourDetailPage({
             )}
           </div>
 
-          {/* Registration Section */}
           <div className="mt-10 pt-8 border-t border-slate-200 print:hidden">
             <TourRegistrationSection
               tourId={tour.id}

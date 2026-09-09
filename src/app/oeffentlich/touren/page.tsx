@@ -1,4 +1,5 @@
 import { Search } from "lucide-react";
+import { Suspense } from "react";
 import Link from "next/link";
 import type { ComponentProps } from "react";
 import { TourCard } from "@/components/tours/TourCard";
@@ -63,63 +64,27 @@ function normalizeTourRows(rows: RawTourCardItem[] | null): TourCardItem[] {
   }));
 }
 
-export default async function PublicToursPage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  const [supabase, params] = await Promise.all([createClient(), searchParams]);
-
-  const categoryFilter = params.category as string;
-  const difficultyFilter = params.difficulty as string;
-  const guideFilter = params.guide as string;
-  const groupFilter = params.group as string;
-  const availableOnly = params.available === "true";
-  const sortBy = (params.sort as string) || "date_asc";
-
-  const { data: categoryData } = await supabase
-    .from("tour_categorys")
-    .select("id, category")
-    .order("category");
-
-  const categories = ((categoryData || []) as TourCategoryOption[]).filter(
-    (c): c is { id: string; category: string } => Boolean(c.category),
-  );
-
+function normalizeCategoryFilter(
+  categoryFilter: string,
+  categories: TourCategoryOption[],
+) {
   const categoryByLabel = new Map(
-    categories.map((c) => [c.category.toLowerCase(), c.id]),
+    categories.map((category) => [category.category.toLowerCase(), category.id]),
   );
 
-  const normalizedCategoryFilter =
-    categoryFilter && categoryByLabel.has(categoryFilter.toLowerCase())
-      ? (categoryByLabel.get(categoryFilter.toLowerCase()) as string)
-      : categoryFilter;
+  return categoryByLabel.has(categoryFilter.toLowerCase())
+    ? (categoryByLabel.get(categoryFilter.toLowerCase()) as string)
+    : categoryFilter;
+}
 
-  const { data: allToursData } = await supabase
-    .from("tours")
-    .select("difficulty")
-    .neq("status", "completed");
-
-  const difficulties = Array.from(
-    new Set(
-      (allToursData ?? []).reduce<string[]>((values, tour) => {
-        if (tour.difficulty) {
-          values.push(tour.difficulty);
-        }
-        return values;
-      }, []),
-    ),
-  ) as string[];
-
-  const [{ data: guides }, { data: tourGroups }] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("id, full_name")
-      .in("role", ["guide", "admin"])
-      .order("full_name"),
-    supabase.from("tour_groups").select("id, group_name").order("group_name"),
-  ]);
-
+function buildTourQuery(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  filters: {
+    normalizedCategoryFilter: string;
+    difficultyFilter: string;
+    groupFilter: string;
+  },
+) {
   let query = supabase
     .from("tours")
     .select(
@@ -150,88 +115,191 @@ export default async function PublicToursPage({
     )
     .neq("status", "completed");
 
-  if (normalizedCategoryFilter) {
-    query = query.eq("category", normalizedCategoryFilter);
+  if (filters.normalizedCategoryFilter) {
+    query = query.eq("category", filters.normalizedCategoryFilter);
   }
-  if (difficultyFilter) query = query.eq("difficulty", difficultyFilter);
-  if (groupFilter) query = query.eq("group", groupFilter);
+
+  if (filters.difficultyFilter) {
+    query = query.eq("difficulty", filters.difficultyFilter);
+  }
+
+  if (filters.groupFilter) {
+    query = query.eq("group", filters.groupFilter);
+  }
+
+  return query;
+}
+
+async function loadConfirmedCountByTour(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  tourIds: string[],
+) {
+  if (tourIds.length === 0) {
+    return new Map<string, number>();
+  }
+
+  const { data } = await supabase.rpc("get_tour_participant_counts", {
+    p_tour_ids: tourIds,
+  });
+
+  return new Map<string, number>(
+    ((data || []) as TourParticipantCountRow[]).map((row) => [
+      row.tour_id,
+      row.confirmed_count || 0,
+    ]),
+  );
+}
+
+function getConfirmedCount(tour: TourCardItem) {
+  return (
+    tour.confirmed_participants_count ??
+    tour.tour_participants?.filter((participant) => participant.status === "confirmed")
+      .length ??
+    0
+  );
+}
+
+function isVisiblePublicTour(tour: TourCardItem, todayIso: string) {
+  if (tour.status !== "cancelled") {
+    return true;
+  }
+
+  const relevantEndDate = tour.end_date || tour.start_date;
+  if (!relevantEndDate) {
+    return false;
+  }
+
+  return relevantEndDate >= todayIso;
+}
+
+function filterByGuide(tours: TourCardItem[], guideFilter: string) {
+  if (!guideFilter) {
+    return tours;
+  }
+
+  return tours.filter((tour) =>
+    tour.tour_guides?.some((tourGuide) => tourGuide.user_id === guideFilter),
+  );
+}
+
+function filterByAvailability(tours: TourCardItem[], availableOnly: boolean) {
+  if (!availableOnly) {
+    return tours;
+  }
+
+  return tours.filter((tour) => {
+    const confirmedCount = getConfirmedCount(tour);
+    const maxParticipants = tour.max_participants || 0;
+    return maxParticipants === 0 || confirmedCount < maxParticipants;
+  });
+}
+
+function sortPublicTours(tours: TourCardItem[], sortBy: string) {
+  if (sortBy.startsWith("capacity")) {
+    const getCapacity = (tour: TourCardItem) => {
+      const confirmedCount = getConfirmedCount(tour);
+      const maxParticipants = tour.max_participants || 999;
+      return confirmedCount / maxParticipants;
+    };
+
+    return [...tours].sort((a, b) =>
+      sortBy === "capacity_low"
+        ? getCapacity(b) - getCapacity(a)
+        : getCapacity(a) - getCapacity(b),
+    );
+  }
+
+  if (sortBy === "date_desc") {
+    return [...tours].sort(
+      (a, b) => toTimestamp(b.start_date) - toTimestamp(a.start_date),
+    );
+  }
+
+  return tours;
+}
+
+export default async function PublicToursPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const [supabase, params] = await Promise.all([createClient(), searchParams]);
+
+  const categoryFilter = params.category as string;
+  const difficultyFilter = params.difficulty as string;
+  const guideFilter = params.guide as string;
+  const groupFilter = params.group as string;
+  const availableOnly = params.available === "true";
+  const sortBy = (params.sort as string) || "date_asc";
+
+  const { data: categoryData } = await supabase
+    .from("tour_categorys")
+    .select("id, category")
+    .order("category");
+
+  const categories = ((categoryData || []) as TourCategoryOption[]).filter(
+    (c): c is { id: string; category: string } => Boolean(c.category),
+  );
+
+  const normalizedCategoryFilter = categoryFilter
+    ? normalizeCategoryFilter(categoryFilter, categories)
+    : categoryFilter;
+
+  const { data: allToursData } = await supabase
+    .from("tours")
+    .select("difficulty")
+    .neq("status", "completed");
+
+  const difficulties = Array.from(
+    new Set(
+      (allToursData ?? []).reduce<string[]>((values, tour) => {
+        if (tour.difficulty) {
+          values.push(tour.difficulty);
+        }
+        return values;
+      }, []),
+    ),
+  ) as string[];
+
+  const [{ data: guides }, { data: tourGroups }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, full_name")
+      .in("role", ["guide", "admin"])
+      .order("full_name"),
+    supabase.from("tour_groups").select("id, group_name").order("group_name"),
+  ]);
+
+  const query = buildTourQuery(supabase, {
+    normalizedCategoryFilter,
+    difficultyFilter,
+    groupFilter,
+  });
 
   const { data: tours, error } = await query.order("start_date", {
     ascending: sortBy === "date_asc",
   });
 
-  const tourIds = (tours || []).map((tour) => tour.id);
-  const { data: countRows } =
-    tourIds.length > 0
-      ? await supabase.rpc("get_tour_participant_counts", {
-          p_tour_ids: tourIds,
-        })
-      : { data: [] };
-
-  const confirmedCountByTour = new Map<string, number>(
-    ((countRows || []) as TourParticipantCountRow[]).map((row) => [
-      row.tour_id,
-      row.confirmed_count || 0,
-    ]),
+  const confirmedCountByTour = await loadConfirmedCountByTour(
+    supabase,
+    (tours || []).map((tour) => tour.id),
   );
 
   const todayIso = new Date().toISOString().split("T")[0];
 
-  let filteredTours: TourCardItem[] = normalizeTourRows(
+  const toursWithCounts: TourCardItem[] = normalizeTourRows(
     tours as RawTourCardItem[] | null,
   ).map((tour) => ({
     ...tour,
     confirmed_participants_count: confirmedCountByTour.get(tour.id) ?? 0,
   }));
 
-  filteredTours = filteredTours.filter((tour) => {
-    if (tour.status !== "cancelled") {
-      return true;
-    }
-
-    const relevantEndDate = tour.end_date || tour.start_date;
-    if (!relevantEndDate) {
-      return false;
-    }
-
-    return relevantEndDate >= todayIso;
-  });
-
-  const getConfirmedCount = (tour: TourCardItem) =>
-    tour.confirmed_participants_count ??
-    tour.tour_participants?.filter((p) => p.status === "confirmed").length ??
-    0;
-
-  if (guideFilter) {
-    filteredTours = filteredTours.filter((tour) =>
-      tour.tour_guides?.some((tg) => tg.user_id === guideFilter),
-    );
-  }
-
-  if (availableOnly) {
-    filteredTours = filteredTours.filter((tour) => {
-      const confirmedCount = getConfirmedCount(tour);
-      const maxParticipants = tour.max_participants || 0;
-      return maxParticipants === 0 || confirmedCount < maxParticipants;
-    });
-  }
-
-  if (sortBy.startsWith("capacity")) {
-    filteredTours.sort((a, b) => {
-      const getCapacity = (t: TourCardItem) => {
-        const conf = getConfirmedCount(t);
-        const max = t.max_participants || 999;
-        return conf / max;
-      };
-      return sortBy === "capacity_low"
-        ? getCapacity(b) - getCapacity(a)
-        : getCapacity(a) - getCapacity(b);
-    });
-  } else if (sortBy === "date_desc") {
-    filteredTours.sort(
-      (a, b) => toTimestamp(b.start_date) - toTimestamp(a.start_date),
-    );
-  }
+  const visibleTours = toursWithCounts.filter((tour) =>
+    isVisiblePublicTour(tour, todayIso),
+  );
+  const guidedTours = filterByGuide(visibleTours, guideFilter);
+  const availableTours = filterByAvailability(guidedTours, availableOnly);
+  const filteredTours = sortPublicTours(availableTours, sortBy);
 
   return (
     <div className="mx-auto max-w-site px-4 py-8">
@@ -251,13 +319,15 @@ export default async function PublicToursPage({
         </div>
       )}
 
-      <TourFilters
-        categories={categories}
-        difficulties={difficulties}
-        guides={guides || []}
-        tourGroups={tourGroups || []}
-        basePath="/oeffentlich/touren"
-      />
+      <Suspense fallback={<div />}>
+        <TourFilters
+          categories={categories}
+          difficulties={difficulties}
+          guides={guides || []}
+          tourGroups={tourGroups || []}
+          basePath="/oeffentlich/touren"
+        />
+      </Suspense>
 
       <div className="space-y-4">
         {filteredTours.length > 0 ? (
