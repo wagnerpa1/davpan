@@ -19,13 +19,17 @@ export function DeleteResourceButton({ resourceId }: { resourceId: string }) {
       return;
 
     setIsDeleting(true);
-    const result = await deleteResource(resourceId);
-    setIsDeleting(false);
 
-    if (result.error) {
-      alert(result.error);
-    } else {
-      router.refresh();
+    try {
+      const result = await deleteResource(resourceId);
+
+      if (result.error) {
+        alert(result.error);
+      } else {
+        router.refresh();
+      }
+    } finally {
+      setIsDeleting(false);
     }
   };
 

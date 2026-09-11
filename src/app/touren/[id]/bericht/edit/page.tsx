@@ -1,10 +1,9 @@
-import { format } from "date-fns";
-import { de } from "date-fns/locale";
-import { Calendar, MapPin, Mountain, MoveLeft } from "lucide-react";
+import { MoveLeft } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getTourParticipantsForListing } from "@/app/actions/reports";
+import { getTourParticipantsForListing } from "@/app/actions/reports.server";
 import { ReportForm } from "@/components/reports/ReportForm";
+import { ReportTourMetaCard } from "@/components/reports/ReportTourMetaCard";
 import { isAdminRole } from "@/lib/permissions";
 import { createClient } from "@/utils/supabase/server";
 
@@ -18,36 +17,40 @@ interface TourGuide {
 }
 
 export default async function EditReportPage({ params, searchParams }: Props) {
-  const { id: tourId } = await params;
-  const sParams = await searchParams;
+  const [{ id: tourId }, sParams] = await Promise.all([params, searchParams]);
   const reportId = sParams.id as string;
 
   if (!reportId) redirect("/guide/dashboard");
 
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const [
+    {
+      data: { user },
+    },
+    { data: tour, error: tourError },
+    { data: report, error: reportError },
+  ] = await Promise.all([
+    supabase.auth.getUser(),
+    supabase
+      .from("tours")
+      .select(`
+        *,
+        tour_guides (user_id)
+      `)
+      .eq("id", tourId)
+      .single(),
+    supabase
+      .from("tour_reports")
+      .select(`
+        *,
+        report_images (id, image_url, order_index)
+      `)
+      .eq("id", reportId)
+      .single(),
+  ]);
+
   if (!user) redirect("/login");
-
-  const { data: tour, error: tourError } = await supabase
-    .from("tours")
-    .select(`
-      *,
-      tour_guides (user_id)
-    `)
-    .eq("id", tourId)
-    .single();
-
-  const { data: report, error: reportError } = await supabase
-    .from("tour_reports")
-    .select(`
-      *,
-      report_images (id, image_url, order_index)
-    `)
-    .eq("id", reportId)
-    .single();
 
   if (tourError || !tour || reportError || !report)
     redirect("/guide/dashboard");
@@ -90,49 +93,7 @@ export default async function EditReportPage({ params, searchParams }: Props) {
         </div>
       </div>
 
-      <div className="mb-8 grid gap-4 overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:grid-cols-2 md:grid-cols-3">
-        <div className="flex items-center gap-3">
-          <div className="rounded-xl bg-jdav-green/10 p-2 text-jdav-green">
-            <Mountain className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Tour
-            </p>
-            <p className="font-bold text-slate-900 truncate">{tour.title}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="rounded-xl bg-jdav-green/10 p-2 text-jdav-green">
-            <Calendar className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-              Datum
-            </p>
-            <p className="font-bold text-slate-900">
-              {tour.start_date
-                ? format(new Date(tour.start_date), "dd. MMMM yyyy", {
-                    locale: de,
-                  })
-                : "TBA"}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="rounded-xl bg-jdav-green/10 p-2 text-jdav-green">
-            <MapPin className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-              Gebiet
-            </p>
-            <p className="font-bold text-slate-900">
-              {tour.target_area || "n.A."}
-            </p>
-          </div>
-        </div>
-      </div>
+      <ReportTourMetaCard tour={tour} />
 
       <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
         <ReportForm

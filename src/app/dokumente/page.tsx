@@ -13,9 +13,10 @@ interface DocumentItem {
 }
 
 export default async function DokumentePage() {
-  const supabase = await createClient();
-
-  const authContext = await getCurrentUserProfile();
+  const [supabase, authContext] = await Promise.all([
+    createClient(),
+    getCurrentUserProfile(),
+  ]);
 
   if (!authContext.user) {
     redirect("/login");
@@ -72,7 +73,7 @@ export default async function DokumentePage() {
                     href={doc.file_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 transition-all hover:border-jdav-green hover:shadow-sm"
+                    className="group flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:border-jdav-green hover:shadow-sm"
                   >
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-green-50 text-jdav-green group-hover:bg-jdav-green group-hover:text-white transition-colors">

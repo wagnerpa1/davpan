@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 export default function GlobalErrorPage() {
   return (
     <html lang="de">
@@ -15,12 +17,12 @@ export default function GlobalErrorPage() {
             Bitte lade die Seite neu. Wenn das Problem bleibt, versuche es
             später erneut.
           </p>
-          <a
+          <Link
             href="/"
             className="mt-6 inline-flex rounded-xl bg-jdav-green px-4 py-2 text-base font-semibold text-white hover:bg-jdav-green-dark"
           >
             Zur Startseite
-          </a>
+          </Link>
         </main>
       </body>
     </html>

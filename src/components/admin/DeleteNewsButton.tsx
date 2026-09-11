@@ -2,7 +2,7 @@
 
 import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 interface DeleteNewsButtonProps {
   id: string;
@@ -11,26 +11,35 @@ interface DeleteNewsButtonProps {
 export function DeleteNewsButton({ id }: DeleteNewsButtonProps) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
+  const isDeletingRef = useRef(false);
 
   const handleDelete = async () => {
-    const confirmed = window.confirm("Diese News wirklich löschen?");
-    if (!confirmed) return;
-
-    setIsDeleting(true);
-
-    const response = await fetch(`/api/admin/news?id=${id}`, {
-      method: "DELETE",
-      credentials: "same-origin",
-    });
-
-    setIsDeleting(false);
-
-    if (!response.ok) {
-      window.alert("Löschen fehlgeschlagen.");
+    if (isDeletingRef.current) {
       return;
     }
 
-    router.refresh();
+    const confirmed = window.confirm("Diese News wirklich löschen?");
+    if (!confirmed) return;
+
+    isDeletingRef.current = true;
+    setIsDeleting(true);
+
+    try {
+      const response = await fetch(`/api/admin/news?id=${id}`, {
+        method: "DELETE",
+        credentials: "same-origin",
+      });
+
+      if (!response.ok) {
+        window.alert("Löschen fehlgeschlagen.");
+        return;
+      }
+
+      router.refresh();
+    } finally {
+      isDeletingRef.current = false;
+      setIsDeleting(false);
+    }
   };
 
   return (

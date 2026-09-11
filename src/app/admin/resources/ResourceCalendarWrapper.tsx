@@ -37,8 +37,6 @@ export function ResourceCalendarWrapper({
   bookings,
 }: ResourceCalendarWrapperProps) {
   const [showBookingForm, setShowBookingForm] = useState(false);
-  const [calendarBookings, _setCalendarBookings] =
-    useState<ResourceBooking[]>(bookings);
 
   const handleBookingSuccess = () => {
     setShowBookingForm(false);
@@ -68,7 +66,7 @@ export function ResourceCalendarWrapper({
         <h2 className="text-lg font-bold text-slate-800 mb-6">
           Buchungs-Kalender
         </h2>
-        <ResourceCalendar bookings={calendarBookings} />
+        <ResourceCalendar bookings={bookings} />
       </div>
     </div>
   );

@@ -3,6 +3,25 @@
 import { revalidatePath } from "next/cache";
 import { canBookStandaloneResource, isAdminRole } from "@/lib/permissions";
 import { createClient } from "@/utils/supabase/server";
+import { requireAuth } from "./auth-guards";
+
+async function requireResourceAdmin() {
+  const auth = await requireAuth();
+  const { data: profile } = await auth.supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", auth.user.id)
+    .single();
+
+  if (!isAdminRole(profile?.role)) {
+    return {
+      error: "Keine Berechtigung (nur Admin).",
+      auth: null,
+    } as const;
+  }
+
+  return { error: null, auth } as const;
+}
 
 async function isUserGuideForTour(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -22,7 +41,17 @@ async function isUserGuideForTour(
 // ----- RESOURCES -----
 
 export async function getResources() {
-  const supabase = await createClient();
+  const { supabase, user } = await requireAuth();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (!canBookStandaloneResource(profile?.role)) {
+    return [];
+  }
+
   const { data, error } = await supabase
     .from("resources")
     .select("*")
@@ -36,23 +65,12 @@ export async function getResources() {
 }
 
 export async function createOrUpdateResource(formData: FormData) {
-  const supabase = await createClient();
-
-  // Security Check
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Nicht eingeloggt." };
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (!isAdminRole(profile?.role)) {
-    return { error: "Keine Berechtigung (nur Admin)." };
+  const admin = await requireResourceAdmin();
+  if (admin.error || !admin.auth) {
+    return { error: admin.error ?? "Nicht autorisiert." };
   }
+
+  const { supabase } = admin.auth;
 
   const id = formData.get("id") as string | null;
   const name = formData.get("name") as string;
@@ -88,22 +106,12 @@ export async function createOrUpdateResource(formData: FormData) {
 }
 
 export async function deleteResource(id: string) {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Nicht eingeloggt." };
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (!isAdminRole(profile?.role)) {
-    return { error: "Keine Berechtigung (nur Admin)." };
+  const admin = await requireResourceAdmin();
+  if (admin.error || !admin.auth) {
+    return { error: admin.error ?? "Nicht autorisiert." };
   }
+
+  const { supabase } = admin.auth;
 
   const { error } = await supabase.from("resources").delete().eq("id", id);
   if (error)
@@ -179,7 +187,25 @@ export async function checkAndBookResource(
   endDate: string,
   userId: string,
 ) {
-  const supabase = await createClient();
+  const { supabase, user } = await requireAuth();
+
+  if (user.id !== userId) {
+    return { error: "Keine Berechtigung." };
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  const isAdmin = isAdminRole(profile?.role);
+  const canBookForTour =
+    isAdmin || (await isUserGuideForTour(supabase, tourId, user.id));
+
+  if (!canBookForTour) {
+    return { error: "Keine Berechtigung für diese Tour." };
+  }
 
   // Use new atomic RPC (handles conflict checking + upsert in one transaction)
   const { data, error } = await supabase.rpc("book_resource_for_tour_atomic", {
@@ -197,7 +223,7 @@ export async function checkAndBookResource(
   return { success: true, booking_id: data.booking_id };
 }
 
-export async function releaseResourceBooking(resourceBookingId: string) {
+async function _releaseResourceBooking(resourceBookingId: string) {
   const supabase = await createClient();
 
   const {
@@ -244,12 +270,7 @@ export async function bookResourceStandalone(
   endDate: string,
   reason: string,
 ) {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Nicht eingeloggt." };
+  const { supabase, user } = await requireAuth();
 
   // Permission check: Allow Guide, Materialwart, or Admin
   const { data: profile } = await supabase
@@ -320,17 +341,14 @@ export async function deleteResourceBooking(resourceBookingId: string) {
   if (!user) return { error: "Nicht eingeloggt." };
 
   // Permission check
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  const { data: booking } = await supabase
-    .from("resource_bookings")
-    .select("tour_id, created_by")
-    .eq("id", resourceBookingId)
-    .single();
+  const [{ data: profile }, { data: booking }] = await Promise.all([
+    supabase.from("profiles").select("role").eq("id", user.id).single(),
+    supabase
+      .from("resource_bookings")
+      .select("tour_id, created_by")
+      .eq("id", resourceBookingId)
+      .single(),
+  ]);
 
   if (!booking) return { error: "Buchung nicht gefunden." };
 

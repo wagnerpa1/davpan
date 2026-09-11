@@ -2,7 +2,7 @@
 "use client";
 
 import { X } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useEffectEvent } from "react";
 import { TourRegistrationForm } from "./TourRegistrationForm";
 
 interface Material {
@@ -38,10 +38,12 @@ export function TourRegistrationModal({
   childrenProfiles,
   availableMaterials,
 }: TourRegistrationModalProps) {
-  // Handle escape key to close modal
+  const handleCloseFromEffect = useEffectEvent(onClose);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: handleCloseFromEffect is an Effect Event and non-reactive
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") handleCloseFromEffect();
     };
     if (isOpen) {
       window.addEventListener("keydown", handleEscape);
@@ -51,7 +53,7 @@ export function TourRegistrationModal({
       window.removeEventListener("keydown", handleEscape);
       document.body.style.overflow = "unset";
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -66,7 +68,7 @@ export function TourRegistrationModal({
       />
 
       {/* Modal Content */}
-      <div className="relative w-full max-w-lg transform overflow-hidden rounded-3xl bg-white shadow-2xl transition-all animate-in slide-in-from-bottom-4 duration-300">
+      <div className="relative w-full max-w-lg transform overflow-hidden rounded-3xl bg-white shadow-2xl transition-transform animate-in slide-in-from-bottom-4 duration-300">
         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
           <div>
             <h2 className="text-xl font-bold text-slate-900">Touranmeldung</h2>
@@ -76,6 +78,7 @@ export function TourRegistrationModal({
           </div>
           <button
             type="button"
+            aria-label="Touranmeldung schließen"
             onClick={onClose}
             className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
           >

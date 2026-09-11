@@ -35,37 +35,40 @@ function formatReportDate(value?: string | null) {
 }
 
 export default async function ReportDetailPage({ params }: Props) {
-  const { id } = await params;
-  const supabase = await createClient();
+  const [{ id }, supabase] = await Promise.all([params, createClient()]);
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const [
+    {
+      data: { user },
+    },
+    { data: report, error },
+  ] = await Promise.all([
+    supabase.auth.getUser(),
+    supabase
+      .from("tour_reports")
+      .select(`
+        *,
+        profiles:created_by (full_name),
+        tours (
+          id,
+          title,
+          difficulty,
+          target_area,
+          start_date,
+          elevation,
+          distance,
+          tour_guides (user_id),
+          tour_categorys!tours_category_fkey(category)
+        ),
+        report_images (id, image_url, order_index)
+      `)
+      .eq("id", id)
+      .single(),
+  ]);
+
   if (!user) {
     redirect("/login");
   }
-
-  // Fetch report with author and tour details
-  const { data: report, error } = await supabase
-    .from("tour_reports")
-    .select(`
-      *,
-      profiles:created_by (full_name),
-      tours (
-        id,
-        title,
-        difficulty,
-        target_area,
-        start_date,
-        elevation,
-        distance,
-        tour_guides (user_id),
-        tour_categorys!tours_category_fkey(category)
-      ),
-      report_images (id, image_url, order_index)
-    `)
-    .eq("id", id)
-    .single();
 
   if (error || !report) {
     notFound();
@@ -201,7 +204,7 @@ export default async function ReportDetailPage({ params }: Props) {
                 href={`/touren/${report.tours.id}`}
                 className="shrink-0 w-full sm:w-auto"
               >
-                <span className="inline-flex w-full items-center justify-center rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold transition-all hover:bg-slate-900 hover:text-white sm:w-auto">
+                <span className="inline-flex w-full items-center justify-center rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold transition-colors hover:bg-slate-900 hover:text-white sm:w-auto">
                   Tour ansehen <ArrowRight className="ml-2 h-3.5 w-3.5" />
                 </span>
               </Link>

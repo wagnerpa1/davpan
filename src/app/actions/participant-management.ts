@@ -96,17 +96,19 @@ export async function updateParticipantStatus(
     previousStatus === "cancelled" &&
     newStatus !== "cancelled"
   ) {
-    for (const reservation of materialReservations) {
-      if (reservation.status !== "cancelled") {
-        continue;
-      }
-
-      const { data: inventory } = await supabase
-        .from("material_inventory")
-        .select("quantity_available")
-        .eq("id", reservation.material_inventory_id)
-        .single();
-
+    const cancelledReservations = materialReservations.filter(
+      (r) => r.status === "cancelled",
+    );
+    const inventoryChecks = await Promise.all(
+      cancelledReservations.map((reservation) =>
+        supabase
+          .from("material_inventory")
+          .select("quantity_available")
+          .eq("id", reservation.material_inventory_id)
+          .single(),
+      ),
+    );
+    for (const { data: inventory } of inventoryChecks) {
       if (!inventory || inventory.quantity_available <= 0) {
         throw new Error(
           "Wiederherstellung nicht möglich: reserviertes Material ist aktuell nicht verfügbar.",
@@ -207,15 +209,11 @@ export async function updateParticipantStatus(
   // ...existing code...
   if (materialReservations && materialReservations.length > 0) {
     if (newStatus === "cancelled") {
-      for (const reservation of materialReservations) {
-        if (reservation.status === "cancelled") {
-          continue;
-        }
-
-        if (
-          reservation.status === "reserved" ||
-          reservation.status === "on loan"
-        ) {
+      const activeReservations = materialReservations.filter(
+        (r) => r.status === "reserved" || r.status === "on loan",
+      );
+      await Promise.all(
+        activeReservations.map(async (reservation) => {
           const { data: inventory } = await supabase
             .from("material_inventory")
             .select("quantity_available")
@@ -228,42 +226,55 @@ export async function updateParticipantStatus(
               .update({ quantity_available: inventory.quantity_available + 1 })
               .eq("id", reservation.material_inventory_id);
           }
-        }
 
-        await supabase
-          .from("material_reservations")
-          .update({ status: "cancelled" })
-          .eq("id", reservation.id);
-      }
+          await supabase
+            .from("material_reservations")
+            .update({ status: "cancelled" })
+            .eq("id", reservation.id);
+        }),
+      );
+
+      const skippedReservations = materialReservations.filter(
+        (r) => r.status === "cancelled",
+      );
+      await Promise.all(
+        skippedReservations.map((reservation) =>
+          supabase
+            .from("material_reservations")
+            .update({ status: "cancelled" })
+            .eq("id", reservation.id),
+        ),
+      );
     }
 
     // If a previously cancelled participant is restored, reactivate reservation.
     if (previousStatus === "cancelled" && newStatus !== "cancelled") {
-      for (const reservation of materialReservations) {
-        if (reservation.status !== "cancelled") {
-          continue;
-        }
+      const cancelledToReactivate = materialReservations.filter(
+        (r) => r.status === "cancelled",
+      );
+      await Promise.all(
+        cancelledToReactivate.map(async (reservation) => {
+          const { data: inventory } = await supabase
+            .from("material_inventory")
+            .select("quantity_available")
+            .eq("id", reservation.material_inventory_id)
+            .single();
 
-        const { data: inventory } = await supabase
-          .from("material_inventory")
-          .select("quantity_available")
-          .eq("id", reservation.material_inventory_id)
-          .single();
+          if (!inventory || inventory.quantity_available <= 0) {
+            return;
+          }
 
-        if (!inventory || inventory.quantity_available <= 0) {
-          continue;
-        }
+          await supabase
+            .from("material_inventory")
+            .update({ quantity_available: inventory.quantity_available - 1 })
+            .eq("id", reservation.material_inventory_id);
 
-        await supabase
-          .from("material_inventory")
-          .update({ quantity_available: inventory.quantity_available - 1 })
-          .eq("id", reservation.material_inventory_id);
-
-        await supabase
-          .from("material_reservations")
-          .update({ status: "reserved" })
-          .eq("id", reservation.id);
-      }
+          await supabase
+            .from("material_reservations")
+            .update({ status: "reserved" })
+            .eq("id", reservation.id);
+        }),
+      );
     }
   }
 

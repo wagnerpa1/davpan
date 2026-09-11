@@ -4,6 +4,7 @@
 --   - 'internal_cron_secret': Authorization token for internal cron worker
 
 -- 1. Enable required extensions if not already present
+CREATE SCHEMA IF NOT EXISTS net;
 CREATE EXTENSION IF NOT EXISTS pg_cron SCHEMA pg_catalog;
 CREATE EXTENSION IF NOT EXISTS pg_net SCHEMA net;
 CREATE EXTENSION IF NOT EXISTS supabase_vault SCHEMA vault;

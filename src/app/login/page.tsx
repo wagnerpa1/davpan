@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { LoginForm } from "@/components/auth/LoginForm";
 
 export default function LoginPage() {
@@ -16,12 +17,12 @@ export default function LoginPage() {
 
         <div className="mt-8 text-center text-sm text-slate-500">
           <p>Du bist noch kein Mitglied oder möchtest nur stöbern?</p>
-          <a
+          <Link
             href="/oeffentlich/touren"
             className="mt-2 inline-block font-medium text-jdav-green hover:text-jdav-green-dark hover:underline"
           >
             Zu den öffentlichen Touren &rarr;
-          </a>
+          </Link>
         </div>
       </div>
     </div>

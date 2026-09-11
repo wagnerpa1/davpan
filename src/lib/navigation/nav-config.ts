@@ -108,6 +108,11 @@ export function buildNavigation(userRole?: RoleLike): AppNavigation {
           description: "Metriken, Outbox und Audit-Logs",
         },
         {
+          label: "Mitgl. Daten Import/Export",
+          href: "/admin/members/import",
+          description: "TMitglierderdatenbank importieren",
+        },
+        {
           label: "Datenexport",
           href: "/admin/export",
           description: "Touren und Teilnehmer als CSV exportieren",

@@ -238,24 +238,30 @@ export function getRegistrationDisplayLabel(
 }
 
 export function getNextConfirmedRegistration(tabs: RegistrationTab[]) {
-  return (
-    tabs
-      .flatMap((tab) => tab.registrations)
-      .filter((registration) => registration.status === "confirmed")
-      .filter(
-        (registration) =>
-          registration.tour.status !== "completed" &&
-          registration.tour.status !== "cancelled",
-      )
-      .sort((left, right) => {
-        const leftDate = left.tour.start_date
-          ? Date.parse(left.tour.start_date)
-          : 0;
-        const rightDate = right.tour.start_date
-          ? Date.parse(right.tour.start_date)
-          : 0;
+  const confirmedRegistrations: UserTourRegistration[] = [];
 
-        return leftDate - rightDate;
-      })[0] ?? null
+  for (const tab of tabs) {
+    for (const registration of tab.registrations) {
+      if (
+        registration.status === "confirmed" &&
+        registration.tour.status !== "completed" &&
+        registration.tour.status !== "cancelled"
+      ) {
+        confirmedRegistrations.push(registration);
+      }
+    }
+  }
+
+  return (
+    confirmedRegistrations.sort((left, right) => {
+      const leftDate = left.tour.start_date
+        ? Date.parse(left.tour.start_date)
+        : 0;
+      const rightDate = right.tour.start_date
+        ? Date.parse(right.tour.start_date)
+        : 0;
+
+      return leftDate - rightDate;
+    })[0] ?? null
   );
 }

@@ -170,48 +170,50 @@ export async function dispatchPushForNotification(input: PushDispatchInput) {
     payload: input.payload,
   });
 
-  for (const sub of subscriptions) {
-    try {
-      await webpush.sendNotification(
-        {
-          endpoint: sub.endpoint,
-          keys: {
-            p256dh: sub.p256dh,
-            auth: sub.auth,
+  await Promise.all(
+    subscriptions.map(async (sub) => {
+      try {
+        await webpush.sendNotification(
+          {
+            endpoint: sub.endpoint,
+            keys: {
+              p256dh: sub.p256dh,
+              auth: sub.auth,
+            },
           },
-        },
-        payload,
-      );
+          payload,
+        );
 
-      const lastUsedUpdate: PushSubscriptionUpdate = {
-        last_used_at: new Date().toISOString(),
-      };
-
-      await pushUpdateClient
-        .from("push_subscriptions")
-        .update(lastUsedUpdate)
-        .eq("id", sub.id);
-    } catch (error: unknown) {
-      const statusCode =
-        typeof error === "object" && error !== null && "statusCode" in error
-          ? Number((error as { statusCode?: number }).statusCode)
-          : 0;
-
-      console.error(
-        `[Push] Error sending notification to subscription ${sub.id}:`,
-        error,
-      );
-
-      if (statusCode === 404 || statusCode === 410) {
-        const disableUpdate: PushSubscriptionUpdate = {
-          disabled_at: new Date().toISOString(),
+        const lastUsedUpdate: PushSubscriptionUpdate = {
+          last_used_at: new Date().toISOString(),
         };
 
         await pushUpdateClient
           .from("push_subscriptions")
-          .update(disableUpdate)
+          .update(lastUsedUpdate)
           .eq("id", sub.id);
+      } catch (error: unknown) {
+        const statusCode =
+          typeof error === "object" && error !== null && "statusCode" in error
+            ? Number((error as { statusCode?: number }).statusCode)
+            : 0;
+
+        console.error(
+          `[Push] Error sending notification to subscription ${sub.id}:`,
+          error,
+        );
+
+        if (statusCode === 404 || statusCode === 410) {
+          const disableUpdate: PushSubscriptionUpdate = {
+            disabled_at: new Date().toISOString(),
+          };
+
+          await pushUpdateClient
+            .from("push_subscriptions")
+            .update(disableUpdate)
+            .eq("id", sub.id);
+        }
       }
-    }
-  }
+    }),
+  );
 }

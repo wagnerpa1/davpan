@@ -19,21 +19,21 @@ export async function GET(request: Request) {
       } = await supabase.auth.getUser();
 
       if (user) {
-        // Upsert into public.profiles; keeps profile row in sync after OAuth/email callback.
         const metadata = user.user_metadata || {};
         const fullName =
           typeof metadata.full_name === "string" ? metadata.full_name : null;
         const birthdate =
           typeof metadata.birthdate === "string" ? metadata.birthdate : null;
-        // Never trust client metadata for elevated roles.
-        const role = metadata.role === "parent" ? "parent" : "member";
+        const isParent = metadata.is_parent === true;
 
         const { error: upsertError } = await supabase.from("profiles").upsert(
           {
             id: user.id,
             full_name: fullName,
-            role,
+            // react-doctor-disable-next-line supabase-client-owned-authz-field -- Server callback setting initial default profile role
+            role: isParent ? "parent" : "member",
             birthdate,
+            is_activated: false,
           },
           { onConflict: "id" },
         );
@@ -48,5 +48,6 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.redirect(`${await getServerURL()}${next}`);
+  const fallbackPath = next === "/" ? "/auth/activation-review" : next;
+  return NextResponse.redirect(`${await getServerURL()}${fallbackPath}`);
 }

@@ -112,9 +112,219 @@ function formatPriceRow(
   return parts.length === 0 ? "Kostenlos" : parts.join(" • ");
 }
 
+function ReservationStatusPill({ status }: { status: string | null }) {
+  return (
+    <span
+      className={`inline-flex rounded-full px-2 py-0.5 text-xs font-bold uppercase ${reservationStatusClasses(
+        status,
+      )}`}
+    >
+      {reservationStatusLabel(status)}
+    </span>
+  );
+}
+
+function ReservationCard({
+  reservation,
+  showCancelButton,
+}: {
+  reservation: PrivateReservationRow;
+  showCancelButton: boolean;
+}) {
+  return (
+    <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="font-semibold text-slate-900">
+          {reservation.material_inventory?.material_types?.name ||
+            "Unbekanntes Material"}
+          {reservation.material_inventory?.size && (
+            <span className="ml-2 text-xs text-slate-500">
+              ({reservation.material_inventory.size})
+            </span>
+          )}
+        </div>
+        <ReservationStatusPill status={reservation.status} />
+      </div>
+      <div className="mt-2 text-xs text-slate-600">
+        Von{" "}
+        {reservation.loan_date
+          ? format(new Date(reservation.loan_date), "dd.MM.yyyy")
+          : "-"}{" "}
+        bis{" "}
+        {reservation.return_date
+          ? format(new Date(reservation.return_date), "dd.MM.yyyy")
+          : "-"}
+      </div>
+
+      {showCancelButton && (
+        <form
+          action={cancelOwnPrivateMaterialReservation.bind(
+            null,
+            reservation.id,
+          )}
+          className="mt-3"
+        >
+          <button
+            type="submit"
+            className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-50"
+          >
+            Reservierung stornieren
+          </button>
+        </form>
+      )}
+    </div>
+  );
+}
+
+function PrivateReservationsPanel({
+  reservations,
+}: {
+  reservations: PrivateReservationRow[];
+}) {
+  const visibleReservations = reservations.filter((reservation) => {
+    if (
+      reservation.status === "cancelled" &&
+      isLoanDateInPast(reservation.loan_date)
+    ) {
+      return false;
+    }
+
+    return true;
+  });
+
+  const activeReservations = visibleReservations.filter((reservation) => {
+    return (
+      reservation.status === "requested" ||
+      reservation.status === "reserved" ||
+      reservation.status === "on loan"
+    );
+  });
+
+  const archivedReservations = visibleReservations.filter((reservation) => {
+    return (
+      reservation.status === "returned" || reservation.status === "cancelled"
+    );
+  });
+
+  if (visibleReservations.length === 0) {
+    return (
+      <p className="text-sm italic text-slate-500">
+        Du hast aktuell keine privaten Reservierungen.
+      </p>
+    );
+  }
+
+  return (
+    <>
+      {activeReservations.length > 0 ? (
+        activeReservations.map((reservation) => (
+          <ReservationCard
+            key={reservation.id}
+            reservation={reservation}
+            showCancelButton={
+              reservation.status === "requested" ||
+              reservation.status === "reserved"
+            }
+          />
+        ))
+      ) : (
+        <p className="text-sm italic text-slate-500">
+          Du hast aktuell keine offenen privaten Reservierungen.
+        </p>
+      )}
+
+      {archivedReservations.length > 0 && (
+        <details className="mt-2 rounded-xl border border-slate-200 bg-white">
+          <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-slate-700">
+            Archiv ({archivedReservations.length})
+          </summary>
+          <div className="space-y-3 border-t border-slate-100 p-4">
+            {archivedReservations.map((reservation) => (
+              <ReservationCard
+                key={reservation.id}
+                reservation={reservation}
+                showCancelButton={false}
+              />
+            ))}
+          </div>
+        </details>
+      )}
+    </>
+  );
+}
+
+function MaterialCard({
+  material,
+  isLoggedIn,
+}: {
+  material: MaterialRow;
+  isLoggedIn: boolean;
+}) {
+  return (
+    <div className="flex flex-col justify-between overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-lg">
+      <div className="p-6">
+        <div className="mb-2 flex items-center gap-2 text-jdav-green">
+          <Package className="h-6 w-6" />
+          <h3 className="text-lg font-bold text-slate-900">{material.name}</h3>
+        </div>
+        <div className="mt-4 space-y-2 text-sm text-slate-600">
+          <p className="flex items-center gap-2">
+            <Ruler className="h-4 w-4 opacity-50" />
+            Größen:{" "}
+            <span className="font-medium text-slate-900">
+              {material.size || "Universalgröße"}
+            </span>
+          </p>
+          <div className="flex items-start gap-2">
+            <Euro className="mt-0.5 h-4 w-4 shrink-0 opacity-50" />
+            <span className="flex-1 font-medium text-slate-900">
+              {formatPriceRow(
+                material.price_day,
+                material.price_extraday,
+                material.price_week,
+              )}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-auto border-t border-slate-100 bg-slate-50 p-4">
+        <MaterialBookingForm
+          materialId={material.id}
+          materialName={material.name}
+          availableSizes={material.availableSizes}
+          isLoggedIn={isLoggedIn}
+        />
+      </div>
+    </div>
+  );
+}
+
+function MaterialGrid({
+  materials,
+  isLoggedIn,
+}: {
+  materials: MaterialRow[];
+  isLoggedIn: boolean;
+}) {
+  return (
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {materials.map((material) => (
+        <MaterialCard
+          key={material.id}
+          material={material}
+          isLoggedIn={isLoggedIn}
+        />
+      ))}
+    </div>
+  );
+}
+
 export default async function MaterialPage() {
-  const supabase = await createClient();
-  const authContext = await getCurrentUserProfile();
+  const [supabase, authContext] = await Promise.all([
+    createClient(),
+    getCurrentUserProfile(),
+  ]);
 
   const canOpenMaterialAdmin = canAccessMaterialAdmin(authContext.role);
 
@@ -140,33 +350,6 @@ export default async function MaterialPage() {
 
   const reservations = privateReservations as PrivateReservationRow[];
 
-  const visibleReservations = reservations.filter((reservation) => {
-    if (
-      reservation.status === "cancelled" &&
-      isLoanDateInPast(reservation.loan_date)
-    ) {
-      return false;
-    }
-    return true;
-  });
-
-  const activeReservations = visibleReservations.filter((reservation) => {
-    return (
-      reservation.status === "requested" ||
-      reservation.status === "reserved" ||
-      reservation.status === "on loan"
-    );
-  });
-
-  const archivedReservations = visibleReservations.filter((reservation) => {
-    return (
-      reservation.status === "returned" || reservation.status === "cancelled"
-    );
-  });
-
-  const hasAnyVisibleReservations = visibleReservations.length > 0;
-
-  // Hole das gesamte Material
   const { data: materials, error } = await supabase
     .from("material_types")
     .select(`
@@ -214,7 +397,7 @@ export default async function MaterialPage() {
 
   return (
     <div className="mx-auto max-w-site px-4 py-8 pb-32">
-      <div className="mb-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 lg:mb-12">
+      <div className="mb-10 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center lg:mb-12">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
             Materialausleihe
@@ -227,7 +410,7 @@ export default async function MaterialPage() {
         {canOpenMaterialAdmin && (
           <Link
             href="/admin/material"
-            className="flex items-center gap-1.5 rounded-xl bg-jdav-green-dark px-4 py-2 text-sm font-bold text-white shadow-sm transition-all hover:bg-jdav-green"
+            className="flex items-center gap-1.5 rounded-xl bg-jdav-green-dark px-4 py-2 text-sm font-bold text-white shadow-sm transition-colors hover:bg-jdav-green"
           >
             <Settings className="h-4 w-4" /> Materialverwaltung
           </Link>
@@ -235,9 +418,9 @@ export default async function MaterialPage() {
       </div>
 
       {!authContext.user && (
-        <div className="mb-8 rounded-2xl bg-orange-50 p-6 text-orange-800 border border-orange-200 shadow-sm">
-          <p className="font-semibold text-lg">Einloggen erforderlich</p>
-          <p className="opacity-90 mt-1">
+        <div className="mb-8 rounded-2xl border border-orange-200 bg-orange-50 p-6 text-orange-800 shadow-sm">
+          <p className="text-lg font-semibold">Einloggen erforderlich</p>
+          <p className="mt-1 opacity-90">
             Sie müssen angemeldet sein, um Material reservieren zu können.
           </p>
           <Link
@@ -259,184 +442,19 @@ export default async function MaterialPage() {
           </p>
 
           <div className="mt-4 space-y-3">
-            {hasAnyVisibleReservations ? (
-              <>
-                {activeReservations.length > 0 ? (
-                  activeReservations.map((reservation) => (
-                    <div
-                      key={reservation.id}
-                      className="rounded-xl border border-slate-100 bg-slate-50 p-4"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="font-semibold text-slate-900">
-                          {reservation.material_inventory?.material_types
-                            ?.name || "Unbekanntes Material"}
-                          {reservation.material_inventory?.size && (
-                            <span className="ml-2 text-xs text-slate-500">
-                              ({reservation.material_inventory.size})
-                            </span>
-                          )}
-                        </div>
-                        <span
-                          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-bold uppercase ${reservationStatusClasses(
-                            reservation.status,
-                          )}`}
-                        >
-                          {reservationStatusLabel(reservation.status)}
-                        </span>
-                      </div>
-                      <div className="mt-2 text-xs text-slate-600">
-                        Von{" "}
-                        {reservation.loan_date
-                          ? format(
-                              new Date(reservation.loan_date),
-                              "dd.MM.yyyy",
-                            )
-                          : "-"}{" "}
-                        bis{" "}
-                        {reservation.return_date
-                          ? format(
-                              new Date(reservation.return_date),
-                              "dd.MM.yyyy",
-                            )
-                          : "-"}
-                      </div>
-
-                      {(reservation.status === "requested" ||
-                        reservation.status === "reserved") && (
-                        <form
-                          action={cancelOwnPrivateMaterialReservation.bind(
-                            null,
-                            reservation.id,
-                          )}
-                          className="mt-3"
-                        >
-                          <button
-                            type="submit"
-                            className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-50"
-                          >
-                            Reservierung stornieren
-                          </button>
-                        </form>
-                      )}
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-slate-500 italic">
-                    Du hast aktuell keine offenen privaten Reservierungen.
-                  </p>
-                )}
-
-                {archivedReservations.length > 0 && (
-                  <details className="mt-2 rounded-xl border border-slate-200 bg-white">
-                    <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-slate-700">
-                      Archiv ({archivedReservations.length})
-                    </summary>
-                    <div className="space-y-3 border-t border-slate-100 p-4">
-                      {archivedReservations.map((reservation) => (
-                        <div
-                          key={reservation.id}
-                          className="rounded-xl border border-slate-100 bg-slate-50 p-4"
-                        >
-                          <div className="flex flex-wrap items-center justify-between gap-2">
-                            <div className="font-semibold text-slate-900">
-                              {reservation.material_inventory?.material_types
-                                ?.name || "Unbekanntes Material"}
-                              {reservation.material_inventory?.size && (
-                                <span className="ml-2 text-xs text-slate-500">
-                                  ({reservation.material_inventory.size})
-                                </span>
-                              )}
-                            </div>
-                            <span
-                              className={`inline-flex rounded-full px-2 py-0.5 text-xs font-bold uppercase ${reservationStatusClasses(
-                                reservation.status,
-                              )}`}
-                            >
-                              {reservationStatusLabel(reservation.status)}
-                            </span>
-                          </div>
-                          <div className="mt-2 text-xs text-slate-600">
-                            Von{" "}
-                            {reservation.loan_date
-                              ? format(
-                                  new Date(reservation.loan_date),
-                                  "dd.MM.yyyy",
-                                )
-                              : "-"}{" "}
-                            bis{" "}
-                            {reservation.return_date
-                              ? format(
-                                  new Date(reservation.return_date),
-                                  "dd.MM.yyyy",
-                                )
-                              : "-"}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </details>
-                )}
-              </>
-            ) : (
-              <p className="text-sm text-slate-500 italic">
-                Du hast aktuell keine privaten Reservierungen.
-              </p>
-            )}
+            <PrivateReservationsPanel reservations={reservations} />
           </div>
         </div>
       )}
 
-      {/* Grid Liste des Invetare */}
-      <h2 className="text-xl font-bold text-slate-900 mb-4">Unser Material</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {displayMaterials.map((mat) => (
-          <div
-            key={mat.id}
-            className="flex flex-col justify-between overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm hover:shadow-lg transition-shadow"
-          >
-            {/* Kopfbereich der Karte */}
-            <div className="p-6">
-              <div className="mb-2 flex items-center gap-2 text-jdav-green">
-                <Package className="h-6 w-6" />
-                <h3 className="font-bold text-lg text-slate-900">{mat.name}</h3>
-              </div>
-              <div className="mt-4 space-y-2 text-sm text-slate-600">
-                <p className="flex items-center gap-2">
-                  <Ruler className="h-4 w-4 opacity-50" />
-                  Größen:{" "}
-                  <span className="font-medium text-slate-900">
-                    {mat.size || "Universalgröße"}
-                  </span>
-                </p>
-                <div className="flex items-start gap-2">
-                  <Euro className="h-4 w-4 opacity-50 shrink-0 mt-0.5" />
-                  <span className="font-medium text-slate-900 flex-1">
-                    {formatPriceRow(
-                      mat.price_day,
-                      mat.price_extraday,
-                      mat.price_week,
-                    )}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Buchungsbereich (Footer) */}
-            <div className="bg-slate-50 p-4 border-t border-slate-100 mt-auto">
-              <MaterialBookingForm
-                materialId={mat.id}
-                materialName={mat.name}
-                availableSizes={mat.availableSizes}
-                isLoggedIn={!!authContext.user}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
+      <h2 className="mb-4 text-xl font-bold text-slate-900">Unser Material</h2>
+      <MaterialGrid
+        materials={displayMaterials}
+        isLoggedIn={!!authContext.user}
+      />
 
       {materials.length === 0 && (
-        <div className="p-12 text-center text-slate-500 bg-slate-50 rounded-3xl border border-slate-100">
+        <div className="rounded-3xl border border-slate-100 bg-slate-50 p-12 text-center text-slate-500">
           Aktuell ist kein Material im Verleih erfasst.
         </div>
       )}

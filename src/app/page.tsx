@@ -219,7 +219,7 @@ export default async function Home() {
                   <Link
                     key={report.id}
                     href={`/berichte/${report.id}`}
-                    className="group block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:border-jdav-green hover:shadow-md"
+                    className="group block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-colors hover:border-jdav-green hover:shadow-md"
                   >
                     <div className="flex flex-col sm:flex-row">
                       <div className="relative aspect-video w-full sm:w-40 sm:aspect-square shrink-0 overflow-hidden bg-slate-100">
@@ -282,7 +282,7 @@ export default async function Home() {
         <form action="/auth/signout" method="POST">
           <button
             type="submit"
-            className="group flex items-center gap-2 text-[10px] font-bold text-slate-400 hover:text-red-500 transition-all uppercase tracking-widest"
+            className="group flex items-center gap-2 text-[10px] font-bold text-slate-400 hover:text-red-500 transition-colors uppercase tracking-widest"
             aria-label="Abmelden"
           >
             <LogOut className="h-4 w-4 transition-transform group-hover:-translate-x-1" />

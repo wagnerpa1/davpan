@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ResetPasswordForm } from "@/components/auth/ResetPasswordForm";
 
 export default function ResetPasswordPage() {
@@ -16,12 +17,12 @@ export default function ResetPasswordPage() {
 
         <div className="mt-8 text-center text-sm text-slate-500">
           <p>Du hast dein Passwort wiederhergestellt?</p>
-          <a
+          <Link
             href="/login"
             className="mt-2 inline-block font-medium text-jdav-green hover:text-jdav-green-dark hover:underline"
           >
             Zurück zum Login &rarr;
-          </a>
+          </Link>
         </div>
       </div>
     </div>

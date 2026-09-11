@@ -11,7 +11,7 @@ import { AnimatedSubmitButton } from "@/components/ui/AnimatedSubmitButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export function RedeemChildInviteForm() {
+function RedeemChildInviteForm() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);

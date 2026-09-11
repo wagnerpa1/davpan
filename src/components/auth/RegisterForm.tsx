@@ -1,11 +1,13 @@
 "use client";
 
-import { CheckCircle2, User, Users } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ChangeEvent, FormEvent } from "react";
 import { useState } from "react";
+import { AccountTypeSelector } from "@/components/auth/AccountTypeSelector";
 import { Button } from "@/components/ui/button";
-import { getAuthCallbackUrl } from "@/lib/auth";
+import { getAuthCallbackUrl } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/client";
 
@@ -17,6 +19,12 @@ function formatMembershipNumber(input: string) {
   if (limited.length <= 5) return `${limited.slice(0, 3)}-${limited.slice(3)}`;
 
   return `${limited.slice(0, 3)}-${limited.slice(3, 5)}-${limited.slice(5)}`;
+}
+
+function handleInputChange(setter: (value: string) => void) {
+  return (e: ChangeEvent<HTMLInputElement>) => {
+    setter(e.target.value);
+  };
 }
 
 export function RegisterForm({ className }: { className?: string }) {
@@ -34,11 +42,6 @@ export function RegisterForm({ className }: { className?: string }) {
   const [birthdate, setBirthdate] = useState("");
   const [membershipNumber, setMembershipNumber] = useState("");
   const [isParent, setIsParent] = useState(false);
-
-  const handleInputChange =
-    (setter: (value: string) => void) => (e: ChangeEvent<HTMLInputElement>) => {
-      setter(e.target.value);
-    };
 
   const handleMembershipChange = (e: ChangeEvent<HTMLInputElement>) => {
     const formatted = formatMembershipNumber(e.target.value);
@@ -126,83 +129,7 @@ export function RegisterForm({ className }: { className?: string }) {
           </div>
         )}
 
-        <fieldset>
-          <legend className="block text-sm font-semibold text-slate-900 mb-3">
-            Was ist dein Konto-Typ?
-          </legend>
-          <div className="grid grid-cols-2 gap-3">
-            {/* Member Card */}
-            <button
-              type="button"
-              onClick={() => setIsParent(false)}
-              className={cn(
-                "relative p-4 rounded-2xl border-2 transition-all duration-200 hover:shadow-md",
-                !isParent
-                  ? "border-jdav-green bg-green-50 shadow-md shadow-green-200"
-                  : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm",
-              )}
-            >
-              <div className="flex flex-col items-center text-center gap-2">
-                <div
-                  className={cn(
-                    "p-2 rounded-xl transition-all duration-200",
-                    !isParent
-                      ? "bg-jdav-green text-white"
-                      : "bg-slate-100 text-slate-600",
-                  )}
-                >
-                  <User className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">
-                    Eigenes Konto
-                  </p>
-                  <p className="text-xs text-slate-600">Für mich</p>
-                </div>
-              </div>
-              {!isParent && (
-                <div className="absolute top-2 right-2 w-5 h-5 bg-jdav-green rounded-full flex items-center justify-center">
-                  <div className="w-2 h-2 bg-white rounded-full" />
-                </div>
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setIsParent(true)}
-              className={cn(
-                "relative p-4 rounded-2xl border-2 transition-all duration-200 hover:shadow-md",
-                isParent
-                  ? "border-jdav-green bg-green-50 shadow-md shadow-green-200"
-                  : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm",
-              )}
-            >
-              <div className="flex flex-col items-center text-center gap-2">
-                <div
-                  className={cn(
-                    "p-2 rounded-xl transition-all duration-200",
-                    isParent
-                      ? "bg-jdav-green text-white"
-                      : "bg-slate-100 text-slate-600",
-                  )}
-                >
-                  <Users className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">
-                    Eltern-Konto
-                  </p>
-                  <p className="text-xs text-slate-600">Für Kinder</p>
-                </div>
-              </div>
-              {isParent && (
-                <div className="absolute top-2 right-2 w-5 h-5 bg-jdav-green rounded-full flex items-center justify-center">
-                  <div className="w-2 h-2 bg-white rounded-full" />
-                </div>
-              )}
-            </button>
-          </div>
-        </fieldset>
+        <AccountTypeSelector isParent={isParent} onSelectParent={setIsParent} />
 
         <div>
           <label
@@ -226,9 +153,9 @@ export function RegisterForm({ className }: { className?: string }) {
             htmlFor="register-membership"
             className="block text-sm font-medium text-slate-700"
           >
-            Mitgliedsnummer{" "}
+            Mitgliedsnummer
             <span className="text-xs text-slate-500">
-              (Sektion-Ortsgruppe-Nummer)
+              (Sektionsmitglied oder Familienzugang)
             </span>
           </label>
           <input
@@ -300,7 +227,7 @@ export function RegisterForm({ className }: { className?: string }) {
 
         <Button
           type="submit"
-          className="w-full mt-6 bg-jdav-green hover:bg-jdav-green-dark text-white shadow-md hover:shadow-lg transition-all duration-200"
+          className="w-full mt-6 bg-jdav-green hover:bg-jdav-green-dark text-white shadow-md hover:shadow-lg transition-colors duration-200"
           disabled={isLoading}
         >
           {isLoading ? "Registriere..." : "Konto erstellen"}
@@ -309,12 +236,12 @@ export function RegisterForm({ className }: { className?: string }) {
 
       <div className="text-center text-sm">
         <span className="text-slate-500">Du hast bereits ein Konto? </span>
-        <a
+        <Link
           href="/login"
           className="font-medium text-jdav-green hover:underline"
         >
           Anmelden
-        </a>
+        </Link>
       </div>
     </div>
   );

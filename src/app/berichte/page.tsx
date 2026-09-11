@@ -3,6 +3,7 @@ import { Calendar, ChevronRight, FileText, Mountain, User } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { ReportFilters } from "@/components/reports/ReportFilters";
 import { createClient } from "@/utils/supabase/server";
 
@@ -157,7 +158,9 @@ export default async function BerichtePage({ searchParams }: Props) {
         </p>
       </div>
 
-      <ReportFilters categories={categories} groups={groups} years={years} />
+      <Suspense fallback={<div />}>
+        <ReportFilters categories={categories} groups={groups} years={years} />
+      </Suspense>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {filteredReports && filteredReports.length > 0 ? (
@@ -169,7 +172,7 @@ export default async function BerichtePage({ searchParams }: Props) {
               <Link
                 key={report.id}
                 href={`/berichte/${report.id}`}
-                className="group flex flex-col h-full bg-white rounded-2xl border border-slate-200 shadow-sm transition-all hover:border-jdav-green hover:shadow-md"
+                className="group flex flex-col h-full bg-white rounded-2xl border border-slate-200 shadow-sm transition-colors hover:border-jdav-green hover:shadow-md"
               >
                 <div className="relative aspect-4/3 w-full overflow-hidden rounded-t-2xl">
                   {previewImage ? (

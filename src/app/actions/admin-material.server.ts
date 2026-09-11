@@ -117,45 +117,50 @@ export async function createOrUpdateMaterialGroup(
 
   const existingInventory = (existingInv || []) as MaterialInventoryRow[];
 
-  for (const inv of inventoryData) {
-    const match = existingInventory.find(
-      (entry) => entry.size === inv.size || (!entry.size && !inv.size),
-    );
-    if (match) {
-      // update quantity (assume available scales accordingly)
-      const diff = inv.quantity_total - match.quantity_total;
-      await supabase
-        .from("material_inventory")
-        .update({
+  await Promise.all(
+    inventoryData.map(async (inv) => {
+      const match = existingInventory.find(
+        (entry) => entry.size === inv.size || (!entry.size && !inv.size),
+      );
+      if (match) {
+        // update quantity (assume available scales accordingly)
+        const diff = inv.quantity_total - match.quantity_total;
+        await supabase
+          .from("material_inventory")
+          .update({
+            quantity_total: inv.quantity_total,
+            quantity_available: Math.max(0, match.quantity_available + diff),
+          })
+          .eq("id", match.id);
+      } else {
+        // insert new
+        await supabase.from("material_inventory").insert({
+          material_type_id: materialTypeId,
+          size: inv.size || null,
           quantity_total: inv.quantity_total,
-          quantity_available: Math.max(0, match.quantity_available + diff),
-        })
-        .eq("id", match.id);
-    } else {
-      // insert new
-      await supabase.from("material_inventory").insert({
-        material_type_id: materialTypeId,
-        size: inv.size || null,
-        quantity_total: inv.quantity_total,
-        quantity_available: inv.quantity_total,
-      });
-    }
-  }
+          quantity_available: inv.quantity_total,
+        });
+      }
+    }),
+  );
 
   // NOTE: Cleanup of old sizes that are no longer sent isn't done here because they might have reservations.
   // We can just set their quantity_available/total to 0 instead of deleting.
   if (existingInventory.length > 0) {
-    for (const old of existingInventory) {
-      const isSent = inventoryData.some(
-        (nv) => nv.size === old.size || (!nv.size && !old.size),
-      );
-      if (!isSent) {
-        await supabase
+    const removedItems = existingInventory.filter(
+      (old) =>
+        !inventoryData.some(
+          (nv) => nv.size === old.size || (!nv.size && !old.size),
+        ),
+    );
+    await Promise.all(
+      removedItems.map((old) =>
+        supabase
           .from("material_inventory")
           .update({ quantity_total: 0, quantity_available: 0 })
-          .eq("id", old.id);
-      }
-    }
+          .eq("id", old.id),
+      ),
+    );
   }
 
   revalidatePath("/admin/material");

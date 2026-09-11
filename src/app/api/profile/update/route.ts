@@ -10,7 +10,6 @@ type ProfileUpdatePayload = Partial<{
   birthdate: string;
   medical_notes: string;
   image_consent: boolean;
-  role: string;
 }>;
 
 export async function POST(req: NextRequest) {
@@ -42,8 +41,6 @@ export async function POST(req: NextRequest) {
   const birthdate = formData.get("birthdate")?.toString();
   const medical_notes = formData.get("medical_notes")?.toString();
   const image_consent = formData.get("image_consent") === "on";
-  const role = formData.get("role")?.toString();
-
   // Input validation for security and data integrity
   if (full_name && full_name.length > 100) {
     return NextResponse.json(
@@ -70,15 +67,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Validate role if provided (only members and parents can self-assign)
-  const ALLOWED_SELF_ROLES = ["member", "parent"];
-  if (role !== undefined && !ALLOWED_SELF_ROLES.includes(role)) {
-    return NextResponse.json(
-      { error: "Invalid role. Only 'member' and 'parent' are allowed." },
-      { status: 400 },
-    );
-  }
-
   const updatePayload: ProfileUpdatePayload = {};
   if (full_name !== undefined) updatePayload.full_name = full_name;
   if (phone !== undefined) updatePayload.phone = phone;
@@ -86,7 +74,6 @@ export async function POST(req: NextRequest) {
     updatePayload.emergency_phone = emergency_phone;
   if (birthdate !== undefined) updatePayload.birthdate = birthdate;
   if (medical_notes !== undefined) updatePayload.medical_notes = medical_notes;
-  if (role !== undefined) updatePayload.role = role;
   updatePayload.image_consent = image_consent;
 
   const { error } = await supabase

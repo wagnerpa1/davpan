@@ -19,13 +19,17 @@ export function ReservationStatusManager({
     if (newStatus === currentStatus) return;
 
     setIsPending(true);
-    const result = await updateReservationStatus(id, newStatus);
-    setIsPending(false);
 
-    if (result.error) {
-      alert(result.error);
-    } else {
-      router.refresh();
+    try {
+      const result = await updateReservationStatus(id, newStatus);
+
+      if (result.error) {
+        alert(result.error);
+      } else {
+        router.refresh();
+      }
+    } finally {
+      setIsPending(false);
     }
   }
 

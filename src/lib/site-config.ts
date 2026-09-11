@@ -5,6 +5,8 @@ export const siteConfig = {
   sectionName,
   appName,
   shortName: process.env.NEXT_PUBLIC_DAV_SHORT_NAME || "DAV PAN",
+  supportEmail:
+    process.env.NEXT_PUBLIC_DAV_SUPPORT_EMAIL || "mitgliedschaft@example.com",
   description:
     process.env.NEXT_PUBLIC_DAV_APP_DESCRIPTION ||
     `App für ${appName} - Touren, Material, Kalender`,

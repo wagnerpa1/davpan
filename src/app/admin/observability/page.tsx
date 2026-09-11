@@ -39,16 +39,15 @@ export default async function ObservabilityDashboard() {
 
   const deliveryMode = getNotificationDeliveryMode();
 
-  const { data: metrics, error: metricsError } = await supabase
-    .from("system_metrics_outbox")
-    .select("*")
-    .maybeSingle();
-
-  const { data: audits } = await supabase
-    .from("audit_logs")
-    .select("*, actor:profiles(name, email)")
-    .order("created_at", { ascending: false })
-    .limit(50);
+  const [{ data: metrics, error: metricsError }, { data: audits }] =
+    await Promise.all([
+      supabase.from("system_metrics_outbox").select("*").maybeSingle(),
+      supabase
+        .from("audit_logs")
+        .select("*, actor:profiles(name, email)")
+        .order("created_at", { ascending: false })
+        .limit(50),
+    ]);
 
   const auditRows = (audits ?? []) as AuditLogEntry[];
 

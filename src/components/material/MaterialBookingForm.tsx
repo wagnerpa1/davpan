@@ -45,18 +45,21 @@ export function MaterialBookingForm({
     setIsPending(true);
     setError(null);
 
-    const formData = new FormData();
-    formData.append("inventoryId", inventoryId);
-    formData.append("loanDate", loanDate);
-    formData.append("returnDate", returnDate);
+    try {
+      const formData = new FormData();
+      formData.append("inventoryId", inventoryId);
+      formData.append("loanDate", loanDate);
+      formData.append("returnDate", returnDate);
 
-    const result = await createIndependentMaterialReservation(formData);
+      const result = await createIndependentMaterialReservation(formData);
 
-    setIsPending(false);
-    if (result.error) {
-      setError(result.error);
-    } else if (result.success) {
-      setSuccess(result.message);
+      if (result.error) {
+        setError(result.error);
+      } else if (result.success) {
+        setSuccess(result.message);
+      }
+    } finally {
+      setIsPending(false);
     }
   }
 

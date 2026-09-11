@@ -8,11 +8,23 @@ import {
   X,
   XCircle,
 } from "lucide-react";
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { cancelRegistration } from "@/app/actions/tour-registration";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { TourRegistrationModal } from "./TourRegistrationModal";
+
+const registrationDeadlineFormatter = new Intl.DateTimeFormat("de-DE", {
+  dateStyle: "medium",
+  timeStyle: "short",
+  timeZone: "Europe/Berlin",
+});
+
+const tourStartDateFormatter = new Intl.DateTimeFormat("de-DE", {
+  dateStyle: "medium",
+  timeZone: "Europe/Berlin",
+});
 
 interface Material {
   id: string; // material_type_id
@@ -126,6 +138,7 @@ function CancelConfirmModal({
       <div className="relative w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl">
         <button
           type="button"
+          aria-label="Tourabsage schließen"
           onClick={onClose}
           className="absolute right-4 top-4 rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
         >
@@ -163,6 +176,314 @@ function CancelConfirmModal({
   );
 }
 
+function calculateUserAgeTooYoung(
+  minAge: number | null,
+  userBirthdate?: string | null,
+  tourStartDate?: string | null,
+): boolean {
+  if (!minAge || !userBirthdate || !tourStartDate) {
+    return false;
+  }
+  const birthDate = new Date(userBirthdate);
+  const startDate = new Date(tourStartDate);
+  let ageAtStart = startDate.getFullYear() - birthDate.getFullYear();
+  const monthDiff = startDate.getMonth() - birthDate.getMonth();
+  if (
+    monthDiff < 0 ||
+    (monthDiff === 0 && startDate.getDate() < birthDate.getDate())
+  ) {
+    ageAtStart -= 1;
+  }
+  return ageAtStart < minAge;
+}
+
+function getRegistrationStatusText(
+  cannotRegister: boolean,
+  isClosedByDeadline: boolean,
+  tourStatus: string,
+): string {
+  if (cannotRegister) {
+    return isClosedByDeadline
+      ? "Anmeldung geschlossen"
+      : "Keine Anmeldung möglich";
+  }
+  return tourStatus === "full" ? "Warteliste aktiv" : "Anmeldung geöffnet";
+}
+
+function TourRegistrationLoggedOut() {
+  return (
+    <div className="rounded-2xl bg-amber-50 p-6 text-center border border-amber-100">
+      <p className="mb-4 text-amber-800 font-medium">
+        Du musst angemeldet sein, um dich für Touren einzuschreiben.
+      </p>
+      <Link href="/login">
+        <Button
+          variant="outline"
+          className="border-amber-200 bg-white text-amber-800 hover:bg-amber-100"
+        >
+          Zum Login
+        </Button>
+      </Link>
+    </div>
+  );
+}
+
+interface TourRegistrationHeaderProps {
+  statusText: string;
+  maxParticipants?: number | null;
+  minAge?: number | null;
+  registrationDeadline?: string | null;
+  showRegisterButton: boolean;
+  tourStatus: string;
+  onOpenModal: () => void;
+}
+
+function TourRegistrationHeader({
+  statusText,
+  maxParticipants,
+  minAge,
+  registrationDeadline,
+  showRegisterButton,
+  tourStatus,
+  onOpenModal,
+}: TourRegistrationHeaderProps) {
+  return (
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="font-bold text-slate-900 text-lg">{statusText}</p>
+        <p className="text-sm text-slate-500 mt-0.5">
+          Teilnehmerlimit: {maxParticipants ?? "Unbegrenzt"}
+          {minAge && (
+            <span className="ml-3">• Mindestalter: {minAge} Jahre</span>
+          )}
+        </p>
+        {registrationDeadline && (
+          <p className="mt-1 text-xs text-slate-400">
+            Anmeldeschluss:{" "}
+            {registrationDeadlineFormatter.format(
+              new Date(registrationDeadline),
+            )}
+          </p>
+        )}
+      </div>
+
+      {showRegisterButton && (
+        <Button
+          size="lg"
+          className="bg-jdav-green hover:bg-jdav-green-dark text-white font-bold h-12 px-8 rounded-xl"
+          onClick={onOpenModal}
+        >
+          {tourStatus === "full" ? "Auf Warteliste" : "Anmelden"}
+        </Button>
+      )}
+    </div>
+  );
+}
+
+interface TourRegistrationAgeWarningAlertProps {
+  minAge: number;
+  tourStartDate: string;
+  onOpenModal: () => void;
+}
+
+function TourRegistrationAgeWarningAlert({
+  minAge,
+  tourStartDate,
+  onOpenModal,
+}: TourRegistrationAgeWarningAlertProps) {
+  return (
+    <div className="flex items-start gap-3 rounded-xl border border-orange-200 bg-orange-50 p-4">
+      <AlertCircle className="h-5 w-5 shrink-0 text-orange-600 mt-0.5" />
+      <div>
+        <p className="font-bold text-orange-800 text-sm">
+          Mindestalter nicht erreicht
+        </p>
+        <p className="text-xs text-orange-700 mt-1">
+          Diese Tour erfordert ein Mindestalter von {minAge} Jahren zum
+          Tourstart ({tourStartDateFormatter.format(new Date(tourStartDate))}
+          ). Du kannst eine Ausnahme anfragen.
+        </p>
+        <Button
+          size="sm"
+          variant="outline"
+          className="mt-2 border-orange-300 text-orange-700 hover:bg-orange-100"
+          onClick={onOpenModal}
+        >
+          Ausnahme anfragen
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+interface TourRegistrationItemProps {
+  status: string;
+  waitlistPosition?: number | null;
+  name?: string;
+  onCancel?: () => void;
+  isPending: boolean;
+}
+
+function TourRegistrationItem({
+  status,
+  waitlistPosition,
+  name,
+  onCancel,
+  isPending,
+}: TourRegistrationItemProps) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="flex-1">
+        <StatusBadge
+          status={status}
+          waitlistPosition={waitlistPosition}
+          name={name}
+        />
+      </div>
+      {status === "confirmed" && onCancel && (
+        <Button
+          size="sm"
+          variant="outline"
+          className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 rounded-xl"
+          onClick={onCancel}
+          disabled={isPending}
+        >
+          Absagen
+        </Button>
+      )}
+    </div>
+  );
+}
+
+interface TourRegistrationListProps {
+  selfReg?: Registration;
+  childRegs: Registration[];
+  childrenProfiles: Child[];
+  canRegisterMoreChildren: boolean;
+  isPending: boolean;
+  onCancel: (id: string, name: string) => void;
+  onOpenModal: () => void;
+}
+
+function TourRegistrationList({
+  selfReg,
+  childRegs,
+  childrenProfiles,
+  canRegisterMoreChildren,
+  isPending,
+  onCancel,
+  onOpenModal,
+}: TourRegistrationListProps) {
+  return (
+    <>
+      {selfReg && (
+        <TourRegistrationItem
+          status={selfReg.status}
+          waitlistPosition={selfReg.waitlist_position}
+          onCancel={() => onCancel(selfReg.id, "dich selbst")}
+          isPending={isPending}
+        />
+      )}
+
+      {childRegs.map((reg) => {
+        const child = childrenProfiles.find(
+          (c) => c.id === reg.child_profile_id,
+        );
+        const childName = child?.full_name || "Kind";
+        return (
+          <TourRegistrationItem
+            key={reg.child_profile_id}
+            status={reg.status}
+            waitlistPosition={reg.waitlist_position}
+            name={childName}
+            onCancel={() => onCancel(reg.id, childName)}
+            isPending={isPending}
+          />
+        );
+      })}
+
+      {canRegisterMoreChildren && (
+        <Button
+          size="sm"
+          variant="outline"
+          className="rounded-xl"
+          onClick={onOpenModal}
+        >
+          Weiteres Kind anmelden
+        </Button>
+      )}
+    </>
+  );
+}
+
+function getRegistrationSectionViewModel(options: {
+  tourStatus: string;
+  registrationDeadline?: string | null;
+  minAge: number | null;
+  userBirthdate?: string | null;
+  tourStartDate?: string | null;
+  userRegistrations: Registration[];
+  childrenProfiles: Child[];
+}) {
+  const {
+    tourStatus,
+    registrationDeadline,
+    minAge,
+    userBirthdate,
+    tourStartDate,
+    userRegistrations,
+    childrenProfiles,
+  } = options;
+
+  const isRegistrationClosedByDeadline =
+    Boolean(registrationDeadline) &&
+    new Date(registrationDeadline as string) < new Date();
+
+  const cannotRegister =
+    tourStatus === "planning" ||
+    tourStatus === "completed" ||
+    tourStatus === "cancelled" ||
+    isRegistrationClosedByDeadline;
+
+  const ageTooYoung = calculateUserAgeTooYoung(
+    minAge,
+    userBirthdate,
+    tourStartDate,
+  );
+
+  const selfReg = userRegistrations.find((r) => r.child_profile_id === null);
+  const childRegs = userRegistrations.filter(
+    (r) => r.child_profile_id !== null,
+  );
+
+  const statusText = getRegistrationStatusText(
+    cannotRegister,
+    isRegistrationClosedByDeadline,
+    tourStatus,
+  );
+
+  const canRegisterSelf = !cannotRegister && !ageTooYoung && !selfReg;
+  const canRegisterMoreChildren =
+    !cannotRegister &&
+    !ageTooYoung &&
+    Boolean(selfReg) &&
+    childrenProfiles.some(
+      (c) => !childRegs.some((r) => r.child_profile_id === c.id),
+    );
+
+  const showAgeWarning =
+    ageTooYoung && !selfReg && minAge !== null && Boolean(tourStartDate);
+
+  return {
+    selfReg,
+    childRegs,
+    statusText,
+    canRegisterSelf,
+    canRegisterMoreChildren,
+    showAgeWarning,
+  };
+}
+
 export function TourRegistrationSection({
   tourId,
   tourTitle,
@@ -185,54 +506,18 @@ export function TourRegistrationSection({
   const [isPending, startTransition] = useTransition();
 
   if (!isLoggedIn) {
-    return (
-      <div className="rounded-2xl bg-amber-50 p-6 text-center border border-amber-100">
-        <p className="mb-4 text-amber-800 font-medium">
-          Du musst angemeldet sein, um dich für Touren einzuschreiben.
-        </p>
-        <a href="/login">
-          <Button
-            variant="outline"
-            className="border-amber-200 bg-white text-amber-800 hover:bg-amber-100"
-          >
-            Zum Login
-          </Button>
-        </a>
-      </div>
-    );
+    return <TourRegistrationLoggedOut />;
   }
 
-  // Mindestalter-Check
-  let ageTooYoung = false;
-  if (minAge && userBirthdate && tourStartDate) {
-    const birthDate = new Date(userBirthdate);
-    const startDate = new Date(tourStartDate);
-    let ageAtStart = startDate.getFullYear() - birthDate.getFullYear();
-    const monthDiff = startDate.getMonth() - birthDate.getMonth();
-    if (
-      monthDiff < 0 ||
-      (monthDiff === 0 && startDate.getDate() < birthDate.getDate())
-    ) {
-      ageAtStart -= 1;
-    }
-    ageTooYoung = ageAtStart < minAge;
-  }
-
-  const isRegistrationClosedByDeadline =
-    !!registrationDeadline && new Date(registrationDeadline) < new Date();
-
-  const cannotRegister =
-    tourStatus === "planning" ||
-    tourStatus === "completed" ||
-    tourStatus === "cancelled" ||
-    isRegistrationClosedByDeadline;
-  const selfReg = userRegistrations.find((r) => r.child_profile_id === null);
-  const childRegs = userRegistrations.filter(
-    (r) => r.child_profile_id !== null,
-  );
-
-  const handleCancel = (id: string, name: string) =>
-    setCancelTarget({ id, name });
+  const vm = getRegistrationSectionViewModel({
+    tourStatus,
+    registrationDeadline,
+    minAge,
+    userBirthdate,
+    tourStartDate,
+    userRegistrations,
+    childrenProfiles,
+  });
 
   const confirmCancel = () => {
     if (!cancelTarget) return;
@@ -245,142 +530,40 @@ export function TourRegistrationSection({
   return (
     <>
       <CancelConfirmModal
-        isOpen={!!cancelTarget}
+        isOpen={Boolean(cancelTarget)}
         onClose={() => setCancelTarget(null)}
         onConfirm={confirmCancel}
         name={cancelTarget?.name || ""}
       />
 
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="font-bold text-slate-900 text-lg">
-              {cannotRegister
-                ? isRegistrationClosedByDeadline
-                  ? "Anmeldung geschlossen"
-                  : "Keine Anmeldung möglich"
-                : tourStatus === "full"
-                  ? "Warteliste aktiv"
-                  : "Anmeldung geöffnet"}
-            </p>
-            <p className="text-sm text-slate-500 mt-0.5">
-              Teilnehmerlimit: {maxParticipants ?? "Unbegrenzt"}
-              {minAge && (
-                <span className="ml-3">• Mindestalter: {minAge} Jahre</span>
-              )}
-            </p>
-            {registrationDeadline && (
-              <p className="mt-1 text-xs text-slate-400">
-                Anmeldeschluss:{" "}
-                {new Date(registrationDeadline).toLocaleString("de-DE")}
-              </p>
-            )}
-          </div>
+        <TourRegistrationHeader
+          statusText={vm.statusText}
+          maxParticipants={maxParticipants}
+          minAge={minAge}
+          registrationDeadline={registrationDeadline}
+          showRegisterButton={vm.canRegisterSelf}
+          tourStatus={tourStatus}
+          onOpenModal={() => setIsModalOpen(true)}
+        />
 
-          {!cannotRegister && !ageTooYoung && !selfReg && (
-            <Button
-              size="lg"
-              className="bg-jdav-green hover:bg-jdav-green-dark text-white font-bold h-12 px-8 rounded-xl"
-              onClick={() => setIsModalOpen(true)}
-            >
-              {tourStatus === "full" ? "Auf Warteliste" : "Anmelden"}
-            </Button>
-          )}
-        </div>
-
-        {/* Mindestalter-Warnung */}
-        {ageTooYoung && !selfReg && (
-          <div className="flex items-start gap-3 rounded-xl border border-orange-200 bg-orange-50 p-4">
-            <AlertCircle className="h-5 w-5 shrink-0 text-orange-600 mt-0.5" />
-            <div>
-              <p className="font-bold text-orange-800 text-sm">
-                Mindestalter nicht erreicht
-              </p>
-              <p className="text-xs text-orange-700 mt-1">
-                Diese Tour erfordert ein Mindestalter von {minAge} Jahren zum
-                Tourstart ({new Date(tourStartDate).toLocaleDateString("de-DE")}
-                ). Du kannst eine Ausnahme anfragen.
-              </p>
-              <Button
-                size="sm"
-                variant="outline"
-                className="mt-2 border-orange-300 text-orange-700 hover:bg-orange-100"
-                onClick={() => setIsModalOpen(true)}
-              >
-                Ausnahme anfragen
-              </Button>
-            </div>
-          </div>
+        {vm.showAgeWarning && tourStartDate && minAge !== null && (
+          <TourRegistrationAgeWarningAlert
+            minAge={minAge}
+            tourStartDate={tourStartDate}
+            onOpenModal={() => setIsModalOpen(true)}
+          />
         )}
 
-        {/* Eigene Anmeldungs-Statusanzeigen */}
-        {selfReg && (
-          <div className="flex items-center gap-3">
-            <div className="flex-1">
-              <StatusBadge
-                status={selfReg.status}
-                waitlistPosition={selfReg.waitlist_position}
-              />
-            </div>
-            {selfReg.status === "confirmed" && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 rounded-xl"
-                onClick={() => handleCancel(selfReg.id, "dich selbst")}
-                disabled={isPending}
-              >
-                Absagen
-              </Button>
-            )}
-          </div>
-        )}
-
-        {childRegs.map((reg) => {
-          const child = childrenProfiles.find(
-            (c) => c.id === reg.child_profile_id,
-          );
-          const childName = child?.full_name || "Kind";
-          return (
-            <div key={reg.child_profile_id} className="flex items-center gap-3">
-              <div className="flex-1">
-                <StatusBadge
-                  status={reg.status}
-                  waitlistPosition={reg.waitlist_position}
-                  name={childName}
-                />
-              </div>
-              {reg.status === "confirmed" && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 rounded-xl"
-                  onClick={() => handleCancel(reg.id, childName)}
-                  disabled={isPending}
-                >
-                  Absagen
-                </Button>
-              )}
-            </div>
-          );
-        })}
-
-        {/* Button to register additional (for remaining children or first time) */}
-        {!cannotRegister &&
-          !ageTooYoung &&
-          selfReg &&
-          childrenProfiles.some(
-            (c) => !childRegs.find((r) => r.child_profile_id === c.id),
-          ) && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="rounded-xl"
-              onClick={() => setIsModalOpen(true)}
-            >
-              Weiteres Kind anmelden
-            </Button>
-          )}
+        <TourRegistrationList
+          selfReg={vm.selfReg}
+          childRegs={vm.childRegs}
+          childrenProfiles={childrenProfiles}
+          canRegisterMoreChildren={vm.canRegisterMoreChildren}
+          isPending={isPending}
+          onCancel={(id, name) => setCancelTarget({ id, name })}
+          onOpenModal={() => setIsModalOpen(true)}
+        />
       </div>
 
       <TourRegistrationModal

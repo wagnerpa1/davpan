@@ -12,6 +12,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+const metadataDateFormatter = new Intl.DateTimeFormat("de-DE", {
+  dateStyle: "medium",
+  timeStyle: "short",
+  timeZone: "Europe/Berlin",
+});
+
 interface LookupEntry {
   id: string;
   name: string | null;
@@ -32,10 +38,7 @@ interface LookupSectionProps {
 }
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat("de-DE", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
+  return metadataDateFormatter.format(new Date(value));
 }
 
 function LookupSection({
@@ -58,7 +61,6 @@ function LookupSection({
     key: string,
     formData: FormData,
     action: (data: FormData) => Promise<{ error?: string | null }>,
-    formElement?: HTMLFormElement | null,
   ) {
     setPendingKey(key);
     setErrorMessage(null);
@@ -72,7 +74,6 @@ function LookupSection({
       return;
     }
 
-    formElement?.reset();
     router.refresh();
   }
 
@@ -96,16 +97,8 @@ function LookupSection({
 
       <form
         className="mt-6 flex flex-col gap-3 sm:flex-row"
-        onSubmit={(event) => {
-          event.preventDefault();
-          const formElement = event.currentTarget;
-          const formData = new FormData(formElement);
-          void submitLookupForm(
-            `create-${fieldName}`,
-            formData,
-            createAction,
-            formElement,
-          );
+        action={async (formData: FormData) => {
+          await submitLookupForm(`create-${fieldName}`, formData, createAction);
         }}
       >
         <Input
@@ -136,16 +129,8 @@ function LookupSection({
               <form
                 key={entry.id}
                 className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 lg:grid-cols-[minmax(0,1fr)_auto_auto] lg:items-center"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  const formElement = event.currentTarget;
-                  const formData = new FormData(formElement);
-                  void submitLookupForm(
-                    saveKey,
-                    formData,
-                    createAction,
-                    formElement,
-                  );
+                action={async (formData: FormData) => {
+                  await submitLookupForm(saveKey, formData, createAction);
                 }}
               >
                 <input type="hidden" name="id" value={entry.id} />

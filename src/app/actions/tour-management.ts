@@ -6,6 +6,7 @@ import { cache } from "react";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
 import { notifyTourOpenForSubscribers } from "@/lib/notifications/targets";
 import { isAdminRole, isGuideRole } from "@/lib/permissions";
+import { shouldThrottleSync } from "@/lib/tours/sync-throttle";
 import { createClient } from "@/utils/supabase/server";
 import { checkAndBookResource } from "./admin-resources";
 
@@ -71,13 +72,15 @@ async function notifyTourAudience(
     relatedGroupId: string | null;
   },
 ) {
-  for (const target of audience) {
-    await dispatchNotification(supabase, {
-      ...input,
-      recipientUserId: target.child_profile_id ? null : target.user_id,
-      recipientChildId: target.child_profile_id,
-    });
-  }
+  await Promise.all(
+    audience.map((target) =>
+      dispatchNotification(supabase, {
+        ...input,
+        recipientUserId: target.child_profile_id ? null : target.user_id,
+        recipientChildId: target.child_profile_id,
+      }),
+    ),
+  );
 }
 
 type TourUpdatePayload = {
@@ -132,15 +135,20 @@ export async function getAvailableMaterials() {
     `)
     .order("name");
 
-  return ((data || []) as MaterialTypeWithInventory[]).map((mt) => ({
-    id: mt.id,
-    name: mt.name,
-    size:
-      mt.material_inventory
-        ?.map((i) => i.size)
-        .filter(Boolean)
-        .join(", ") || "Universal",
-  }));
+  return ((data || []) as MaterialTypeWithInventory[]).map((mt) => {
+    const size = mt.material_inventory?.reduce<string[]>((sizes, item) => {
+      if (item.size) {
+        sizes.push(item.size);
+      }
+      return sizes;
+    }, []);
+
+    return {
+      id: mt.id,
+      name: mt.name,
+      size: size?.join(", ") || "Universal",
+    };
+  });
 }
 
 export async function getAvailableGuides() {
@@ -288,15 +296,17 @@ export async function createTour(formData: FormData) {
 
   // Insert resource bookings
   if (resourceIds.length > 0 && start_date) {
-    for (const resId of resourceIds) {
-      await checkAndBookResource(
-        resId,
-        tour.id,
-        start_date,
-        end_date || start_date,
-        user.id,
-      );
-    }
+    await Promise.all(
+      resourceIds.map((resId) =>
+        checkAndBookResource(
+          resId,
+          tour.id,
+          start_date,
+          end_date || start_date,
+          user.id,
+        ),
+      ),
+    );
   }
 
   if (tour.status === "open" && tour.group) {
@@ -321,13 +331,14 @@ export async function updateTour(tourId: string, formData: FormData) {
   if (userError || !user) throw new Error("Unauthorized");
 
   const payload: TourUpdatePayload = {};
-  const { data: previousTour } = await supabase
-    .from("tours")
-    .select("title, group, start_date, end_date, status")
-    .eq("id", tourId)
-    .maybeSingle();
-
-  const audienceTargets = await getTourAudienceTargets(tourId, supabase);
+  const [{ data: previousTour }, audienceTargets] = await Promise.all([
+    supabase
+      .from("tours")
+      .select("title, group, start_date, end_date, status")
+      .eq("id", tourId)
+      .maybeSingle(),
+    getTourAudienceTargets(tourId, supabase),
+  ]);
   const fields = [
     "title",
     "description",
@@ -417,9 +428,11 @@ export async function updateTour(tourId: string, formData: FormData) {
   const ed = edCandidate || sd;
 
   if (resourceIds.length > 0 && sd && ed) {
-    for (const resId of resourceIds) {
-      await checkAndBookResource(resId, tourId, sd, ed, user.id);
-    }
+    await Promise.all(
+      resourceIds.map((resId) =>
+        checkAndBookResource(resId, tourId, sd, ed, user.id),
+      ),
+    );
   }
 
   const nextStatus =
@@ -526,14 +539,10 @@ export async function deleteTour(tourId: string) {
   redirect(`/touren/${tourId}`);
 }
 
-let _lastSyncTs = 0;
-
 async function _doSyncTourStatuses() {
-  const now = Date.now();
-  if (now - _lastSyncTs < 60_000) {
+  if (shouldThrottleSync()) {
     return { completedCount: 0, skipped: true };
   }
-  _lastSyncTs = now;
 
   const supabase = await createClient();
   const today = new Date().toISOString().split("T")[0];

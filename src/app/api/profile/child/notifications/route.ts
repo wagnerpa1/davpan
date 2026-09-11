@@ -45,8 +45,11 @@ export async function POST(req: NextRequest) {
 
   const selectedGroupIds = formData
     .getAll("tour_group_ids")
-    .map((value) => value.toString())
-    .filter(Boolean);
+    .reduce<string[]>((acc, value) => {
+      const v = value.toString();
+      if (v) acc.push(v);
+      return acc;
+    }, []);
 
   const upsertPayload = {
     child_id: child.id,

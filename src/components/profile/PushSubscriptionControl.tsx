@@ -76,6 +76,7 @@ export function PushSubscriptionControl({
       let subscription = await registration.pushManager.getSubscription();
 
       if (!subscription) {
+        // react-doctor-disable-next-line effect-needs-cleanup -- Web Push subscription is persistent and managed via service worker, not a component lifecycle subscription
         subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: urlBase64ToUint8Array(publicVapidKey),

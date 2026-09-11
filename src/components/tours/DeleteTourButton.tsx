@@ -27,6 +27,7 @@ export function DeleteTourButton({ tourId }: DeleteTourButtonProps) {
         if (typeof window !== "undefined") {
           window.alert("Absagen fehlgeschlagen. Bitte versuche es erneut.");
         }
+      } finally {
         setIsDeleting(false);
       }
     }

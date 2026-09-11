@@ -14,13 +14,23 @@ interface AdminDocument {
   file_url: string;
 }
 
+const DOCUMENT_CATEGORIES = [
+  "Allgemein",
+  "Formulare",
+  "Packlisten",
+  "Vereinsregeln",
+  "JDAV",
+];
+
 export const metadata: Metadata = {
   title: "Admin - Dokumente verwalten",
 };
 
 export default async function AdminDokumentePage() {
-  const supabase = await createClient();
-  const authContext = await getCurrentUserProfile();
+  const [supabase, authContext] = await Promise.all([
+    createClient(),
+    getCurrentUserProfile(),
+  ]);
 
   if (!isAdminRole(authContext.role)) {
     redirect("/dokumente");
@@ -30,14 +40,6 @@ export default async function AdminDokumentePage() {
     .from("documents")
     .select("*")
     .order("category", { ascending: true });
-
-  const categories = [
-    "Allgemein",
-    "Formulare",
-    "Packlisten",
-    "Vereinsregeln",
-    "JDAV",
-  ];
 
   return (
     <div className="mx-auto max-w-site px-4 py-8">
@@ -55,7 +57,7 @@ export default async function AdminDokumentePage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* Upload Form (Client Component) */}
         <div className="md:col-span-1">
-          <DocumentUploadForm categories={categories} />
+          <DocumentUploadForm categories={DOCUMENT_CATEGORIES} />
         </div>
 
         {/* Documents List */}

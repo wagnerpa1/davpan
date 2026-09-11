@@ -3,7 +3,7 @@
 import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { deleteMaterialType } from "@/app/actions/admin-material";
+import { deleteMaterialType } from "@/app/actions/admin-material.server";
 import { Button } from "@/components/ui/button";
 
 export function DeleteMaterialButton({ id }: { id: string }) {
@@ -15,13 +15,17 @@ export function DeleteMaterialButton({ id }: { id: string }) {
       return;
 
     setIsPending(true);
-    const result = await deleteMaterialType(id);
-    setIsPending(false);
 
-    if (result.error) {
-      alert(result.error);
-    } else {
-      router.refresh();
+    try {
+      const result = await deleteMaterialType(id);
+
+      if (result.error) {
+        alert(result.error);
+      } else {
+        router.refresh();
+      }
+    } finally {
+      setIsPending(false);
     }
   }
 

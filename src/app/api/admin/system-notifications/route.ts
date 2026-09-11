@@ -50,14 +50,20 @@ export async function POST(req: NextRequest) {
   const targetModeRaw = formData.get("target_mode")?.toString().trim() ?? "all";
   const roles = formData
     .getAll("roles")
-    .map((value) => value.toString().trim())
-    .filter((value): value is SystemTargetRole =>
-      (SYSTEM_TARGET_ROLES as readonly string[]).includes(value),
-    );
+    .reduce<SystemTargetRole[]>((acc, value) => {
+      const v = value.toString().trim();
+      if ((SYSTEM_TARGET_ROLES as readonly string[]).includes(v))
+        acc.push(v as SystemTargetRole);
+      return acc;
+    }, []);
+
   const groupIds = formData
     .getAll("group_ids")
-    .map((value) => value.toString().trim())
-    .filter((value) => UUID_REGEX.test(value));
+    .reduce<string[]>((acc, value) => {
+      const v = value.toString().trim();
+      if (UUID_REGEX.test(v)) acc.push(v);
+      return acc;
+    }, []);
 
   if (!title || !message) {
     return NextResponse.json(
@@ -103,35 +109,36 @@ export async function POST(req: NextRequest) {
     groupIds,
   );
 
-  for (const userId of userIds) {
-    await dispatchNotification(supabase, {
-      type: "system",
-      title,
-      body: message,
-      payload: {
-        source: "admin_system_notification",
-        target_mode: targetMode,
-      },
-      recipientUserId: userId,
-      relatedTourId: null,
-      relatedGroupId: null,
-    });
-  }
-
-  for (const childId of childIds) {
-    await dispatchNotification(supabase, {
-      type: "system",
-      title,
-      body: message,
-      payload: {
-        source: "admin_system_notification",
-        target_mode: targetMode,
-      },
-      recipientChildId: childId,
-      relatedTourId: null,
-      relatedGroupId: null,
-    });
-  }
+  await Promise.all([
+    ...userIds.map((userId) =>
+      dispatchNotification(supabase, {
+        type: "system",
+        title,
+        body: message,
+        payload: {
+          source: "admin_system_notification",
+          target_mode: targetMode,
+        },
+        recipientUserId: userId,
+        relatedTourId: null,
+        relatedGroupId: null,
+      }),
+    ),
+    ...childIds.map((childId) =>
+      dispatchNotification(supabase, {
+        type: "system",
+        title,
+        body: message,
+        payload: {
+          source: "admin_system_notification",
+          target_mode: targetMode,
+        },
+        recipientChildId: childId,
+        relatedTourId: null,
+        relatedGroupId: null,
+      }),
+    ),
+  ]);
 
   await supabase.from("admin_system_notification_audit").insert({
     sent_by: user.id,

@@ -12,16 +12,17 @@ export function DocumentUploadForm({ categories }: { categories: string[] }) {
     setError(null);
     setIsPending(true);
 
-    const result = await uploadDocument(formData);
-    setIsPending(false);
+    try {
+      const result = await uploadDocument(formData);
 
-    if (result?.error) {
-      setError(result.error);
-    } else {
-      // Success - page will be revalidated by server action
-      // Clear form
-      const form = document.getElementById("upload-form") as HTMLFormElement;
-      form?.reset();
+      if (result?.error) {
+        setError(result.error);
+      } else {
+        const form = document.getElementById("upload-form") as HTMLFormElement;
+        form?.reset();
+      }
+    } finally {
+      setIsPending(false);
     }
   };
 
@@ -84,13 +85,13 @@ export function DocumentUploadForm({ categories }: { categories: string[] }) {
             name="file"
             type="file"
             required
-            className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-jdav-green-light/20 file:text-jdav-green hover:file:bg-jdav-green-light/30 transition-all"
+            className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-jdav-green-light/20 file:text-jdav-green hover:file:bg-jdav-green-light/30 transition-colors"
           />
         </div>
         <button
           type="submit"
           disabled={isPending}
-          className="w-full bg-jdav-green hover:bg-jdav-green-dark text-white font-bold py-2 px-4 rounded-xl shadow-sm transition-all disabled:opacity-50"
+          className="w-full bg-jdav-green hover:bg-jdav-green-dark text-white font-bold py-2 px-4 rounded-xl shadow-sm transition-colors disabled:opacity-50"
         >
           {isPending ? "Lädt hoch..." : "Hochladen"}
         </button>

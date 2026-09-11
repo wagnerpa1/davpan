@@ -57,6 +57,145 @@ function normalizeTours(
   });
 }
 
+const TOUR_STATUS_MAP: Record<string, { label: string; classes: string }> = {
+  planning: { label: "Planung", classes: "bg-blue-100 text-blue-700" },
+  open: { label: "Anmeldung offen", classes: "bg-green-100 text-green-700" },
+  full: { label: "Ausgebucht", classes: "bg-amber-100 text-amber-700" },
+  cancelled: {
+    label: "Abgesagt",
+    classes: "bg-red-100 text-red-700",
+  },
+  completed: {
+    label: "Abgeschlossen",
+    classes: "bg-slate-100 text-slate-600",
+  },
+};
+
+function getTourItemClasses(tour: GuideDashboardTour) {
+  const hasReports = (tour.tour_reports?.length ?? 0) > 0;
+
+  if (tour.status === "completed" && !hasReports) {
+    return "border-red-500 shadow-md shadow-red-50/50";
+  }
+
+  if (tour.status === "cancelled") {
+    return "border-red-200 bg-red-50/20";
+  }
+
+  return "border-slate-200";
+}
+
+function getTourReportAction(tour: GuideDashboardTour) {
+  if (tour.status !== "completed") {
+    return null;
+  }
+
+  const firstReport = tour.tour_reports?.[0];
+  const hasReport = Boolean(firstReport);
+
+  return {
+    href: firstReport
+      ? `/berichte/${firstReport.id}`
+      : `/touren/${tour.id}/bericht/neu`,
+    label: hasReport ? "Bericht" : "Bericht erstellen",
+    classes: hasReport
+      ? "bg-slate-100 text-slate-600 hover:bg-slate-200"
+      : "bg-red-600 text-white hover:bg-red-700 shadow-sm shadow-red-200",
+  };
+}
+
+function TourDetails({ tour }: { tour: GuideDashboardTour }) {
+  return (
+    <div className="flex-1">
+      <div className="mb-1 flex items-center gap-2">
+        <span
+          className={cn(
+            "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
+            TOUR_STATUS_MAP[tour.status]?.classes ||
+              "bg-slate-100 text-slate-600",
+          )}
+        >
+          {TOUR_STATUS_MAP[tour.status]?.label || tour.status}
+        </span>
+        <span className="text-xs text-slate-400 capitalize">
+          {tour.tour_categorys?.category || "Tour"}
+        </span>
+      </div>
+      <h3 className="text-lg font-bold text-slate-900 transition-colors group-hover:text-jdav-green">
+        {tour.title}
+      </h3>
+      <div className="mt-2 flex flex-wrap gap-4 text-sm text-slate-500">
+        <div className="flex items-center gap-1.5">
+          <Calendar className="h-4 w-4 text-jdav-green" />
+          {tour.start_date
+            ? format(new Date(tour.start_date), "dd.MM.yy")
+            : "TBA"}
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Users className="h-4 w-4 text-jdav-green" />
+          {tour.tour_participants?.[0]?.count || 0} /{" "}
+          {tour.max_participants || "∞"} Teilnehmer
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TourActions({ tour }: { tour: GuideDashboardTour }) {
+  const reportAction = getTourReportAction(tour);
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 border-t pt-4 sm:border-t-0 sm:pt-0">
+      {reportAction && (
+        <Link href={reportAction.href} className="flex-1 sm:flex-none">
+          <button
+            type="button"
+            className={cn(
+              "flex h-8 w-full items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-bold transition-colors",
+              reportAction.classes,
+            )}
+          >
+            <FileEdit className="h-3.5 w-3.5" />
+            {reportAction.label}
+          </button>
+        </Link>
+      )}
+      <Link href={`/touren/${tour.id}`} className="flex-1 sm:flex-none">
+        <button
+          type="button"
+          className="h-8 w-full rounded-lg border border-slate-200 px-3 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50"
+        >
+          Details
+        </button>
+      </Link>
+      <Link href={`/touren/${tour.id}/edit`} className="flex-1 sm:flex-none">
+        <button
+          type="button"
+          className="h-8 w-full rounded-lg bg-jdav-green px-3 text-xs font-bold text-white transition-colors hover:bg-jdav-green-dark"
+        >
+          Bearbeiten
+        </button>
+      </Link>
+    </div>
+  );
+}
+
+export function TourItem({ tour }: { tour: GuideDashboardTour }) {
+  return (
+    <div
+      className={cn(
+        "group overflow-hidden rounded-2xl border bg-white shadow-sm transition-colors hover:border-jdav-green hover:shadow-md",
+        getTourItemClasses(tour),
+      )}
+    >
+      <div className="flex flex-col justify-between gap-4 p-5 sm:flex-row sm:items-center">
+        <TourDetails tour={tour} />
+        <TourActions tour={tour} />
+      </div>
+    </div>
+  );
+}
+
 export default async function GuideDashboardPage() {
   const supabase = await createClient();
 
@@ -101,20 +240,6 @@ export default async function GuideDashboardPage() {
     tours = normalizeTours(data as RawGuideDashboardTour[] | null);
   }
 
-  const statusMap: Record<string, { label: string; classes: string }> = {
-    planning: { label: "Planung", classes: "bg-blue-100 text-blue-700" },
-    open: { label: "Anmeldung offen", classes: "bg-green-100 text-green-700" },
-    full: { label: "Ausgebucht", classes: "bg-amber-100 text-amber-700" },
-    cancelled: {
-      label: "Abgesagt",
-      classes: "bg-red-100 text-red-700",
-    },
-    completed: {
-      label: "Abgeschlossen",
-      classes: "bg-slate-100 text-slate-600",
-    },
-  };
-
   // Filter for active vs archived
   const activeTours = tours.filter(
     (t) =>
@@ -127,102 +252,6 @@ export default async function GuideDashboardPage() {
     (t) =>
       t.status === "cancelled" ||
       (t.status === "completed" && t.tour_reports && t.tour_reports.length > 0),
-  );
-
-  const TourItem = ({ tour }: { tour: GuideDashboardTour }) => (
-    <div
-      className={cn(
-        "group overflow-hidden rounded-2xl border bg-white shadow-sm transition-all hover:border-jdav-green hover:shadow-md",
-        tour.status === "completed" &&
-          (!tour.tour_reports || tour.tour_reports.length === 0)
-          ? "border-red-500 shadow-md shadow-red-50/50"
-          : tour.status === "cancelled"
-            ? "border-red-200 bg-red-50/20"
-            : "border-slate-200",
-      )}
-    >
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 gap-4">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <span
-              className={cn(
-                "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
-                statusMap[tour.status]?.classes ||
-                  "bg-slate-100 text-slate-600",
-              )}
-            >
-              {statusMap[tour.status]?.label || tour.status}
-            </span>
-            <span className="text-xs text-slate-400 capitalize">
-              {tour.tour_categorys?.category || "Tour"}
-            </span>
-          </div>
-          <h3 className="text-lg font-bold text-slate-900 group-hover:text-jdav-green transition-colors">
-            {tour.title}
-          </h3>
-          <div className="mt-2 flex flex-wrap gap-4 text-sm text-slate-500">
-            <div className="flex items-center gap-1.5">
-              <Calendar className="h-4 w-4 text-jdav-green" />
-              {tour.start_date
-                ? format(new Date(tour.start_date), "dd.MM.yy")
-                : "TBA"}
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Users className="h-4 w-4 text-jdav-green" />
-              {tour.tour_participants?.[0]?.count || 0} /{" "}
-              {tour.max_participants || "∞"} Teilnehmer
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2 border-t pt-4 sm:border-t-0 sm:pt-0">
-          {tour.status === "completed" && (
-            <Link
-              href={
-                tour.tour_reports && tour.tour_reports.length > 0
-                  ? `/berichte/${tour.tour_reports[0].id}`
-                  : `/touren/${tour.id}/bericht/neu`
-              }
-              className="flex-1 sm:flex-none"
-            >
-              <button
-                type="button"
-                className={cn(
-                  "flex h-8 w-full items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-bold transition-colors",
-                  tour.tour_reports && tour.tour_reports.length > 0
-                    ? "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                    : "bg-red-600 text-white hover:bg-red-700 shadow-sm shadow-red-200",
-                )}
-              >
-                <FileEdit className="h-3.5 w-3.5" />
-                {tour.tour_reports && tour.tour_reports.length > 0
-                  ? "Bericht"
-                  : "Bericht erstellen"}
-              </button>
-            </Link>
-          )}
-          <Link href={`/touren/${tour.id}`} className="flex-1 sm:flex-none">
-            <button
-              type="button"
-              className="h-8 w-full rounded-lg border border-slate-200 px-3 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
-            >
-              Details
-            </button>
-          </Link>
-          <Link
-            href={`/touren/${tour.id}/edit`}
-            className="flex-1 sm:flex-none"
-          >
-            <button
-              type="button"
-              className="h-8 w-full rounded-lg bg-jdav-green px-3 text-xs font-bold text-white hover:bg-jdav-green-dark transition-colors"
-            >
-              Bearbeiten
-            </button>
-          </Link>
-        </div>
-      </div>
-    </div>
   );
 
   return (

@@ -84,37 +84,41 @@ export async function notifyTourOpenForSubscribers(
     const userPrefRows = (userPrefs ?? []) as UserPrefRow[];
     const childPrefRows = (childPrefs ?? []) as ChildPrefRow[];
 
-    for (const row of userPrefRows) {
-      await dispatchNotification(notificationClient, {
-        type: "tour_new",
-        title: `Anmeldung offen: ${input.title}`,
-        body: `Die Tour "${input.title}" ist jetzt zur Anmeldung freigegeben.`,
-        payload: {
-          tour_id: input.tourId,
-          status: "open",
-          url: `/touren/${input.tourId}`,
-        },
-        recipientUserId: row.user_id,
-        relatedTourId: input.tourId,
-        relatedGroupId: input.groupId,
-      });
-    }
+    await Promise.all(
+      userPrefRows.map((row) =>
+        dispatchNotification(notificationClient, {
+          type: "tour_new",
+          title: `Anmeldung offen: ${input.title}`,
+          body: `Die Tour "${input.title}" ist jetzt zur Anmeldung freigegeben.`,
+          payload: {
+            tour_id: input.tourId,
+            status: "open",
+            url: `/touren/${input.tourId}`,
+          },
+          recipientUserId: row.user_id,
+          relatedTourId: input.tourId,
+          relatedGroupId: input.groupId,
+        }),
+      ),
+    );
 
-    for (const row of childPrefRows) {
-      await dispatchNotification(notificationClient, {
-        type: "tour_new",
-        title: `Anmeldung offen: ${input.title}`,
-        body: "Eine Tour deiner abonnierten Gruppe ist jetzt zur Anmeldung freigegeben.",
-        payload: {
-          tour_id: input.tourId,
-          status: "open",
-          url: `/touren/${input.tourId}`,
-        },
-        recipientChildId: row.child_id,
-        relatedTourId: input.tourId,
-        relatedGroupId: input.groupId,
-      });
-    }
+    await Promise.all(
+      childPrefRows.map((row) =>
+        dispatchNotification(notificationClient, {
+          type: "tour_new",
+          title: `Anmeldung offen: ${input.title}`,
+          body: "Eine Tour deiner abonnierten Gruppe ist jetzt zur Anmeldung freigegeben.",
+          payload: {
+            tour_id: input.tourId,
+            status: "open",
+            url: `/touren/${input.tourId}`,
+          },
+          recipientChildId: row.child_id,
+          relatedTourId: input.tourId,
+          relatedGroupId: input.groupId,
+        }),
+      ),
+    );
   } catch (error) {
     // Benachrichtigungsfehler duerfen Kernprozesse wie Tour-Erstellung nicht blockieren.
     console.error("[Notification] notifyTourOpenForSubscribers failed:", error);

@@ -2,7 +2,7 @@
 
 import { Loader2 } from "lucide-react";
 import { useTransition } from "react";
-import { deleteMyAccount } from "@/app/actions/delete-account";
+import { deleteMyAccount } from "@/app/actions/delete-account.server";
 
 export function DeleteAccountButton() {
   const [isPending, startTransition] = useTransition();

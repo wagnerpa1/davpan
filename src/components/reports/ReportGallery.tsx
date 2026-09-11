@@ -92,7 +92,7 @@ export function ReportGallery({ images }: ReportGalleryProps) {
             key={img.id}
             type="button"
             onClick={() => setSelectedIdx(idx)}
-            className="relative flex-none w-[70%] sm:w-[35%] lg:w-[22%] aspect-4/3 snap-start rounded-2xl overflow-hidden cursor-pointer group border border-slate-100 bg-slate-50 transition-all hover:border-jdav-green/40"
+            className="relative flex-none w-[70%] sm:w-[35%] lg:w-[22%] aspect-4/3 snap-start rounded-2xl overflow-hidden cursor-pointer group border border-slate-100 bg-slate-50 transition-colors hover:border-jdav-green/40"
             aria-label={`Bild ${idx + 1} vergrössern`}
           >
             <Image
@@ -113,6 +113,7 @@ export function ReportGallery({ images }: ReportGalleryProps) {
           <button
             type="button"
             onClick={() => setSelectedIdx(null)}
+            aria-label="Bildgalerie schließen"
             className="absolute top-6 right-6 p-3 text-white/50 hover:text-white transition-colors z-10 bg-white/5 rounded-full"
           >
             <X className="h-6 w-6" />
@@ -126,7 +127,8 @@ export function ReportGallery({ images }: ReportGalleryProps) {
                 e.stopPropagation();
                 prevImage();
               }}
-              className="p-3 rounded-full bg-white/5 text-white/50 hover:text-white hover:bg-white/10 transition-all pointer-events-auto backdrop-blur-sm"
+              aria-label="Vorheriges Bild"
+              className="p-3 rounded-full bg-white/5 text-white/50 hover:text-white hover:bg-white/10 transition-colors pointer-events-auto backdrop-blur-sm"
             >
               <ChevronLeft className="h-6 w-6" />
             </button>
@@ -136,7 +138,8 @@ export function ReportGallery({ images }: ReportGalleryProps) {
                 e.stopPropagation();
                 nextImage();
               }}
-              className="p-3 rounded-full bg-white/5 text-white/50 hover:text-white hover:bg-white/10 transition-all pointer-events-auto backdrop-blur-sm"
+              aria-label="Nächstes Bild"
+              className="p-3 rounded-full bg-white/5 text-white/50 hover:text-white hover:bg-white/10 transition-colors pointer-events-auto backdrop-blur-sm"
             >
               <ChevronRight className="h-6 w-6" />
             </button>
@@ -147,7 +150,7 @@ export function ReportGallery({ images }: ReportGalleryProps) {
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
           >
-            <div className="relative w-full h-full animate-in zoom-in-95 duration-300 transition-all">
+            <div className="relative w-full h-full animate-in zoom-in-95 duration-300 transition-transform">
               <Image
                 src={images[selectedIdx].image_url}
                 alt={`Full size view ${selectedIdx + 1}`}
@@ -164,8 +167,9 @@ export function ReportGallery({ images }: ReportGalleryProps) {
                   key={img.id}
                   type="button"
                   onClick={() => setSelectedIdx(i)}
+                  aria-label={`Bild ${i + 1} auswählen`}
                   className={cn(
-                    "h-1.5 transition-all duration-300 rounded-full",
+                    "h-1.5 transition-[width,background-color] duration-300 rounded-full",
                     selectedIdx === i
                       ? "w-8 bg-jdav-green"
                       : "w-1.5 bg-white/20 hover:bg-white/40",

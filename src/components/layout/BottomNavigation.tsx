@@ -51,7 +51,7 @@ export function BottomNavigation({ userRole }: BottomNavigationProps) {
 
         <div
           className={cn(
-            "absolute bottom-24 left-4 right-4 mx-auto max-h-[calc(100vh-12rem)] max-w-md overflow-y-auto rounded-3xl border border-slate-200 bg-white/95 p-4 shadow-2xl backdrop-blur-md transition-all duration-200",
+            "absolute bottom-24 left-4 right-4 mx-auto max-h-[calc(100vh-12rem)] max-w-md overflow-y-auto rounded-3xl border border-slate-200 bg-white/95 p-4 shadow-2xl backdrop-blur-md transition-transform duration-200",
             isMoreOpen
               ? "translate-y-0 scale-100"
               : "translate-y-3 scale-[0.98]",
@@ -147,7 +147,7 @@ export function BottomNavigation({ userRole }: BottomNavigationProps) {
               href={item.href}
               onClick={() => setIsMoreOpen(false)}
               className={cn(
-                "motion-press group relative flex flex-col items-center justify-center px-1.5 py-1 transition-all duration-300",
+                "motion-press group relative flex flex-col items-center justify-center px-1.5 py-1 transition-colors duration-300",
                 isActive
                   ? "text-jdav-green"
                   : "text-slate-400 hover:text-slate-600",
@@ -155,7 +155,7 @@ export function BottomNavigation({ userRole }: BottomNavigationProps) {
             >
               <div
                 className={cn(
-                  "mb-1 flex h-9 w-14 items-center justify-center rounded-full transition-all duration-300",
+                  "mb-1 flex h-9 w-14 items-center justify-center rounded-full transition-colors duration-300",
                   isActive ? "bg-jdav-green/10" : "group-active:bg-slate-100",
                 )}
               >
@@ -169,7 +169,7 @@ export function BottomNavigation({ userRole }: BottomNavigationProps) {
               </div>
               <span
                 className={cn(
-                  "text-[10px] font-bold tracking-tight transition-all duration-300",
+                  "text-[10px] font-bold tracking-tight transition-opacity duration-300",
                   isActive ? "opacity-100 scale-100" : "opacity-70 scale-95",
                 )}
               >
@@ -188,7 +188,7 @@ export function BottomNavigation({ userRole }: BottomNavigationProps) {
           aria-label={isMoreOpen ? "Mehr-Menü schließen" : "Mehr-Menü öffnen"}
           onClick={() => setIsMoreOpen(!isMoreOpen)}
           className={cn(
-            "motion-press group relative flex flex-col items-center justify-center px-1.5 py-1 transition-all duration-300",
+            "motion-press group relative flex flex-col items-center justify-center px-1.5 py-1 transition-colors duration-300",
             isMoreOpen
               ? "text-jdav-green"
               : "text-slate-400 hover:text-slate-600",
@@ -196,7 +196,7 @@ export function BottomNavigation({ userRole }: BottomNavigationProps) {
         >
           <div
             className={cn(
-              "mb-1 flex h-9 w-14 items-center justify-center rounded-full transition-all duration-300",
+              "mb-1 flex h-9 w-14 items-center justify-center rounded-full transition-colors duration-300",
               isMoreOpen ? "bg-jdav-green/10" : "group-active:bg-slate-100",
             )}
           >
@@ -214,7 +214,7 @@ export function BottomNavigation({ userRole }: BottomNavigationProps) {
           </div>
           <span
             className={cn(
-              "text-[10px] font-bold tracking-tight transition-all duration-300",
+              "text-[10px] font-bold tracking-tight transition-opacity duration-300",
               isMoreOpen ? "opacity-100 scale-100" : "opacity-70 scale-95",
             )}
           >
