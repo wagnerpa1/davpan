@@ -25,8 +25,10 @@ declare global {
 declare const self: ServiceWorkerGlobalScope;
 
 const notificationTitle =
-  process.env.NEXT_PUBLIC_DAV_APP_NAME ||
-  `DAV ${process.env.NEXT_PUBLIC_DAV_SECTION_NAME || "Pfarrkirchen"}`;
+  (typeof process !== "undefined" &&
+    process.env &&
+    process.env.NEXT_PUBLIC_DAV_APP_NAME) ||
+  "DAV Pfarrkirchen";
 
 const bgSyncPlugin = new BackgroundSyncPlugin("offline-mutations-queue", {
   maxRetentionTime: 24 * 60, // Retry for max 24 Hours

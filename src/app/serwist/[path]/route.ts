@@ -28,4 +28,14 @@ export const { dynamic, dynamicParams, revalidate, generateStaticParams, GET } =
     // nextConfig,
     // If set to `false`, Serwist will attempt to use `esbuild-wasm`.
     useNativeEsbuild: true,
+    esbuildOptions: {
+      define: {
+        "process.env.NEXT_PUBLIC_DAV_APP_NAME": JSON.stringify(
+          process.env.NEXT_PUBLIC_DAV_APP_NAME || "DAV Pfarrkirchen",
+        ),
+        "process.env.NEXT_PUBLIC_DAV_SECTION_NAME": JSON.stringify(
+          process.env.NEXT_PUBLIC_DAV_SECTION_NAME || "Pfarrkirchen",
+        ),
+      },
+    },
   });
