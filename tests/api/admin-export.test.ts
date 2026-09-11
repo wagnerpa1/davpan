@@ -13,8 +13,6 @@ vi.mock("@/lib/auth", () => ({
   getCurrentUserProfile: getCurrentUserProfileMock,
 }));
 
-import { GET } from "../../src/app/api/admin/export/route";
-
 const originalDateTimeFormat = Intl.DateTimeFormat;
 
 function installUtcDateTimeFormatMock() {
@@ -191,6 +189,7 @@ describe("GET /api/admin/export", () => {
   it("returns a no-store CSV for tours and formats dates in UTC", async () => {
     createAdminProfileMock();
     const { constructorMock } = installUtcDateTimeFormatMock();
+    const { GET } = await import("../../src/app/api/admin/export/route");
     createClientMock.mockResolvedValueOnce(createToursSupabaseMock());
 
     const response = await GET(createRequest("tours-current"));
@@ -214,6 +213,8 @@ describe("GET /api/admin/export", () => {
   it("returns a no-store CSV for participants as well", async () => {
     createAdminProfileMock();
     const { constructorMock } = installUtcDateTimeFormatMock();
+    vi.resetModules();
+    const { GET } = await import("../../src/app/api/admin/export/route");
     createClientMock.mockResolvedValueOnce(createParticipantsSupabaseMock());
 
     const response = await GET(createRequest("participants-current"));

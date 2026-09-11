@@ -151,12 +151,14 @@ export async function loadTourRegistrationOverview(
   userId: string,
   isParent: boolean,
 ): Promise<TourRegistrationOverview> {
-  const [selfResult, childProfilesResult] = await Promise.all([
+  // Optimization: Fetch user's tour participants (for self and children) and child profiles in a single parallel batch.
+  // Previously, child registrations were queried in a sequential waterfall after resolving child profiles.
+  // Querying all registrations for `user_id = userId` alongside `child_profiles` cuts DB network round-trips from 2 to 1.
+  const [participantsResult, childProfilesResult] = await Promise.all([
     supabase
       .from("tour_participants")
       .select(TOUR_SELECT)
       .eq("user_id", userId)
-      .is("child_profile_id", null)
       .order("created_at", { ascending: false }),
     isParent
       ? supabase
@@ -170,26 +172,16 @@ export async function loadTourRegistrationOverview(
   const childProfiles = (
     (childProfilesResult.data ?? []) as ChildProfileRow[]
   ).filter((child): child is ChildProfileRow => Boolean(child?.id));
-  const childIds = childProfiles.map((child) => child.id);
 
-  const childResult =
-    isParent && childIds.length > 0
-      ? await supabase
-          .from("tour_participants")
-          .select(TOUR_SELECT)
-          .in("child_profile_id", childIds)
-          .order("created_at", { ascending: false })
-      : { data: [], error: null };
+  const allRegistrations = buildRegistrationRows(
+    (participantsResult.data ?? []) as unknown as TourParticipantRow[],
+  );
 
   const selfRegistrations = sortByTourDate(
-    buildRegistrationRows(
-      (selfResult.data ?? []) as unknown as TourParticipantRow[],
-    ),
+    allRegistrations.filter((r) => r.child_profile_id === null),
   );
   const childRegistrations = sortByTourDate(
-    buildRegistrationRows(
-      (childResult.data ?? []) as unknown as TourParticipantRow[],
-    ),
+    allRegistrations.filter((r) => r.child_profile_id !== null),
   );
 
   const tabs: RegistrationTab[] = [
