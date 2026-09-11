@@ -4,7 +4,7 @@ import { ResetPasswordForm } from "@/components/auth/ResetPasswordForm";
 export default function ResetPasswordPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-green-100 p-4">
-      <div className="w-full max-w-md space-y-8 rounded-2xl bg-white p-8 shadow-xl">
+      <div className="w-full max-w-md space-y-8 rounded-2xl bg-white p-8 shadow-xl min-h-[460px]">
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-extrabold tracking-tight text-slate-900">
             Passwort zurücksetzen
@@ -13,7 +13,9 @@ export default function ResetPasswordPage() {
             Gib deine E-Mail ein, um einen Reset-Link zu erhalten
           </p>
         </div>
-        <ResetPasswordForm />
+        <div className="min-h-[260px]">
+          <ResetPasswordForm />
+        </div>
 
         <div className="mt-8 text-center text-sm text-slate-500">
           <p>Du hast dein Passwort wiederhergestellt?</p>

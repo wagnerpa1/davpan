@@ -345,9 +345,9 @@ export default async function PublicToursPage({
         ) : (
           <div className="rounded-2xl border border-slate-200 border-dashed p-12 text-center">
             <Search className="mx-auto mb-4 h-12 w-12 text-slate-300" />
-            <h3 className="text-lg font-medium text-slate-900">
+            <h2 className="text-lg font-medium text-slate-900">
               Keine passenden Touren gefunden
-            </h3>
+            </h2>
             <p className="mt-2 text-sm text-slate-500">
               Versuche es mit anderen Filtereinstellungen oder setze alle Filter
               zurück.

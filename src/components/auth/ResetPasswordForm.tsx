@@ -29,6 +29,7 @@ export function ResetPasswordForm({ className }: { className?: string }) {
                 inputBorder: "#e2e8f0",
                 inputBorderHover: "#76a355",
                 inputBorderFocus: "#76a355",
+                inputLabelText: "#334155",
               },
               radii: {
                 borderRadiusButton: "0.5rem",

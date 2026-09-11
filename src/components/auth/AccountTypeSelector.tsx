@@ -18,7 +18,6 @@ export function AccountTypeSelector({
       <div className="grid grid-cols-2 gap-3">
         <button
           type="button"
-          aria-label="Mitglied aktivieren"
           onClick={() => onSelectParent(false)}
           className={cn(
             "relative p-4 rounded-2xl border-2 transition-shadow duration-200 hover:shadow-md",
@@ -56,7 +55,6 @@ export function AccountTypeSelector({
 
         <button
           type="button"
-          aria-label="Familienzugang"
           onClick={() => onSelectParent(true)}
           className={cn(
             "relative p-4 rounded-2xl border-2 transition-shadow duration-200 hover:shadow-md",
