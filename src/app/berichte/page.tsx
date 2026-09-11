@@ -1,9 +1,9 @@
 import { format } from "date-fns";
-import { Suspense } from "react";
 import { Calendar, ChevronRight, FileText, Mountain, User } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { ReportFilters } from "@/components/reports/ReportFilters";
 import { createClient } from "@/utils/supabase/server";
 

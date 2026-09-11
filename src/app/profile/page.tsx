@@ -37,11 +37,29 @@ function formatMembershipNumber(value: string | null | undefined) {
   return `${value.slice(0, 3)}-${value.slice(3, 5)}-${value.slice(5)}`;
 }
 
-function mapChildProfileRow(
-  row: ChildProfile & { parent_child_relations?: unknown },
-) {
-  const { parent_child_relations: _relations, ...rest } = row;
-  return rest as ChildProfile;
+async function loadChildrenForParent(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+): Promise<ChildProfile[]> {
+  const [{ data: legacyChildren }, { data: relationChildren }] =
+    await Promise.all([
+      supabase.from("child_profiles").select("*").eq("parent_id", userId),
+      supabase
+        .from("child_profiles")
+        .select("*, parent_child_relations!inner(parent_id)")
+        .eq("parent_child_relations.parent_id", userId),
+    ]);
+
+  const childrenMap = new Map<string, ChildProfile>();
+  legacyChildren?.forEach((c) => {
+    childrenMap.set(c.id, c);
+  });
+  relationChildren?.forEach((c) => {
+    const { parent_child_relations: _relations, ...rest } = c;
+    childrenMap.set(c.id, rest as ChildProfile);
+  });
+
+  return Array.from(childrenMap.values());
 }
 
 function buildChildNotificationPreferences(
@@ -60,7 +78,11 @@ function PersonalDataSection({
   user,
   profile,
 }: {
-  user: NonNullable<Awaited<ReturnType<typeof createClient>>["auth"]["getUser"]> extends never ? never : { email?: string | null };
+  user: NonNullable<
+    Awaited<ReturnType<typeof createClient>>["auth"]["getUser"]
+  > extends never
+    ? never
+    : { email?: string | null };
   profile: {
     full_name?: string | null;
     membership_number?: string | null;
@@ -257,7 +279,7 @@ function PersonalDataSection({
             <input
               type="checkbox"
               name="image_consent"
-              defaultChecked={profile?.image_consent}
+              defaultChecked={profile?.image_consent ?? false}
               className="mt-1 h-4 w-4 rounded border-slate-300 text-jdav-green focus:ring-jdav-green"
             />
             <div className="space-y-1.5 text-sm">

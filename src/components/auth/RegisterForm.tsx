@@ -129,10 +129,7 @@ export function RegisterForm({ className }: { className?: string }) {
           </div>
         )}
 
-        <AccountTypeSelector
-          isParent={isParent}
-          onSelectParent={setIsParent}
-        />
+        <AccountTypeSelector isParent={isParent} onSelectParent={setIsParent} />
 
         <div>
           <label

@@ -54,4 +54,3 @@ export function DeleteNewsButton({ id }: DeleteNewsButtonProps) {
     </button>
   );
 }
-

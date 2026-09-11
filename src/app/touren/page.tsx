@@ -1,8 +1,8 @@
 import { Search } from "lucide-react";
-import { Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { ComponentProps } from "react";
+import { Suspense } from "react";
 import { syncTourStatuses } from "@/app/actions/tour-management";
 import { TourCard } from "@/components/tours/TourCard";
 import { TourFilters } from "@/components/tours/TourFilters";
@@ -333,7 +333,7 @@ export default async function TourenPage({
 
   const canCreate = canCreateTour(authContext.role);
   const { categories, difficulties, guides, tourGroups, filteredTours } =
-    await getTourenPageData(supabase, params, authContext.role);
+    await getTourenPageData(supabase, params, authContext.role ?? undefined);
 
   return (
     <div className="mx-auto max-w-site px-4 py-8">

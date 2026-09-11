@@ -201,18 +201,16 @@ self.addEventListener("message", (event) => {
   }
 
   event.waitUntil(
-    caches
-      .keys()
-      .then((cacheNames) =>
-        Promise.all(
-          cacheNames.reduce<Promise<boolean>[]>((acc, name) => {
-            if (["jdav-pages", "jdav-touren", "jdav-images"].includes(name)) {
-              acc.push(caches.delete(name));
-            }
-            return acc;
-          }, []),
-        ),
+    caches.keys().then((cacheNames) =>
+      Promise.all(
+        cacheNames.reduce<Promise<boolean>[]>((acc, name) => {
+          if (["jdav-pages", "jdav-touren", "jdav-images"].includes(name)) {
+            acc.push(caches.delete(name));
+          }
+          return acc;
+        }, []),
       ),
+    ),
   );
 });
 

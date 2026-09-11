@@ -41,6 +41,8 @@ function PreferenceFields({
   preferences: NotificationPreference;
   tourGroups: TourGroupItem[];
 }) {
+  const selectedTourGroupIds = new Set(preferences.tour_group_ids);
+
   return (
     <>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -114,7 +116,7 @@ function PreferenceFields({
                 type="checkbox"
                 name="tour_group_ids"
                 value={group.id}
-                defaultChecked={preferences.tour_group_ids.includes(group.id)}
+                defaultChecked={selectedTourGroupIds.has(group.id)}
                 className="h-4 w-4 rounded border-slate-300 text-jdav-green focus:ring-jdav-green"
               />
               {group.group_name || "Unbenannte Gruppe"}

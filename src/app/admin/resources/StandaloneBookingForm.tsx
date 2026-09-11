@@ -63,10 +63,11 @@ export function StandaloneBookingForm({
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  const selectedResourceId =
-    resources.some((resource) => resource.id === formState.resourceId)
-      ? formState.resourceId
-      : resources[0]?.id ?? "";
+  const selectedResourceId = resources.some(
+    (resource) => resource.id === formState.resourceId,
+  )
+    ? formState.resourceId
+    : (resources[0]?.id ?? "");
 
   const validateForm = () => {
     if (!formState.resourceId) {
@@ -168,7 +169,13 @@ export function StandaloneBookingForm({
             <select
               id="resourceSelect"
               value={selectedResourceId}
-              onChange={(e) => dispatch({ type: "set", field: "resourceId", value: e.target.value })}
+              onChange={(e) =>
+                dispatch({
+                  type: "set",
+                  field: "resourceId",
+                  value: e.target.value,
+                })
+              }
               disabled={isLoading}
               className="mt-2 flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-jdav-green disabled:bg-slate-50 disabled:text-slate-500"
             >
@@ -192,7 +199,13 @@ export function StandaloneBookingForm({
                 id="startDate"
                 type="datetime-local"
                 value={formState.startDate}
-                onChange={(e) => dispatch({ type: "set", field: "startDate", value: e.target.value })}
+                onChange={(e) =>
+                  dispatch({
+                    type: "set",
+                    field: "startDate",
+                    value: e.target.value,
+                  })
+                }
                 disabled={isLoading}
                 className="mt-2"
                 required
@@ -206,7 +219,13 @@ export function StandaloneBookingForm({
                 id="endDate"
                 type="datetime-local"
                 value={formState.endDate}
-                onChange={(e) => dispatch({ type: "set", field: "endDate", value: e.target.value })}
+                onChange={(e) =>
+                  dispatch({
+                    type: "set",
+                    field: "endDate",
+                    value: e.target.value,
+                  })
+                }
                 disabled={isLoading}
                 className="mt-2"
                 required
@@ -222,7 +241,13 @@ export function StandaloneBookingForm({
             <Textarea
               id="reason"
               value={formState.reason}
-              onChange={(e) => dispatch({ type: "set", field: "reason", value: e.target.value })}
+              onChange={(e) =>
+                dispatch({
+                  type: "set",
+                  field: "reason",
+                  value: e.target.value,
+                })
+              }
               disabled={isLoading}
               placeholder="z.B. Vereinsevent am 15. Juni, Tourenleiter-Schulung, etc."
               maxLength={300}
@@ -270,7 +295,7 @@ export function StandaloneBookingForm({
             )}
             <button
               type="submit"
-              disabled={isLoading || !resourceId}
+              disabled={isLoading || !selectedResourceId}
               className="mt-6 inline-flex rounded-xl bg-jdav-green px-4 py-2 text-base font-semibold text-white hover:bg-jdav-green-dark disabled:opacity-50"
             >
               {isLoading ? "Wird reserviert..." : "Reservierung erstellen"}

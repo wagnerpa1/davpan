@@ -29,9 +29,7 @@ export function NotificationTabsHeader({
   return (
     <div className="border-b border-slate-100 px-4 py-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-bold text-slate-900">
-          Benachrichtigungen
-        </h2>
+        <h2 className="text-sm font-bold text-slate-900">Benachrichtigungen</h2>
         <button
           type="button"
           onClick={() => void onMarkTabAsRead()}

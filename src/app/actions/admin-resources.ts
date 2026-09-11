@@ -70,7 +70,7 @@ export async function createOrUpdateResource(formData: FormData) {
     return { error: admin.error ?? "Nicht autorisiert." };
   }
 
-  const { supabase, user } = admin.auth;
+  const { supabase } = admin.auth;
 
   const id = formData.get("id") as string | null;
   const name = formData.get("name") as string;

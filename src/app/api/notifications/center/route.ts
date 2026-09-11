@@ -75,19 +75,26 @@ export async function GET() {
         .limit(200);
 
       for (const child of children) {
-        const reduced =
-          childNotifications?.reduce(
-            (acc, notification) => {
-              if (notification.recipient_child_id === child.id) {
-                const { recipient_child_id: _recipientChildId, ...item } =
-                  notification as any;
-                acc.items.push(item);
-                if (!notification.read_at) acc.unreadCount += 1;
-              }
-              return acc;
-            },
-            { items: [] as NotificationTab[0]["items"], unreadCount: 0 },
-          ) ?? { items: [], unreadCount: 0 };
+        const reduced = childNotifications?.reduce(
+          (acc, notification) => {
+            if (notification.recipient_child_id === child.id) {
+              const item: NotificationTab["items"][number] = {
+                id: notification.id,
+                type: notification.type,
+                title: notification.title,
+                body: notification.body,
+                payload:
+                  notification.payload as NotificationTab["items"][number]["payload"],
+                created_at: notification.created_at,
+                read_at: notification.read_at,
+              };
+              acc.items.push(item);
+              if (!notification.read_at) acc.unreadCount += 1;
+            }
+            return acc;
+          },
+          { items: [] as NotificationTab["items"], unreadCount: 0 },
+        ) ?? { items: [], unreadCount: 0 };
 
         tabs.push({
           id: `child-${child.id}`,

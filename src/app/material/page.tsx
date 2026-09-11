@@ -135,7 +135,8 @@ function ReservationCard({
     <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="font-semibold text-slate-900">
-          {reservation.material_inventory?.material_types?.name || "Unbekanntes Material"}
+          {reservation.material_inventory?.material_types?.name ||
+            "Unbekanntes Material"}
           {reservation.material_inventory?.size && (
             <span className="ml-2 text-xs text-slate-500">
               ({reservation.material_inventory.size})
@@ -146,14 +147,21 @@ function ReservationCard({
       </div>
       <div className="mt-2 text-xs text-slate-600">
         Von{" "}
-        {reservation.loan_date ? format(new Date(reservation.loan_date), "dd.MM.yyyy") : "-"}{" "}
+        {reservation.loan_date
+          ? format(new Date(reservation.loan_date), "dd.MM.yyyy")
+          : "-"}{" "}
         bis{" "}
-        {reservation.return_date ? format(new Date(reservation.return_date), "dd.MM.yyyy") : "-"}
+        {reservation.return_date
+          ? format(new Date(reservation.return_date), "dd.MM.yyyy")
+          : "-"}
       </div>
 
       {showCancelButton && (
         <form
-          action={cancelOwnPrivateMaterialReservation.bind(null, reservation.id)}
+          action={cancelOwnPrivateMaterialReservation.bind(
+            null,
+            reservation.id,
+          )}
           className="mt-3"
         >
           <button
@@ -193,11 +201,17 @@ function PrivateReservationsPanel({
   });
 
   const archivedReservations = visibleReservations.filter((reservation) => {
-    return reservation.status === "returned" || reservation.status === "cancelled";
+    return (
+      reservation.status === "returned" || reservation.status === "cancelled"
+    );
   });
 
   if (visibleReservations.length === 0) {
-    return <p className="text-sm italic text-slate-500">Du hast aktuell keine privaten Reservierungen.</p>;
+    return (
+      <p className="text-sm italic text-slate-500">
+        Du hast aktuell keine privaten Reservierungen.
+      </p>
+    );
   }
 
   return (
@@ -208,7 +222,8 @@ function PrivateReservationsPanel({
             key={reservation.id}
             reservation={reservation}
             showCancelButton={
-              reservation.status === "requested" || reservation.status === "reserved"
+              reservation.status === "requested" ||
+              reservation.status === "reserved"
             }
           />
         ))
@@ -225,7 +240,11 @@ function PrivateReservationsPanel({
           </summary>
           <div className="space-y-3 border-t border-slate-100 p-4">
             {archivedReservations.map((reservation) => (
-              <ReservationCard key={reservation.id} reservation={reservation} showCancelButton={false} />
+              <ReservationCard
+                key={reservation.id}
+                reservation={reservation}
+                showCancelButton={false}
+              />
             ))}
           </div>
         </details>
@@ -259,7 +278,11 @@ function MaterialCard({
           <div className="flex items-start gap-2">
             <Euro className="mt-0.5 h-4 w-4 shrink-0 opacity-50" />
             <span className="flex-1 font-medium text-slate-900">
-              {formatPriceRow(material.price_day, material.price_extraday, material.price_week)}
+              {formatPriceRow(
+                material.price_day,
+                material.price_extraday,
+                material.price_week,
+              )}
             </span>
           </div>
         </div>
@@ -287,7 +310,11 @@ function MaterialGrid({
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
       {materials.map((material) => (
-        <MaterialCard key={material.id} material={material} isLoggedIn={isLoggedIn} />
+        <MaterialCard
+          key={material.id}
+          material={material}
+          isLoggedIn={isLoggedIn}
+        />
       ))}
     </div>
   );
@@ -407,7 +434,9 @@ export default async function MaterialPage() {
 
       {authContext.user && (
         <div className="mb-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-bold text-slate-900">Meine privaten Ausleihen</h2>
+          <h2 className="text-lg font-bold text-slate-900">
+            Meine privaten Ausleihen
+          </h2>
           <p className="mt-1 text-sm text-slate-600">
             Hier siehst du den Status deiner privaten Reservierungen.
           </p>
@@ -419,7 +448,10 @@ export default async function MaterialPage() {
       )}
 
       <h2 className="mb-4 text-xl font-bold text-slate-900">Unser Material</h2>
-      <MaterialGrid materials={displayMaterials} isLoggedIn={!!authContext.user} />
+      <MaterialGrid
+        materials={displayMaterials}
+        isLoggedIn={!!authContext.user}
+      />
 
       {materials.length === 0 && (
         <div className="rounded-3xl border border-slate-100 bg-slate-50 p-12 text-center text-slate-500">

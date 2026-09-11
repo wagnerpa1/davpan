@@ -2,7 +2,7 @@
 "use client";
 
 import { X } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useEffectEvent } from "react";
 import { TourRegistrationForm } from "./TourRegistrationForm";
 
 interface Material {
@@ -38,10 +38,12 @@ export function TourRegistrationModal({
   childrenProfiles,
   availableMaterials,
 }: TourRegistrationModalProps) {
-  // Handle escape key to close modal
+  const handleCloseFromEffect = useEffectEvent(onClose);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: handleCloseFromEffect is an Effect Event and non-reactive
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") handleCloseFromEffect();
     };
     if (isOpen) {
       window.addEventListener("keydown", handleEscape);
@@ -51,7 +53,7 @@ export function TourRegistrationModal({
       window.removeEventListener("keydown", handleEscape);
       document.body.style.overflow = "unset";
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

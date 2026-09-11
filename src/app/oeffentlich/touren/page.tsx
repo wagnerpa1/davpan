@@ -1,7 +1,7 @@
 import { Search } from "lucide-react";
-import { Suspense } from "react";
 import Link from "next/link";
 import type { ComponentProps } from "react";
+import { Suspense } from "react";
 import { TourCard } from "@/components/tours/TourCard";
 import { TourFilters } from "@/components/tours/TourFilters";
 import { siteConfig } from "@/lib/site-config";
@@ -69,7 +69,11 @@ function normalizeCategoryFilter(
   categories: TourCategoryOption[],
 ) {
   const categoryByLabel = new Map(
-    categories.map((category) => [category.category.toLowerCase(), category.id]),
+    categories
+      .filter((cat): cat is TourCategoryOption & { category: string } =>
+        Boolean(cat.category),
+      )
+      .map((category) => [category.category.toLowerCase(), category.id]),
   );
 
   return categoryByLabel.has(categoryFilter.toLowerCase())
@@ -153,8 +157,9 @@ async function loadConfirmedCountByTour(
 function getConfirmedCount(tour: TourCardItem) {
   return (
     tour.confirmed_participants_count ??
-    tour.tour_participants?.filter((participant) => participant.status === "confirmed")
-      .length ??
+    tour.tour_participants?.filter(
+      (participant) => participant.status === "confirmed",
+    ).length ??
     0
   );
 }

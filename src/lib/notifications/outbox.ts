@@ -236,7 +236,17 @@ export async function processNotificationOutboxBatch(options?: {
   let failed = 0;
   let skipped = 0;
 
-  for (const item of items) {
+  interface OutboxItemData {
+    id: number;
+    event_key: string;
+    aggregate_id: string;
+    event_version: number;
+    attempts: number;
+  }
+
+  async function processSingleOutboxItem(
+    item: OutboxItemData,
+  ): Promise<"processed" | "failed" | "skipped"> {
     const lockResult = await outboxClient
       .from("notification_outbox")
       .update({
@@ -247,8 +257,7 @@ export async function processNotificationOutboxBatch(options?: {
       .eq("status", "pending");
 
     if (lockResult.error) {
-      skipped += 1;
-      continue;
+      return "skipped";
     }
 
     try {
@@ -276,8 +285,7 @@ export async function processNotificationOutboxBatch(options?: {
           })
           .eq("id", item.id);
 
-        skipped += 1;
-        continue;
+        return "skipped";
       }
 
       const dedupe = await processedClient.from("processed_events").insert({
@@ -295,8 +303,7 @@ export async function processNotificationOutboxBatch(options?: {
           })
           .eq("id", item.id);
 
-        skipped += 1;
-        continue;
+        return "skipped";
       }
 
       if (dedupe.error) {
@@ -336,8 +343,7 @@ export async function processNotificationOutboxBatch(options?: {
           })
           .eq("id", item.id);
 
-        failed += 1;
-        continue;
+        return "failed";
       }
 
       await dispatchPushForNotification({
@@ -351,13 +357,12 @@ export async function processNotificationOutboxBatch(options?: {
             : {},
       });
 
-      // Phase 4: Trigger mandatory email for registration/waitlist status changes
       if (
         notification.type === "registration" ||
         notification.type === "waitlist" ||
         notification.type === "tour_update"
       ) {
-        if (notification.recipient_user_id) {
+        if (admin && notification.recipient_user_id) {
           const { data: userData } = await admin.auth.admin.getUserById(
             notification.recipient_user_id,
           );
@@ -383,7 +388,7 @@ export async function processNotificationOutboxBatch(options?: {
         })
         .eq("id", item.id);
 
-      processed += 1;
+      return "processed";
     } catch (error: unknown) {
       const nextAttempts = item.attempts + 1;
       const errorMessage =
@@ -401,8 +406,7 @@ export async function processNotificationOutboxBatch(options?: {
           })
           .eq("id", item.id);
 
-        failed += 1;
-        continue;
+        return "failed";
       }
 
       const backoffSeconds = Math.min(300, 2 ** Math.min(nextAttempts, 8));
@@ -420,7 +424,21 @@ export async function processNotificationOutboxBatch(options?: {
         })
         .eq("id", item.id);
 
+      return "failed";
+    }
+  }
+
+  const results = await Promise.all(
+    items.map((item) => processSingleOutboxItem(item as OutboxItemData)),
+  );
+
+  for (const outcome of results) {
+    if (outcome === "processed") {
+      processed += 1;
+    } else if (outcome === "failed") {
       failed += 1;
+    } else if (outcome === "skipped") {
+      skipped += 1;
     }
   }
 
