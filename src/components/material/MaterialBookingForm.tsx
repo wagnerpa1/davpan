@@ -5,6 +5,7 @@ import type { FormEvent } from "react";
 import { useState } from "react";
 import { createIndependentMaterialReservation } from "@/app/actions/material";
 import { Button } from "@/components/ui/button";
+import { isOfflineQueued, runClientAction } from "@/lib/client-action-runner";
 
 interface MaterialBookingFormProps {
   materialId: string;
@@ -51,12 +52,24 @@ export function MaterialBookingForm({
       formData.append("loanDate", loanDate);
       formData.append("returnDate", returnDate);
 
-      const result = await createIndependentMaterialReservation(formData);
+      const result = await runClientAction(() =>
+        createIndependentMaterialReservation(formData),
+      );
+
+      if (isOfflineQueued(result)) {
+        setSuccess(
+          "Du bist offline. Die Materialanfrage wird synchronisiert, sobald Du wieder verbunden bist.",
+        );
+        return;
+      }
 
       if (result.error) {
         setError(result.error);
       } else if (result.success) {
-        setSuccess(result.message);
+        setSuccess(
+          result.message ??
+            "Material erfolgreich angefragt. Das Material-Team bestätigt die Reservierung.",
+        );
       }
     } finally {
       setIsPending(false);

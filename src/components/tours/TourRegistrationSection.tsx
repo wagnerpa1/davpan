@@ -12,6 +12,7 @@ import Link from "next/link";
 import { useState, useTransition } from "react";
 import { cancelRegistration } from "@/app/actions/tour-registration";
 import { Button } from "@/components/ui/button";
+import { isOfflineQueued, runClientAction } from "@/lib/client-action-runner";
 import { cn } from "@/lib/utils";
 import { TourRegistrationModal } from "./TourRegistrationModal";
 
@@ -504,6 +505,7 @@ export function TourRegistrationSection({
     name: string;
   } | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [offlineNotice, setOfflineNotice] = useState<string | null>(null);
 
   if (!isLoggedIn) {
     return <TourRegistrationLoggedOut />;
@@ -522,8 +524,21 @@ export function TourRegistrationSection({
   const confirmCancel = () => {
     if (!cancelTarget) return;
     startTransition(async () => {
-      await cancelRegistration(cancelTarget.id);
+      const result = await runClientAction(() =>
+        cancelRegistration(cancelTarget.id),
+      );
       setCancelTarget(null);
+      if (isOfflineQueued(result)) {
+        setOfflineNotice(
+          "Du bist offline. Die Absage wird synchronisiert, sobald Du wieder verbunden bist.",
+        );
+        return;
+      }
+      if (result && "error" in result && result.error) {
+        setOfflineNotice(result.error);
+        return;
+      }
+      setOfflineNotice(null);
     });
   };
 
@@ -537,6 +552,11 @@ export function TourRegistrationSection({
       />
 
       <div className="space-y-4">
+        {offlineNotice && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            {offlineNotice}
+          </div>
+        )}
         <TourRegistrationHeader
           statusText={vm.statusText}
           maxParticipants={maxParticipants}

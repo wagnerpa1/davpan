@@ -6,7 +6,7 @@ import type React from "react";
 import { useRef, useState } from "react";
 import { registerForTour } from "@/app/actions/tour-registration";
 import { Button } from "@/components/ui/button";
-import { runClientAction } from "@/lib/client-action-runner";
+import { isOfflineQueued, runClientAction } from "@/lib/client-action-runner";
 
 interface Material {
   id: string; // material_type_id
@@ -331,7 +331,7 @@ export function TourRegistrationForm({
 
       const result = await runClientAction(() => registerForTour(formData));
 
-      if ("offlineQueued" in result && result.offlineQueued) {
+      if (isOfflineQueued(result)) {
         setSuccess(
           "Du bist offline. Deine Anmeldung wurde gespeichert und wird synchronisiert, sobald Du wieder verbunden bist.",
         );
@@ -342,9 +342,9 @@ export function TourRegistrationForm({
         return;
       }
 
-      if ("error" in result && result.error) {
+      if (result.error) {
         setError(result.error);
-      } else if ("success" in result && result.success) {
+      } else if (result.success) {
         setSuccess(result.message || "Erfolgreich angemeldet.");
         router.refresh();
         if (onSuccess) {

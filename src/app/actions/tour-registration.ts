@@ -22,7 +22,10 @@ export async function registerForTour(formData: FormData) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    return { error: "Du musst angemeldet sein, um dich anzumelden." };
+    return {
+      success: false,
+      error: "Du musst angemeldet sein, um dich anzumelden.",
+    };
   }
 
   const tourId = formData.get("tourId") as string;
@@ -45,7 +48,7 @@ export async function registerForTour(formData: FormData) {
   }
 
   if (!tourId) {
-    return { error: "Tour ID fehlt." };
+    return { success: false, error: "Tour ID fehlt." };
   }
 
   // 1.5 Fetch Tour data for capacity and age checks
@@ -58,11 +61,14 @@ export async function registerForTour(formData: FormData) {
     .single();
 
   if (tError || !tour) {
-    return { error: "Tour nicht gefunden." };
+    return { success: false, error: "Tour nicht gefunden." };
   }
 
   if (tour.status !== "open" && tour.status !== "full") {
-    return { error: "Anmeldung für diese Tour ist aktuell nicht möglich." };
+    return {
+      success: false,
+      error: "Anmeldung für diese Tour ist aktuell nicht möglich.",
+    };
   }
 
   // 1.6 Age Check
@@ -79,7 +85,7 @@ export async function registerForTour(formData: FormData) {
         birthdate = child.birthdate;
         actorDisplayName = child.full_name || "Kind";
       } else {
-        return { error: "Ung�ltiges Kind-Profil." };
+        return { success: false, error: "Ungültiges Kind-Profil." };
       }
     } else {
       const { data: profile } = await supabase
@@ -176,7 +182,7 @@ export async function registerForTour(formData: FormData) {
         rpcError.code === "23505" ||
         errorMsg.includes("Already registered")
       ) {
-        return { error: "F�r diese Tour bereits angemeldet." };
+        return { success: false, error: "Für diese Tour bereits angemeldet." };
       }
 
       if (errorMsg.includes("Material not available")) {
@@ -195,12 +201,13 @@ export async function registerForTour(formData: FormData) {
         });
 
         return {
-          error: "Material ist leider nicht mehr verf�gbar.",
+          success: false,
+          error: "Material ist leider nicht mehr verfügbar.",
         };
       }
 
       console.error("RPC Error:", rpcError);
-      return { error: errorMsg };
+      return { success: false, error: errorMsg };
     }
 
     const status = result.status;
@@ -268,7 +275,10 @@ export async function registerForTour(formData: FormData) {
     };
   } catch (err: unknown) {
     console.error("Registration error:", err);
-    return { error: "Bei der Anmeldung ist ein Fehler aufgetreten." };
+    return {
+      success: false,
+      error: "Bei der Anmeldung ist ein Fehler aufgetreten.",
+    };
   }
 }
 
@@ -277,7 +287,7 @@ export async function cancelRegistration(participantId: string) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { error: "Nicht eingeloggt." };
+  if (!user) return { success: false, error: "Nicht eingeloggt." };
 
   // Get the registration to verify ownership and get tourId
   const { data: reg, error: regError } = await supabase
@@ -286,8 +296,10 @@ export async function cancelRegistration(participantId: string) {
     .eq("id", participantId)
     .single();
 
-  if (regError || !reg) return { error: "Anmeldung nicht gefunden." };
-  if (reg.user_id !== user.id) return { error: "Keine Berechtigung." };
+  if (regError || !reg)
+    return { success: false, error: "Anmeldung nicht gefunden." };
+  if (reg.user_id !== user.id)
+    return { success: false, error: "Keine Berechtigung." };
 
   // Fetch tour info for notifications and cancel the registration in parallel.
   const [{ data: tourData }, { error }] = await Promise.all([
@@ -302,7 +314,7 @@ export async function cancelRegistration(participantId: string) {
       .eq("id", participantId),
   ]);
 
-  if (error) return { error: "Absage fehlgeschlagen." };
+  if (error) return { success: false, error: "Absage fehlgeschlagen." };
 
   await dispatchNotification(supabase, {
     type: "registration",

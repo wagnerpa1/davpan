@@ -11,6 +11,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { ComponentProps } from "react";
 import { TourCard } from "@/components/tours/TourCard";
+import { SignOutForm } from "@/components/ui/SignOutForm";
 import { getCurrentUserProfile } from "@/lib/auth";
 import { siteConfig } from "@/lib/site-config";
 import { loadNextConfirmedRegistration } from "@/lib/tours/registration-overview";
@@ -385,7 +386,7 @@ export default async function Home() {
       </div>
 
       <div className="mt-16 flex justify-center border-t border-slate-100 pt-8">
-        <form action="/auth/signout" method="POST">
+        <SignOutForm>
           <button
             type="submit"
             className="group flex items-center gap-2 text-[10px] font-bold text-slate-400 hover:text-red-500 transition-colors uppercase tracking-widest"
@@ -394,7 +395,7 @@ export default async function Home() {
             <LogOut className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
             Abmelden
           </button>
-        </form>
+        </SignOutForm>
       </div>
     </div>
   );

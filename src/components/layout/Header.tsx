@@ -8,6 +8,7 @@ import { useState } from "react";
 import { buildNavigation } from "@/lib/navigation/nav-config";
 import type { RoleLike } from "@/lib/permissions";
 import { isParentRole } from "@/lib/permissions";
+import { SignOutForm } from "@/components/ui/SignOutForm";
 import { siteConfig } from "@/lib/site-config";
 
 const MemberBarcodePopup = dynamic(
@@ -117,18 +118,14 @@ export function Header({ birthdate, membershipNumber, userRole }: HeaderProps) {
             birthdate={birthdate}
           />
           <NotificationCenter isParent={isParent} />
-          <form
-            action="/auth/signout"
-            method="POST"
-            className="hidden md:block"
-          >
+          <SignOutForm className="hidden md:block">
             <button
               type="submit"
               className="text-sm font-medium text-red-600 hover:text-red-700 transition-colors"
             >
               Abmelden
             </button>
-          </form>
+          </SignOutForm>
         </div>
       </div>
     </header>
