@@ -252,16 +252,100 @@ export function getNextConfirmedRegistration(tabs: RegistrationTab[]) {
     }
   }
 
-  return (
-    confirmedRegistrations.sort((left, right) => {
-      const leftDate = left.tour.start_date
-        ? Date.parse(left.tour.start_date)
-        : 0;
-      const rightDate = right.tour.start_date
-        ? Date.parse(right.tour.start_date)
-        : 0;
+  return sortByTourDate(confirmedRegistrations)[0] ?? null;
+}
 
-      return leftDate - rightDate;
-    })[0] ?? null
-  );
+const NEXT_CONFIRMED_SELECT = `
+  id,
+  tour_id,
+  status,
+  waitlist_position,
+  child_profile_id,
+  child_profiles (
+    id,
+    full_name
+  ),
+  tours!inner (
+    id,
+    title,
+    status,
+    start_date,
+    end_date,
+    target_area,
+    max_participants,
+    difficulty,
+    tour_groups!tours_group_fkey (
+      group_name
+    ),
+    tour_categorys!tours_category_fkey (
+      category
+    ),
+    tour_guides (
+      user_id,
+      profiles (
+        full_name
+      )
+    )
+  )
+`;
+
+/**
+ * Loads only the soonest upcoming confirmed registration for the home dashboard.
+ */
+export async function loadNextConfirmedRegistration(
+  supabase: SupabaseLike,
+  userId: string,
+  isParent: boolean,
+): Promise<UserTourRegistration | null> {
+  const today = new Date().toISOString().split("T")[0];
+
+  const [selfResult, childProfilesResult] = await Promise.all([
+    supabase
+      .from("tour_participants")
+      .select(NEXT_CONFIRMED_SELECT)
+      .eq("user_id", userId)
+      .eq("status", "confirmed")
+      .is("child_profile_id", null)
+      .gte("tours.end_date", today)
+      .not("tours.status", "in", "(completed,cancelled)")
+      .order("start_date", {
+        ascending: true,
+        referencedTable: "tours",
+      })
+      .limit(1),
+    isParent
+      ? supabase.from("child_profiles").select("id").eq("parent_id", userId)
+      : Promise.resolve({ data: [] as { id: string }[] | null }),
+  ]);
+
+  const childIds = (
+    (childProfilesResult.data ?? []) as { id: string }[]
+  ).flatMap((child) => (child.id ? [child.id] : []));
+
+  const childResult =
+    isParent && childIds.length > 0
+      ? await supabase
+          .from("tour_participants")
+          .select(NEXT_CONFIRMED_SELECT)
+          .in("child_profile_id", childIds)
+          .eq("status", "confirmed")
+          .gte("tours.end_date", today)
+          .not("tours.status", "in", "(completed,cancelled)")
+          .order("start_date", {
+            ascending: true,
+            referencedTable: "tours",
+          })
+          .limit(1)
+      : { data: [] };
+
+  const candidates = sortByTourDate([
+    ...buildRegistrationRows(
+      (selfResult.data ?? []) as unknown as TourParticipantRow[],
+    ),
+    ...buildRegistrationRows(
+      (childResult.data ?? []) as unknown as TourParticipantRow[],
+    ),
+  ]);
+
+  return candidates[0] ?? null;
 }

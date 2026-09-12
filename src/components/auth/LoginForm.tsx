@@ -1,13 +1,23 @@
 "use client";
 
-import { Auth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getAuthCallbackUrl } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/client";
+
+const Auth = dynamic(
+  () => import("@supabase/auth-ui-react").then((mod) => mod.Auth),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-48 animate-pulse rounded-lg bg-slate-100" />
+    ),
+  },
+);
 
 export function LoginForm({ className }: { className?: string }) {
   const [supabase] = useState(() => createClient());

@@ -56,6 +56,7 @@ const nextConfig: NextConfig = {
     root: process.cwd(),
   },
   experimental: {
+    optimizePackageImports: ["lucide-react", "date-fns"],
     serverActions: {
       allowedOrigins: getAllowedOrigins(),
     },

@@ -1,5 +1,3 @@
-"use client";
-
 import { format } from "date-fns";
 import { Calendar, ChevronRight, MapPin, Users } from "lucide-react";
 import Link from "next/link";

@@ -1,7 +1,7 @@
 import { Search } from "lucide-react";
-import { Suspense } from "react";
 import Link from "next/link";
 import type { ComponentProps } from "react";
+import { Suspense } from "react";
 import { TourCard } from "@/components/tours/TourCard";
 import { TourFilters } from "@/components/tours/TourFilters";
 import { siteConfig } from "@/lib/site-config";
@@ -69,7 +69,11 @@ function normalizeCategoryFilter(
   categories: TourCategoryOption[],
 ) {
   const categoryByLabel = new Map(
-    categories.map((category) => [category.category.toLowerCase(), category.id]),
+    categories
+      .filter((category): category is { id: string; category: string } =>
+        Boolean(category.category),
+      )
+      .map((category) => [category.category.toLowerCase(), category.id]),
   );
 
   return categoryByLabel.has(categoryFilter.toLowerCase())
@@ -153,8 +157,9 @@ async function loadConfirmedCountByTour(
 function getConfirmedCount(tour: TourCardItem) {
   return (
     tour.confirmed_participants_count ??
-    tour.tour_participants?.filter((participant) => participant.status === "confirmed")
-      .length ??
+    tour.tour_participants?.filter(
+      (participant) => participant.status === "confirmed",
+    ).length ??
     0
   );
 }
@@ -232,10 +237,21 @@ export default async function PublicToursPage({
   const availableOnly = params.available === "true";
   const sortBy = (params.sort as string) || "date_asc";
 
-  const { data: categoryData } = await supabase
-    .from("tour_categorys")
-    .select("id, category")
-    .order("category");
+  const [
+    { data: categoryData },
+    { data: allToursData },
+    { data: guides },
+    { data: tourGroups },
+  ] = await Promise.all([
+    supabase.from("tour_categorys").select("id, category").order("category"),
+    supabase.from("tours").select("difficulty").neq("status", "completed"),
+    supabase
+      .from("profiles")
+      .select("id, full_name")
+      .in("role", ["guide", "admin"])
+      .order("full_name"),
+    supabase.from("tour_groups").select("id, group_name").order("group_name"),
+  ]);
 
   const categories = ((categoryData || []) as TourCategoryOption[]).filter(
     (c): c is { id: string; category: string } => Boolean(c.category),
@@ -244,11 +260,6 @@ export default async function PublicToursPage({
   const normalizedCategoryFilter = categoryFilter
     ? normalizeCategoryFilter(categoryFilter, categories)
     : categoryFilter;
-
-  const { data: allToursData } = await supabase
-    .from("tours")
-    .select("difficulty")
-    .neq("status", "completed");
 
   const difficulties = Array.from(
     new Set(
@@ -260,15 +271,6 @@ export default async function PublicToursPage({
       }, []),
     ),
   ) as string[];
-
-  const [{ data: guides }, { data: tourGroups }] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("id, full_name")
-      .in("role", ["guide", "admin"])
-      .order("full_name"),
-    supabase.from("tour_groups").select("id, group_name").order("group_name"),
-  ]);
 
   const query = buildTourQuery(supabase, {
     normalizedCategoryFilter,
