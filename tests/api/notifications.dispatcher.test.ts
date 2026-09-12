@@ -1,13 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { dispatchNotification } from "../../src/lib/notifications/dispatcher";
 
-const { enqueueSpy, pushDispatchSpy } = vi.hoisted(() => ({
+const { enqueueSpy, pushDispatchSpy, emailDispatchSpy } = vi.hoisted(() => ({
   enqueueSpy: vi.fn(),
   pushDispatchSpy: vi.fn(),
+  emailDispatchSpy: vi.fn(),
 }));
 
 vi.mock("@/lib/notifications/push-dispatch", () => ({
   dispatchPushForNotification: pushDispatchSpy,
+}));
+
+vi.mock("@/lib/notifications/email-dispatcher", () => ({
+  maybeDispatchEmailForNotification: emailDispatchSpy,
 }));
 
 vi.mock("@/lib/notifications/outbox", () => ({
@@ -87,6 +92,8 @@ describe("dispatchNotification opt-in filtering", () => {
     enqueueSpy.mockReset();
     enqueueSpy.mockResolvedValue(true);
     pushDispatchSpy.mockReset();
+    emailDispatchSpy.mockReset();
+    emailDispatchSpy.mockResolvedValue(undefined);
   });
 
   it("insertet keine system-notification, wenn user system opt-out gesetzt hat", async () => {
@@ -111,6 +118,7 @@ describe("dispatchNotification opt-in filtering", () => {
 
     expect(notificationInsert).not.toHaveBeenCalled();
     expect(pushDispatchSpy).not.toHaveBeenCalled();
+    expect(emailDispatchSpy).not.toHaveBeenCalled();
   });
 
   it("insertet notification mit sanitizter payload, wenn opt-in aktiv ist", async () => {
@@ -156,6 +164,13 @@ describe("dispatchNotification opt-in filtering", () => {
     });
     expect(insertArg.payload).not.toHaveProperty("emergency_phone");
     expect(pushDispatchSpy).toHaveBeenCalledTimes(1);
+    expect(emailDispatchSpy).toHaveBeenCalledWith({
+      type: "registration",
+      recipientUserId: "user-2",
+      recipientChildId: null,
+      title: "Status",
+      body: "Änderung",
+    });
   });
 
   it("queued event statt push, wenn outbox mode aktiv ist", async () => {
@@ -185,5 +200,6 @@ describe("dispatchNotification opt-in filtering", () => {
 
     expect(enqueueSpy).toHaveBeenCalledTimes(1);
     expect(pushDispatchSpy).not.toHaveBeenCalled();
+    expect(emailDispatchSpy).not.toHaveBeenCalled();
   });
 });

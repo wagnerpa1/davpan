@@ -1,10 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { processNotificationOutboxBatch } from "../../src/lib/notifications/outbox";
 
-const { createAdminClientSpy, dispatchPushSpy } = vi.hoisted(() => ({
-  createAdminClientSpy: vi.fn(),
-  dispatchPushSpy: vi.fn(),
-}));
+const { createAdminClientSpy, dispatchPushSpy, emailDispatchSpy } = vi.hoisted(
+  () => ({
+    createAdminClientSpy: vi.fn(),
+    dispatchPushSpy: vi.fn(),
+    emailDispatchSpy: vi.fn(),
+  }),
+);
 
 vi.mock("@/utils/supabase/admin", () => ({
   createAdminClient: createAdminClientSpy,
@@ -12,6 +15,10 @@ vi.mock("@/utils/supabase/admin", () => ({
 
 vi.mock("@/lib/notifications/push-dispatch", () => ({
   dispatchPushForNotification: dispatchPushSpy,
+}));
+
+vi.mock("@/lib/notifications/email-dispatcher", () => ({
+  maybeDispatchEmailForNotification: emailDispatchSpy,
 }));
 
 type OutboxRow = {
@@ -32,6 +39,7 @@ function createOutboxSupabaseMock(options: {
       title: string;
       body: string;
       payload: Record<string, unknown>;
+      type?: string;
     } | null
   >;
   duplicateEventKeys?: Set<string>;
@@ -161,6 +169,7 @@ describe("processNotificationOutboxBatch", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     delete process.env.NOTIFICATION_OUTBOX_MAX_ATTEMPTS;
+    emailDispatchSpy.mockResolvedValue(undefined);
   });
 
   it("processes pending outbox items and marks them processed", async () => {
@@ -181,6 +190,7 @@ describe("processNotificationOutboxBatch", () => {
           title: "Titel",
           body: "Body",
           payload: { url: "/touren/1" },
+          type: "registration",
         },
       },
     });
@@ -202,6 +212,13 @@ describe("processNotificationOutboxBatch", () => {
     });
     expect(result.duration_ms).toEqual(expect.any(Number));
     expect(dispatchPushSpy).toHaveBeenCalledTimes(1);
+    expect(emailDispatchSpy).toHaveBeenCalledWith({
+      type: "registration",
+      recipientUserId: "user-1",
+      recipientChildId: null,
+      title: "Titel",
+      body: "Body",
+    });
     expect(updates.some((u) => u.values.status === "processed")).toBe(true);
   });
 
@@ -230,6 +247,7 @@ describe("processNotificationOutboxBatch", () => {
     expect(result.processed).toBe(0);
     expect(result.skipped).toBe(1);
     expect(dispatchPushSpy).not.toHaveBeenCalled();
+    expect(emailDispatchSpy).not.toHaveBeenCalled();
   });
 
   it("requeues failed dispatches with incremented attempts", async () => {
@@ -250,6 +268,7 @@ describe("processNotificationOutboxBatch", () => {
           title: "Titel",
           body: "Body",
           payload: { url: "/touren/3" },
+          type: "waitlist",
         },
       },
     });
@@ -265,12 +284,53 @@ describe("processNotificationOutboxBatch", () => {
     expect(result.claimed).toBe(1);
     expect(result.processed).toBe(0);
     expect(result.failed).toBe(1);
+    expect(emailDispatchSpy).not.toHaveBeenCalled();
     expect(
       updates.some(
         (u) =>
           u.values.status === "pending" &&
           u.values.attempts === 2 &&
           typeof u.values.available_at === "string",
+      ),
+    ).toBe(true);
+  });
+
+  it("requeues entries when email delivery fails", async () => {
+    const { supabase, updates } = createOutboxSupabaseMock({
+      outboxRows: [
+        {
+          id: 7,
+          event_key: "notification:7:created:v1",
+          aggregate_id: "notification-7",
+          event_version: 1,
+          attempts: 0,
+        },
+      ],
+      notificationById: {
+        "notification-7": {
+          recipient_user_id: "user-7",
+          recipient_child_id: null,
+          title: "Anmeldung bestätigt",
+          body: "Du bist dabei",
+          payload: { url: "/touren/7" },
+          type: "registration",
+        },
+      },
+    });
+
+    createAdminClientSpy.mockReturnValue(supabase as never);
+    dispatchPushSpy.mockResolvedValue(undefined);
+    emailDispatchSpy.mockRejectedValue(new Error("SMTP unavailable"));
+
+    const result = await processNotificationOutboxBatch();
+
+    expect(result).toMatchObject({ processed: 0, failed: 1 });
+    expect(
+      updates.some(
+        (update) =>
+          update.values.status === "pending" &&
+          update.values.attempts === 1 &&
+          update.values.last_error === "SMTP unavailable",
       ),
     ).toBe(true);
   });
@@ -295,6 +355,7 @@ describe("processNotificationOutboxBatch", () => {
           title: "Titel",
           body: "Body",
           payload: { url: "/touren/4" },
+          type: "tour_update",
         },
       },
     });
@@ -349,6 +410,7 @@ describe("processNotificationOutboxBatch", () => {
     expect(result.failed).toBe(0);
     expect(result.skipped).toBe(1);
     expect(dispatchPushSpy).not.toHaveBeenCalled();
+    expect(emailDispatchSpy).not.toHaveBeenCalled();
     expect(
       updates.some(
         (u) =>
@@ -357,5 +419,46 @@ describe("processNotificationOutboxBatch", () => {
           String(u.values.last_error).includes("stale event suppressed"),
       ),
     ).toBe(true);
+  });
+
+  it("dispatches email for child recipients via shared helper", async () => {
+    const { supabase } = createOutboxSupabaseMock({
+      outboxRows: [
+        {
+          id: 6,
+          event_key: "notification:6:created:v1",
+          aggregate_id: "notification-6",
+          event_version: 1,
+          attempts: 0,
+        },
+      ],
+      notificationById: {
+        "notification-6": {
+          recipient_user_id: null,
+          recipient_child_id: "child-1",
+          title: "Anmeldung bestätigt",
+          body: "Dein Kind ist bestätigt",
+          payload: { url: "/touren/6" },
+          type: "registration",
+        },
+      },
+    });
+
+    createAdminClientSpy.mockReturnValue(supabase as never);
+    dispatchPushSpy.mockResolvedValue(undefined);
+
+    const result = await processNotificationOutboxBatch({
+      limit: 10,
+      consumer: "push_dispatcher",
+    });
+
+    expect(result.processed).toBe(1);
+    expect(emailDispatchSpy).toHaveBeenCalledWith({
+      type: "registration",
+      recipientUserId: null,
+      recipientChildId: "child-1",
+      title: "Anmeldung bestätigt",
+      body: "Dein Kind ist bestätigt",
+    });
   });
 });
