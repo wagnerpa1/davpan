@@ -1,8 +1,20 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
-import { ResourceCalendar } from "./ResourceCalendar";
 import { StandaloneBookingForm } from "./StandaloneBookingForm";
+
+const ResourceCalendar = dynamic(
+  () => import("./ResourceCalendar").then((mod) => mod.ResourceCalendar),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-96 items-center justify-center text-sm text-slate-500">
+        Kalender wird geladen…
+      </div>
+    ),
+  },
+);
 
 interface Resource {
   id: string;

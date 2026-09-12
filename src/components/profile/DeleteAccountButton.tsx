@@ -8,6 +8,11 @@ export function DeleteAccountButton() {
   const [isPending, startTransition] = useTransition();
 
   const handleDelete = () => {
+    if (!navigator.onLine) {
+      alert("Konto-Löschung ist offline nicht möglich.");
+      return;
+    }
+
     if (
       confirm(
         "Bist du sicher, dass du deinen Account komplett löschen willst? Dieser Vorgang kann nicht rückgängig gemacht werden!",

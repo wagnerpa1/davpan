@@ -9,14 +9,36 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import type { ComponentProps } from "react";
 import { TourCard } from "@/components/tours/TourCard";
+import { SignOutForm } from "@/components/ui/SignOutForm";
 import { getCurrentUserProfile } from "@/lib/auth";
 import { siteConfig } from "@/lib/site-config";
-import {
-  getNextConfirmedRegistration,
-  loadTourRegistrationOverview,
-} from "@/lib/tours/registration-overview";
+import { loadNextConfirmedRegistration } from "@/lib/tours/registration-overview";
 import { createClient } from "@/utils/supabase/server";
+
+type TourCardItem = ComponentProps<typeof TourCard>["tour"];
+
+type RawTourCardItem = Omit<
+  TourCardItem,
+  "tour_groups" | "tour_categorys" | "tour_guides"
+> & {
+  tour_groups?:
+    | { group_name: string | null }
+    | { group_name: string | null }[]
+    | null;
+  tour_categorys?:
+    | { category: string | null }
+    | { category: string | null }[]
+    | null;
+  tour_guides?: Array<{
+    user_id: string;
+    profiles?:
+      | { full_name?: string | null }
+      | { full_name?: string | null }[]
+      | null;
+  }>;
+};
 
 interface ReportImage {
   image_url: string;
@@ -33,6 +55,101 @@ interface NewsPost {
 interface TourParticipantCountRow {
   tour_id: string;
   confirmed_count: number;
+}
+
+interface HomeReport {
+  id: string;
+  title: string;
+  report_text: string;
+  tours?: {
+    title?: string | null;
+    start_date?: string | null;
+    tour_categorys?: { category: string | null } | null;
+  } | null;
+  report_images?: ReportImage[] | null;
+}
+
+function normalizeRelation<T>(value: T | T[] | null | undefined): T | null {
+  if (!value) return null;
+  return Array.isArray(value) ? (value[0] ?? null) : value;
+}
+
+function normalizeHomeReports(rows: unknown[] | null): HomeReport[] {
+  return ((rows || []) as Array<Record<string, unknown>>).map((row) => {
+    const tour = normalizeRelation(
+      row.tours as
+        | {
+            title?: string | null;
+            start_date?: string | null;
+            tour_categorys?:
+              | { category: string | null }
+              | { category: string | null }[]
+              | null;
+          }
+        | {
+            title?: string | null;
+            start_date?: string | null;
+            tour_categorys?:
+              | { category: string | null }
+              | { category: string | null }[]
+              | null;
+          }[]
+        | null,
+    );
+
+    return {
+      id: row.id as string,
+      title: row.title as string,
+      report_text: (row.report_text as string) || "",
+      tours: tour
+        ? {
+            title: tour.title,
+            start_date: tour.start_date,
+            tour_categorys: normalizeRelation(tour.tour_categorys),
+          }
+        : null,
+      report_images: (row.report_images as ReportImage[] | null) || null,
+    };
+  });
+}
+
+const TOUR_CARD_SELECT = `
+  id,
+  title,
+  status,
+  start_date,
+  end_date,
+  target_area,
+  max_participants,
+  difficulty,
+  tour_groups (group_name),
+  tour_categorys!tours_category_fkey (category),
+  tour_guides (
+    user_id,
+    profiles (
+      full_name
+    )
+  )
+`;
+
+function normalizeTourCard(tour: RawTourCardItem | null): TourCardItem | null {
+  if (!tour) return null;
+
+  return {
+    ...tour,
+    tour_groups: Array.isArray(tour.tour_groups)
+      ? (tour.tour_groups[0] ?? null)
+      : tour.tour_groups,
+    tour_categorys: Array.isArray(tour.tour_categorys)
+      ? (tour.tour_categorys[0] ?? null)
+      : tour.tour_categorys,
+    tour_guides: tour.tour_guides?.map((guide) => ({
+      ...guide,
+      profiles: Array.isArray(guide.profiles)
+        ? (guide.profiles[0] ?? null)
+        : guide.profiles,
+    })),
+  };
 }
 
 /**
@@ -53,37 +170,28 @@ export default async function Home() {
   const today = new Date().toISOString().split("T")[0];
   const twoMonthsAgo = subMonths(new Date(), 2).toISOString();
 
-  // Parallelize main data fetches
   const [
-    registrationOverview,
+    nextConfirmedRegistration,
     nextTourResult,
     recentReportsResult,
     recentNewsResult,
   ] = await Promise.all([
-    loadTourRegistrationOverview(supabase, user.id, role === "parent"),
+    loadNextConfirmedRegistration(supabase, user.id, role === "parent"),
     supabase
       .from("tours")
-      .select(`
-        *,
-        tour_groups (group_name),
-        tour_categorys!tours_category_fkey (category),
-        tour_guides (
-          user_id,
-          profiles (
-            full_name
-          )
-        )
-      `)
+      .select(TOUR_CARD_SELECT)
       .gte("end_date", today)
       .neq("status", "completed")
       .neq("status", "cancelled")
       .order("start_date", { ascending: true })
       .limit(1)
-      .single(),
+      .maybeSingle(),
     supabase
       .from("tour_reports")
       .select(`
-        *,
+        id,
+        title,
+        report_text,
         tours (
           title,
           start_date,
@@ -101,34 +209,38 @@ export default async function Home() {
       .limit(4),
   ]);
 
-  const { data: nextTour } = nextTourResult;
-  const { data: recentReports } = recentReportsResult;
+  const { data: nextTourData } = nextTourResult;
+  const recentReports = normalizeHomeReports(
+    recentReportsResult.data as unknown[] | null,
+  );
   const { data: recentNews } = recentNewsResult;
 
-  const nextConfirmedRegistration = getNextConfirmedRegistration(
-    registrationOverview.tabs,
-  );
+  const nextTour = normalizeTourCard(nextTourData as RawTourCardItem | null);
+  const confirmedTour = nextConfirmedRegistration
+    ? normalizeTourCard(nextConfirmedRegistration.tour as RawTourCardItem)
+    : null;
 
-  let nextTourWithCount = nextTour;
-  if (nextTour?.id) {
+  const tourIdForCount = confirmedTour?.id ?? nextTour?.id ?? null;
+
+  let featuredTour: TourCardItem | null = confirmedTour ?? nextTour;
+  if (tourIdForCount && featuredTour) {
     const { data: countRows } = await supabase.rpc(
       "get_tour_participant_counts",
       {
-        p_tour_ids: [nextTour.id],
+        p_tour_ids: [tourIdForCount],
       },
     );
     const row = (countRows as TourParticipantCountRow[] | null)?.[0];
-    nextTourWithCount = {
-      ...nextTour,
+    featuredTour = {
+      ...featuredTour,
       confirmed_participants_count: row?.confirmed_count || 0,
     };
   }
 
-  const featuredTour = nextConfirmedRegistration?.tour ?? nextTourWithCount;
-  const featuredTitle = nextConfirmedRegistration
+  const featuredTitle = confirmedTour
     ? "Deine nächste bestätigte Tour"
     : "Deine nächste Tour";
-  const featuredLink = nextConfirmedRegistration ? "/touren/meine" : "/touren";
+  const featuredLink = confirmedTour ? "/touren/meine" : "/touren";
 
   const displayName = fullName || user.email?.split("@")[0];
 
@@ -144,7 +256,6 @@ export default async function Home() {
       </div>
 
       <div className="space-y-12">
-        {/* Next Tour Section */}
         <section>
           <div className="mb-4 flex items-center justify-between">
             <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900">
@@ -175,7 +286,6 @@ export default async function Home() {
           )}
         </section>
 
-        {/* Vereinsfeed Section */}
         <section className="space-y-6">
           <div className="flex items-center justify-between border-b border-slate-100 pb-2">
             <h2 className="text-xl font-bold text-slate-900">Neuigkeiten</h2>
@@ -208,11 +318,9 @@ export default async function Home() {
               </article>
             ))}
 
-            {recentReports && recentReports.length > 0 ? (
+            {recentReports.length > 0 ? (
               recentReports.map((report) => {
-                const previewImage = (
-                  report.report_images as ReportImage[]
-                )?.sort(
+                const previewImage = report.report_images?.sort(
                   (a, b) => (a.order_index ?? 0) - (b.order_index ?? 0),
                 )?.[0]?.image_url;
                 return (
@@ -277,9 +385,8 @@ export default async function Home() {
         </section>
       </div>
 
-      {/* Development tool to sign out */}
       <div className="mt-16 flex justify-center border-t border-slate-100 pt-8">
-        <form action="/auth/signout" method="POST">
+        <SignOutForm>
           <button
             type="submit"
             className="group flex items-center gap-2 text-[10px] font-bold text-slate-400 hover:text-red-500 transition-colors uppercase tracking-widest"
@@ -288,7 +395,7 @@ export default async function Home() {
             <LogOut className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
             Abmelden
           </button>
-        </form>
+        </SignOutForm>
       </div>
     </div>
   );

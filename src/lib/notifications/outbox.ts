@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { maybeDispatchEmailForNotification } from "@/lib/notifications/email-dispatcher";
 import { dispatchPushForNotification } from "@/lib/notifications/push-dispatch";
 import { createAdminClient } from "@/utils/supabase/admin";
 import type { Database, Json } from "@/utils/supabase/types";
@@ -357,27 +358,13 @@ export async function processNotificationOutboxBatch(options?: {
             : {},
       });
 
-      if (
-        notification.type === "registration" ||
-        notification.type === "waitlist" ||
-        notification.type === "tour_update"
-      ) {
-        if (admin && notification.recipient_user_id) {
-          const { data: userData } = await admin.auth.admin.getUserById(
-            notification.recipient_user_id,
-          );
-          if (userData?.user?.email) {
-            const { dispatchEmailForNotification } = await import(
-              "./email-dispatcher"
-            );
-            await dispatchEmailForNotification(
-              userData.user.email,
-              notification.title,
-              notification.body,
-            );
-          }
-        }
-      }
+      await maybeDispatchEmailForNotification({
+        type: notification.type,
+        recipientUserId: notification.recipient_user_id,
+        recipientChildId: notification.recipient_child_id,
+        title: notification.title,
+        body: notification.body,
+      });
 
       await outboxClient
         .from("notification_outbox")

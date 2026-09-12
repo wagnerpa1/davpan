@@ -1,15 +1,31 @@
 "use client";
 
 import { ChevronDown } from "lucide-react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { MemberBarcodePopup } from "@/components/layout/MemberBarcodePopup";
-import { NotificationCenter } from "@/components/notifications/NotificationCenter";
 import { buildNavigation } from "@/lib/navigation/nav-config";
 import type { RoleLike } from "@/lib/permissions";
 import { isParentRole } from "@/lib/permissions";
+import { SignOutForm } from "@/components/ui/SignOutForm";
 import { siteConfig } from "@/lib/site-config";
+
+const MemberBarcodePopup = dynamic(
+  () =>
+    import("@/components/layout/MemberBarcodePopup").then(
+      (mod) => mod.MemberBarcodePopup,
+    ),
+  { ssr: false },
+);
+
+const NotificationCenter = dynamic(
+  () =>
+    import("@/components/notifications/NotificationCenter").then(
+      (mod) => mod.NotificationCenter,
+    ),
+  { ssr: false },
+);
 
 interface HeaderProps {
   birthdate: string | null;
@@ -102,18 +118,14 @@ export function Header({ birthdate, membershipNumber, userRole }: HeaderProps) {
             birthdate={birthdate}
           />
           <NotificationCenter isParent={isParent} />
-          <form
-            action="/auth/signout"
-            method="POST"
-            className="hidden md:block"
-          >
+          <SignOutForm className="hidden md:block">
             <button
               type="submit"
               className="text-sm font-medium text-red-600 hover:text-red-700 transition-colors"
             >
               Abmelden
             </button>
-          </form>
+          </SignOutForm>
         </div>
       </div>
     </header>

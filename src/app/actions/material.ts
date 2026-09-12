@@ -17,7 +17,10 @@ export async function createIndependentMaterialReservation(formData: FormData) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { error: "Du musst angemeldet sein, um Material zu reservieren." };
+    return {
+      success: false,
+      error: "Du musst angemeldet sein, um Material zu reservieren.",
+    };
   }
 
   const inventoryId = formData.get("inventoryId") as string;
@@ -25,7 +28,7 @@ export async function createIndependentMaterialReservation(formData: FormData) {
   const returnDate = formData.get("returnDate") as string;
 
   if (!inventoryId || !loanDate || !returnDate) {
-    return { error: "Bitte fülle alle Pflichtfelder aus." };
+    return { success: false, error: "Bitte fülle alle Pflichtfelder aus." };
   }
 
   try {
@@ -58,13 +61,14 @@ export async function createIndependentMaterialReservation(formData: FormData) {
           recipientUserId: user.id,
         });
         return {
+          success: false,
           error:
             "Dieses Material ist im gewählten Zeitraum oder in dieser Größe nicht mehr verfügbar.",
         };
       }
 
       console.error("RPC Error:", error);
-      return { error: errorMsg };
+      return { success: false, error: errorMsg };
     }
 
     const managerIds = await resolveMaterialManagerUserIds(supabase);
@@ -90,7 +94,10 @@ export async function createIndependentMaterialReservation(formData: FormData) {
     };
   } catch (err: unknown) {
     console.error("Reservation error:", err);
-    return { error: "Bei der Buchung ist ein Fehler aufgetreten." };
+    return {
+      success: false,
+      error: "Bei der Buchung ist ein Fehler aufgetreten.",
+    };
   }
 }
 

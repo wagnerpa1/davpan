@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { maybeDispatchEmailForNotification } from "@/lib/notifications/email-dispatcher";
 import {
   enqueueNotificationCreatedEvent,
   getNotificationDeliveryMode,
@@ -288,6 +289,18 @@ export async function dispatchNotification(
     body: input.body,
     payload,
   });
+
+  try {
+    await maybeDispatchEmailForNotification({
+      type: input.type,
+      recipientUserId,
+      recipientChildId,
+      title: input.title,
+      body: input.body,
+    });
+  } catch (error) {
+    console.error("[Email] Direct notification delivery failed:", error);
+  }
 }
 
 export async function dispatchToUsers(

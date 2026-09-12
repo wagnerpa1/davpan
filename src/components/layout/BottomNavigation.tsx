@@ -7,6 +7,7 @@ import { useState } from "react";
 import { buildNavigation } from "@/lib/navigation/nav-config";
 import { getNavigationIcon } from "@/lib/navigation/nav-icons";
 import type { RoleLike } from "@/lib/permissions";
+import { SignOutForm } from "@/components/ui/SignOutForm";
 import { siteConfig } from "@/lib/site-config";
 import { cn } from "@/lib/utils";
 
@@ -115,7 +116,7 @@ export function BottomNavigation({ userRole }: BottomNavigationProps) {
           </div>
 
           <div className="mt-4 border-t border-slate-100 pt-4">
-            <form action="/auth/signout" method="POST">
+            <SignOutForm>
               <button
                 type="submit"
                 className="group flex w-full items-center gap-3 rounded-2xl border border-red-100 bg-red-50/60 px-3 py-3 text-red-700 transition hover:bg-red-50"
@@ -130,7 +131,7 @@ export function BottomNavigation({ userRole }: BottomNavigationProps) {
                   </p>
                 </div>
               </button>
-            </form>
+            </SignOutForm>
           </div>
         </div>
       </div>

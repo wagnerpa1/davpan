@@ -44,6 +44,19 @@ function mapChildProfileRow(
   return rest as ChildProfile;
 }
 
+async function loadChildrenForParent(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  parentId: string,
+) {
+  const { data } = await supabase
+    .from("child_profiles")
+    .select("id, full_name, birthdate, medical_notes, image_consent")
+    .eq("parent_id", parentId)
+    .order("full_name");
+
+  return ((data || []) as ChildProfile[]).map(mapChildProfileRow);
+}
+
 function buildChildNotificationPreferences(
   children: ChildProfile[],
   childPreferenceById: Map<string, NotificationPreference>,
@@ -60,7 +73,11 @@ function PersonalDataSection({
   user,
   profile,
 }: {
-  user: NonNullable<Awaited<ReturnType<typeof createClient>>["auth"]["getUser"]> extends never ? never : { email?: string | null };
+  user: NonNullable<
+    Awaited<ReturnType<typeof createClient>>["auth"]["getUser"]
+  > extends never
+    ? never
+    : { email?: string | null };
   profile: {
     full_name?: string | null;
     membership_number?: string | null;
@@ -257,7 +274,7 @@ function PersonalDataSection({
             <input
               type="checkbox"
               name="image_consent"
-              defaultChecked={profile?.image_consent}
+              defaultChecked={profile?.image_consent ?? false}
               className="mt-1 h-4 w-4 rounded border-slate-300 text-jdav-green focus:ring-jdav-green"
             />
             <div className="space-y-1.5 text-sm">

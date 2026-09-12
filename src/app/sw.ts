@@ -30,54 +30,125 @@ const notificationTitle =
     process.env.NEXT_PUBLIC_DAV_APP_NAME) ||
   "DAV Pfarrkirchen";
 
+const AUTH_SENSITIVE_CACHES = [
+  "jdav-pages",
+  "jdav-touren",
+  "jdav-images",
+] as const;
+
+const LOGICAL_ERROR_PATTERN = /"error"\s*:\s*"(?:\\.|[^"\\])+"/;
+const SUCCESS_FALSE_PATTERN = /"success"\s*:\s*false/;
+
+async function clearAuthSensitiveCaches(): Promise<void> {
+  const cacheNames = await caches.keys();
+  const deletions: Promise<boolean>[] = [];
+  for (const name of cacheNames) {
+    if ((AUTH_SENSITIVE_CACHES as readonly string[]).includes(name)) {
+      deletions.push(caches.delete(name));
+    }
+  }
+  await Promise.all(deletions);
+}
+
+function classifyConflictType(bodyText: string): string {
+  if (bodyText.includes("stale_write")) return "Daten veraltet";
+  if (
+    bodyText.includes("Material") ||
+    bodyText.includes("inventory_exceeded") ||
+    bodyText.includes("Insufficient inventory")
+  ) {
+    return "Material nicht mehr verfügbar";
+  }
+  if (
+    bodyText.includes("ausgebucht") ||
+    bodyText.includes("capacity_exceeded") ||
+    bodyText.includes("Already registered")
+  ) {
+    return "Kein freier Platz mehr";
+  }
+  if (bodyText.includes("invalid_state")) return "Status-Konflikt";
+  if (
+    bodyText.includes("Nicht eingeloggt") ||
+    bodyText.includes("angemeldet sein") ||
+    bodyText.includes("Nicht authentifiziert")
+  ) {
+    return "Sitzung abgelaufen";
+  }
+  return "Konflikt";
+}
+
+function hasLogicalActionFailure(bodyText: string): boolean {
+  return (
+    SUCCESS_FALSE_PATTERN.test(bodyText) || LOGICAL_ERROR_PATTERN.test(bodyText)
+  );
+}
+
+type ReplayOutcome = "ok" | "conflict" | "retry";
+
+function classifyReplayOutcome(
+  response: Response,
+  bodyText: string,
+): ReplayOutcome {
+  if (
+    response.status >= 500 ||
+    response.status === 408 ||
+    response.status === 429
+  ) {
+    return "retry";
+  }
+  if (!response.ok) {
+    return "conflict";
+  }
+  if (hasLogicalActionFailure(bodyText)) {
+    return "conflict";
+  }
+  return "ok";
+}
+
+async function notifyOfflineConflict(conflictType: string): Promise<void> {
+  await self.registration.showNotification("Offline-Aktion verweigert", {
+    body: `Eine deiner Offline-Änderungen konnte nicht synchronisiert werden: ${conflictType}. Bitte überprüfe den Stand.`,
+    icon: "/android-chrome-192x192.png",
+    badge: "/favicon-32x32.png",
+    tag: "offline-conflict",
+    requireInteraction: true,
+  });
+}
+
+async function notifyClientsSyncComplete(): Promise<void> {
+  const clients = await self.clients.matchAll({ type: "window" });
+  for (const client of clients) {
+    client.postMessage({ type: "OFFLINE_SYNC_COMPLETE" });
+  }
+}
+
 const bgSyncPlugin = new BackgroundSyncPlugin("offline-mutations-queue", {
   maxRetentionTime: 24 * 60, // Retry for max 24 Hours
   onSync: async ({ queue }) => {
     let entry = await queue.shiftRequest();
+    let replayedAny = false;
+
     while (entry) {
       try {
         const response = await fetch(entry.request.clone());
+        const bodyText = await response.clone().text();
+        const outcome = classifyReplayOutcome(response, bodyText);
 
-        if (response.ok) {
-          const clone = response.clone();
-          const text = await clone.text();
-
-          if (text.includes('"success":false') && text.includes('"error"')) {
-            let conflictType = "Konflikt";
-            if (text.includes("stale_write")) conflictType = "Daten veraltet";
-            else if (
-              text.includes("Material") ||
-              text.includes("inventory_exceeded")
-            )
-              conflictType = "Material nicht mehr verfügbar";
-            else if (
-              text.includes("ausgebucht") ||
-              text.includes("capacity_exceeded")
-            )
-              conflictType = "Kein freier Platz mehr";
-            else if (text.includes("invalid_state"))
-              conflictType = "Status-Konflikt";
-
-            // If the server explicitly rejected the logical request as an error,
-            // infinite retry won't fix it. We drop it and inform the user locally.
-            self.registration.showNotification("Offline-Aktion verweigert", {
-              body: `Eine deiner Offline-änderungen konnte nicht synchronisiert werden: ${conflictType}. Bitte überprüfe den Stand.`,
-              icon: "/android-chrome-192x192.png",
-              badge: "/favicon-32x32.png",
-              tag: "offline-conflict",
-              requireInteraction: true,
-            });
-            console.warn(
-              `[SW] Offline request dropped due to domain conflict: ${conflictType}`,
-            );
-            entry = await queue.shiftRequest();
-            continue;
-          }
-        }
-
-        if (!response.ok && response.status >= 500) {
+        if (outcome === "retry") {
           throw new Error(`Server returned ${response.status}`);
         }
+
+        if (outcome === "conflict") {
+          const conflictType = classifyConflictType(bodyText);
+          await notifyOfflineConflict(conflictType);
+          console.warn(
+            `[SW] Offline request dropped due to domain conflict: ${conflictType}`,
+          );
+          entry = await queue.shiftRequest();
+          continue;
+        }
+
+        replayedAny = true;
       } catch (error) {
         console.error(
           "[SW] BackgroundSync replay failed, scheduling retry:",
@@ -90,14 +161,24 @@ const bgSyncPlugin = new BackgroundSyncPlugin("offline-mutations-queue", {
       }
       entry = await queue.shiftRequest();
     }
-    // Alert client we are back online and synced!
-    self.clients.matchAll().then((clients) => {
-      clients.forEach((c) => {
-        c.postMessage({ type: "OFFLINE_SYNC_COMPLETE" });
-      });
-    });
+
+    if (replayedAny) {
+      await notifyClientsSyncComplete();
+    }
   },
 });
+
+const clearAuthCachesPlugin = {
+  fetchDidSucceed: async ({ response }: { response: Response }) => {
+    await clearAuthSensitiveCaches();
+    return response;
+  },
+  fetchDidFail: async () => {
+    // User intended to leave the session; drop cached private pages even if
+    // the network sign-out request could not complete yet.
+    await clearAuthSensitiveCaches();
+  },
+};
 
 const NON_CACHEABLE_NAVIGATION_PREFIXES = [
   "/api/",
@@ -109,8 +190,17 @@ const NON_CACHEABLE_NAVIGATION_PREFIXES = [
 
 const runtimeCaching: import("serwist").RuntimeCaching[] = [
   {
-    // Capture Next.js Server Action Mutations (POST requests)
-    matcher: ({ request }: { request: Request }) => request.method === "POST",
+    // Sign-out must never enter the offline mutation queue.
+    matcher: ({ request, url }: { request: Request; url: URL }) =>
+      request.method === "POST" && url.pathname === "/auth/signout",
+    handler: new NetworkOnly({
+      plugins: [clearAuthCachesPlugin],
+    }),
+  },
+  {
+    // Only Next.js Server Actions — not arbitrary API/form POSTs.
+    matcher: ({ request }: { request: Request }) =>
+      request.method === "POST" && request.headers.has("Next-Action"),
     handler: new NetworkOnly({
       plugins: [bgSyncPlugin],
     }),
@@ -202,18 +292,7 @@ self.addEventListener("message", (event) => {
     return;
   }
 
-  event.waitUntil(
-    caches.keys().then((cacheNames) =>
-      Promise.all(
-        cacheNames.reduce<Promise<boolean>[]>((acc, name) => {
-          if (["jdav-pages", "jdav-touren", "jdav-images"].includes(name)) {
-            acc.push(caches.delete(name));
-          }
-          return acc;
-        }, []),
-      ),
-    ),
-  );
+  event.waitUntil(clearAuthSensitiveCaches());
 });
 
 self.addEventListener("push", (event) => {

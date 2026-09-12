@@ -1,10 +1,8 @@
 import { format } from "date-fns";
 import { Edit } from "lucide-react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CalendarExport } from "@/components/tours/CalendarExport";
-import { DeleteTourButton } from "@/components/tours/DeleteTourButton";
-import { ParticipantManagement } from "@/components/tours/ParticipantManagement";
 import { TourDetailsContent } from "@/components/tours/TourDetailsContent";
 import { TourHero } from "@/components/tours/TourHero";
 import { TourInfoGrid } from "@/components/tours/TourInfoGrid";
@@ -12,6 +10,22 @@ import { TourRegistrationSection } from "@/components/tours/TourRegistrationSect
 import { getCurrentUserProfile } from "@/lib/auth";
 import { isAdminRole, isParentRole } from "@/lib/permissions";
 import { createClient } from "@/utils/supabase/server";
+
+const CalendarExport = dynamic(() =>
+  import("@/components/tours/CalendarExport").then((mod) => mod.CalendarExport),
+);
+
+const DeleteTourButton = dynamic(() =>
+  import("@/components/tours/DeleteTourButton").then(
+    (mod) => mod.DeleteTourButton,
+  ),
+);
+
+const ParticipantManagement = dynamic(() =>
+  import("@/components/tours/ParticipantManagement").then(
+    (mod) => mod.ParticipantManagement,
+  ),
+);
 
 interface AvailableMaterial {
   id: string; // material_type_id
@@ -136,61 +150,36 @@ async function getTourDetailData(
   id: string,
   supabase: Awaited<ReturnType<typeof createClient>>,
 ) {
-  const { data: tour, error } = await supabase
-    .from("tours")
-    .select(`
-      *,
-      tour_guides (
-        user_id,
-        profiles (
-          id,
-          full_name
-        )
-      ),
-      tour_participants (
-        id,
-        status,
-        user_id,
-        child_profile_id,
-        waitlist_position,
-        age_override,
-        created_at,
-        profiles!tour_participants_user_id_fkey (
-          full_name,
-          phone,
-          emergency_phone,
-          medical_notes,
-          birthdate
-        ),
-        child_profiles (
-          full_name,
-          medical_notes,
-          birthdate,
-          profiles!child_profiles_parent_id_fkey (
+  const [
+    { data: tour, error },
+    authContext,
+    { data: tmData },
+    { data: countRows },
+  ] = await Promise.all([
+    supabase
+      .from("tours")
+      .select(`
+        *,
+        tour_guides (
+          user_id,
+          profiles (
+            id,
             full_name
           )
+        ),
+        tour_groups!tours_group_fkey (
+          group_name
+        ),
+        tour_categorys!tours_category_fkey (
+          category
         )
-      ),
-      tour_groups!tours_group_fkey (
-        group_name
-      ),
-      tour_categorys!tours_category_fkey (
-        category
-      )
-    `)
-    .eq("id", id)
-    .single();
-
-  if (error || !tour) return null;
-
-  const tourData = tour as typeof tour & TourDetailUiState;
-
-  const [authContext, { data: tmData }, { data: reservationsData }] =
-    await Promise.all([
-      getCurrentUserProfile(),
-      supabase
-        .from("tour_material_requirements")
-        .select(`
+      `)
+      .eq("id", id)
+      .single(),
+    getCurrentUserProfile(),
+    supabase
+      .from("tour_material_requirements")
+      .select(`
         material_type_id,
         material_types(
           id,
@@ -198,19 +187,15 @@ async function getTourDetailData(
           inventory:material_inventory(id, size, quantity_available)
         )
       `)
-        .eq("tour_id", id),
-      supabase
-        .from("material_reservations")
-        .select(`
-        id, material_inventory_id, user_id, child_profile_id,
-        material_inventory (
-          id, size,
-          material_types (name)
-        )
-      `)
-        .eq("tour_id", id),
-    ]);
+      .eq("tour_id", id),
+    supabase.rpc("get_tour_participant_counts", {
+      p_tour_ids: [id],
+    }),
+  ]);
 
+  if (error || !tour) return null;
+
+  const tourData = tour as typeof tour & TourDetailUiState;
   const isLoggedIn = !!authContext.user;
 
   const materialMap = new Map<string, AvailableMaterial>();
@@ -239,19 +224,6 @@ async function getTourDetailData(
   });
   const availableMaterials = Array.from(materialMap.values());
 
-  const reservations = ((reservationsData || []) as ReservationQueryRow[]).map(
-    (r) => ({
-      id: r.id,
-      material_id: r.material_inventory_id,
-      user_id: r.user_id,
-      child_profile_id: r.child_profile_id,
-      size: r.material_inventory?.size ?? undefined,
-      materials: {
-        name: r.material_inventory?.material_types?.name || "Unbekannt",
-      },
-    }),
-  );
-
   let childrenProfiles: ChildProfileOption[] = [];
   let userRegistrations: UserRegistration[] = [];
   let userBirthdate: string | null = null;
@@ -259,43 +231,110 @@ async function getTourDetailData(
 
   if (authContext.user) {
     userBirthdate = authContext.birthdate;
-
-    const [cRes, rRes] = await Promise.all([
-      isParentRole(authContext.role)
-        ? supabase
-            .from("child_profiles")
-            .select("id, full_name, birthdate")
-            .eq("parent_id", authContext.user.id)
-        : Promise.resolve({ data: null }),
-      supabase
-        .from("tour_participants")
-        .select("id, user_id, child_profile_id, status, waitlist_position")
-        .eq("tour_id", id)
-        .eq("user_id", authContext.user.id),
-    ]);
-
-    childrenProfiles = cRes.data || [];
-    userRegistrations = rRes.data || [];
-
-    const userRole = authContext.role;
     const isLead = tourData.tour_guides?.some(
       (tg: TourGuide) => tg.user_id === authContext.user?.id,
     );
     canManageTour =
-      isAdminRole(userRole) ||
+      isAdminRole(authContext.role) ||
       isLead ||
       tourData.created_by === authContext.user.id;
   }
 
+  const [userContextResult, manageResult] = await Promise.all([
+    authContext.user
+      ? Promise.all([
+          isParentRole(authContext.role)
+            ? supabase
+                .from("child_profiles")
+                .select("id, full_name, birthdate")
+                .eq("parent_id", authContext.user.id)
+            : Promise.resolve({ data: null }),
+          supabase
+            .from("tour_participants")
+            .select("id, user_id, child_profile_id, status, waitlist_position")
+            .eq("tour_id", id)
+            .eq("user_id", authContext.user.id),
+        ])
+      : Promise.resolve(null),
+    canManageTour
+      ? Promise.all([
+          supabase
+            .from("tour_participants")
+            .select(`
+              id,
+              status,
+              user_id,
+              child_profile_id,
+              waitlist_position,
+              age_override,
+              created_at,
+              profiles!tour_participants_user_id_fkey (
+                full_name,
+                phone,
+                emergency_phone,
+                medical_notes,
+                birthdate
+              ),
+              child_profiles (
+                full_name,
+                medical_notes,
+                birthdate,
+                profiles!child_profiles_parent_id_fkey (
+                  full_name
+                )
+              )
+            `)
+            .eq("tour_id", id),
+          supabase
+            .from("material_reservations")
+            .select(`
+              id, material_inventory_id, user_id, child_profile_id,
+              material_inventory (
+                id, size,
+                material_types (name)
+              )
+            `)
+            .eq("tour_id", id),
+        ])
+      : Promise.resolve(null),
+  ]);
+
+  if (userContextResult) {
+    const [cRes, rRes] = userContextResult;
+    childrenProfiles = cRes.data || [];
+    userRegistrations = rRes.data || [];
+  }
+
+  let participants: TourParticipant[] = [];
+  let reservations: Array<{
+    id: string;
+    material_id: string;
+    user_id: string;
+    child_profile_id: string | null;
+    size?: string;
+    materials: { name: string };
+  }> = [];
+
+  if (manageResult) {
+    const [{ data: participantsData }, { data: reservationsData }] =
+      manageResult;
+    participants = (participantsData || []) as unknown as TourParticipant[];
+    reservations = ((reservationsData || []) as ReservationQueryRow[]).map(
+      (r) => ({
+        id: r.id,
+        material_id: r.material_inventory_id,
+        user_id: r.user_id,
+        child_profile_id: r.child_profile_id,
+        size: r.material_inventory?.size ?? undefined,
+        materials: {
+          name: r.material_inventory?.material_types?.name || "Unbekannt",
+        },
+      }),
+    );
+  }
+
   const guides = (tour.tour_guides || []).map(
     (tg: TourGuide) => tg.profiles?.full_name || "Unbekannt",
-  );
-  const participants = (tourData.tour_participants || []) as TourParticipant[];
-  const { data: countRows } = await supabase.rpc(
-    "get_tour_participant_counts",
-    {
-      p_tour_ids: [id],
-    },
   );
   const confirmedParticipantCount =
     ((countRows as TourParticipantCountRow[] | null)?.[0]?.confirmed_count ??

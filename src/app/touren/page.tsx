@@ -1,6 +1,7 @@
 import { Search } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import type { ComponentProps } from "react";
 import { Suspense } from "react";
 import { syncTourStatuses } from "@/app/actions/tour-management";
@@ -324,8 +325,9 @@ export default async function TourenPage({
     getCurrentUserProfile(),
   ]);
 
-  // Sync statuses before fetching
-  await syncTourStatuses();
+  after(() => {
+    void syncTourStatuses();
+  });
 
   if (!authContext.user) {
     redirect("/login");

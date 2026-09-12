@@ -21,6 +21,71 @@ interface ReportImage {
   order_index: number | null;
 }
 
+interface ReportTour {
+  id: string;
+  title: string;
+  start_date: string | null;
+  target_area: string | null;
+  group: string | null;
+  category: string | null;
+  tour_categorys?: { category: string | null } | null;
+}
+
+interface ReportListItem {
+  id: string;
+  title: string;
+  report_text: string;
+  created_at: string;
+  profiles?: { full_name: string | null } | null;
+  tours: ReportTour;
+  report_images?: ReportImage[] | null;
+}
+
+function normalizeRelation<T>(value: T | T[] | null | undefined): T | null {
+  if (!value) return null;
+  return Array.isArray(value) ? (value[0] ?? null) : value;
+}
+
+function normalizeReportRows(rows: unknown[] | null): ReportListItem[] {
+  return ((rows || []) as Array<Record<string, unknown>>).map((row) => {
+    const tour = normalizeRelation(
+      row.tours as ReportTour | ReportTour[] | null,
+    );
+    const profiles = normalizeRelation(
+      row.profiles as
+        | { full_name: string | null }
+        | { full_name: string | null }[]
+        | null,
+    );
+    const category = tour
+      ? normalizeRelation(
+          tour.tour_categorys as
+            | { category: string | null }
+            | { category: string | null }[]
+            | null,
+        )
+      : null;
+
+    return {
+      id: row.id as string,
+      title: row.title as string,
+      report_text: (row.report_text as string) || "",
+      created_at: row.created_at as string,
+      profiles,
+      tours: {
+        id: tour?.id || "",
+        title: tour?.title || "",
+        start_date: tour?.start_date ?? null,
+        target_area: tour?.target_area ?? null,
+        group: tour?.group ?? null,
+        category: tour?.category ?? null,
+        tour_categorys: category,
+      },
+      report_images: (row.report_images as ReportImage[] | null) || null,
+    };
+  });
+}
+
 type ReportSearchParams = Record<string, string | string[] | undefined>;
 
 function getSearchParam(
@@ -83,25 +148,30 @@ export default async function BerichtePage({ searchParams }: Props) {
     redirect("/login");
   }
 
-  const { data: catData } = await supabase
-    .from("tour_categorys")
-    .select("id, category")
-    .order("category");
+  const [{ data: catData }, { data: groupsData }] = await Promise.all([
+    supabase.from("tour_categorys").select("id, category").order("category"),
+    supabase.from("tour_groups").select("id, group_name"),
+  ]);
+
   const categories = ((catData || []) as TourCategoryOption[]).filter(
     (c): c is { id: string; category: string } => Boolean(c.category),
   );
+  const groups = (groupsData || []) as { id: string; group_name: string }[];
   const normalizedCategoryFilter = normalizeCategoryFilter(
     categoryFilter,
     categories,
   );
 
   let query = supabase.from("tour_reports").select(`
-      *,
+      id,
+      title,
+      report_text,
+      created_at,
       profiles:created_by(full_name),
       tours!inner(
         id,
-        title, 
-        start_date, 
+        title,
+        start_date,
         target_area,
         group,
         category,
@@ -125,25 +195,21 @@ export default async function BerichtePage({ searchParams }: Props) {
     query = query.eq("tours.group", groupFilter);
   }
 
-  const { data: reports } = await query;
+  const { data: reportsData } = await query;
+  const reports = normalizeReportRows(reportsData as unknown[] | null);
 
   const filteredReports = yearFilter
-    ? reports?.filter(
+    ? reports.filter(
         (report) =>
           getReportYear(report.tours.start_date)?.toString() === yearFilter,
       )
     : reports;
 
-  const { data: groupsData } = await supabase
-    .from("tour_groups")
-    .select("id, group_name");
-  const groups = (groupsData || []) as { id: string; group_name: string }[];
-
   const years = Array.from(
     new Set(
       reports
-        ?.map((report) => getReportYear(report.tours.start_date))
-        .filter((year): year is number => year !== null) || [],
+        .map((report) => getReportYear(report.tours.start_date))
+        .filter((year): year is number => year !== null),
     ),
   ).sort((a, b) => b - a);
 
@@ -163,11 +229,9 @@ export default async function BerichtePage({ searchParams }: Props) {
       </Suspense>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {filteredReports && filteredReports.length > 0 ? (
+        {filteredReports.length > 0 ? (
           filteredReports.map((report) => {
-            const previewImage = getReportPreviewImage(
-              report.report_images as ReportImage[] | null | undefined,
-            );
+            const previewImage = getReportPreviewImage(report.report_images);
             return (
               <Link
                 key={report.id}
