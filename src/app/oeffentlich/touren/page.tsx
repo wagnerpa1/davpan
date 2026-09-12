@@ -1,7 +1,7 @@
 import { Search } from "lucide-react";
+import { Suspense } from "react";
 import Link from "next/link";
 import type { ComponentProps } from "react";
-import { Suspense } from "react";
 import { TourCard } from "@/components/tours/TourCard";
 import { TourFilters } from "@/components/tours/TourFilters";
 import { siteConfig } from "@/lib/site-config";
@@ -69,11 +69,7 @@ function normalizeCategoryFilter(
   categories: TourCategoryOption[],
 ) {
   const categoryByLabel = new Map(
-    categories
-      .filter((cat): cat is TourCategoryOption & { category: string } =>
-        Boolean(cat.category),
-      )
-      .map((category) => [category.category.toLowerCase(), category.id]),
+    categories.map((category) => [category.category.toLowerCase(), category.id]),
   );
 
   return categoryByLabel.has(categoryFilter.toLowerCase())
@@ -157,9 +153,8 @@ async function loadConfirmedCountByTour(
 function getConfirmedCount(tour: TourCardItem) {
   return (
     tour.confirmed_participants_count ??
-    tour.tour_participants?.filter(
-      (participant) => participant.status === "confirmed",
-    ).length ??
+    tour.tour_participants?.filter((participant) => participant.status === "confirmed")
+      .length ??
     0
   );
 }
@@ -345,9 +340,9 @@ export default async function PublicToursPage({
         ) : (
           <div className="rounded-2xl border border-slate-200 border-dashed p-12 text-center">
             <Search className="mx-auto mb-4 h-12 w-12 text-slate-300" />
-            <h2 className="text-lg font-medium text-slate-900">
+            <h3 className="text-lg font-medium text-slate-900">
               Keine passenden Touren gefunden
-            </h2>
+            </h3>
             <p className="mt-2 text-sm text-slate-500">
               Versuche es mit anderen Filtereinstellungen oder setze alle Filter
               zurück.

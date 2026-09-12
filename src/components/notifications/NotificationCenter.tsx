@@ -2,10 +2,6 @@
 
 import { Bell } from "lucide-react";
 import {
-  type Dispatch,
-  type MutableRefObject,
-  type RefObject,
-  type SetStateAction,
   useCallback,
   useEffect,
   useMemo,
@@ -24,71 +20,6 @@ interface NotificationCenterResponse {
 
 interface NotificationCenterProps {
   isParent: boolean;
-}
-
-type SupabaseBrowserClient = ReturnType<typeof createBrowserClient>;
-type RefreshTimerRef = MutableRefObject<ReturnType<typeof setTimeout> | null>;
-
-interface NotificationCenterState {
-  activeTab: NotificationTab | null;
-  activeTabId: string;
-  error: string | null;
-  hasTabNavigation: boolean;
-  isLoading: boolean;
-  isMarkingTabAsRead: boolean;
-  markActiveTabAsRead: () => Promise<void>;
-  markSingleAsRead: (notificationId: string) => Promise<void>;
-  openNotification: (item: NotificationItem) => Promise<void>;
-  realtimeFilters: string[];
-  refreshTimerRef: RefreshTimerRef;
-  scheduleNotificationsRefresh: () => void;
-  setActiveTabId: (tabId: string) => void;
-  supabase: SupabaseBrowserClient;
-  tabs: NotificationTab[];
-  totalUnread: number;
-}
-
-interface NotificationCenterPanelProps {
-  activeTab: NotificationTab | null;
-  activeTabId: string;
-  error: string | null;
-  hasTabNavigation: boolean;
-  isLoading: boolean;
-  isMarkingTabAsRead: boolean;
-  markActiveTabAsRead: () => Promise<void>;
-  markSingleAsRead: (notificationId: string) => Promise<void>;
-  onClose: () => void;
-  openNotification: (item: NotificationItem) => Promise<void>;
-  setActiveTabId: (tabId: string) => void;
-  tabs: NotificationTab[];
-}
-
-interface NotificationPanelContentProps {
-  activeTab: NotificationTab | null;
-  error: string | null;
-  isLoading: boolean;
-  markSingleAsRead: (notificationId: string) => Promise<void>;
-  openNotification: (item: NotificationItem) => Promise<void>;
-}
-
-interface NotificationRealtimeSubscriptionProps {
-  filters: string[];
-  onRefresh: () => void;
-  refreshTimerRef: RefreshTimerRef;
-  supabase: SupabaseBrowserClient;
-}
-
-interface SubscribeToNotificationChangesOptions {
-  filters: string[];
-  onRefresh: () => void;
-  refreshTimerRef: RefreshTimerRef;
-  supabase: SupabaseBrowserClient;
-}
-
-interface NotificationBellButtonProps {
-  isOpen: boolean;
-  onToggle: () => void;
-  totalUnread: number;
 }
 
 function formatRelative(dateIso: string): string {
@@ -122,69 +53,32 @@ function sanitizeClientPath(path: string | undefined): string | null {
   return null;
 }
 
-function clearPendingRefresh(refreshTimerRef: RefreshTimerRef) {
-  if (!refreshTimerRef.current) {
-    return;
-  }
-
-  clearTimeout(refreshTimerRef.current);
-  refreshTimerRef.current = null;
-}
-
-function toRealtimeFilters(tabs: NotificationTab[]): string[] {
-  return tabs.reduce<string[]>((filters, tab) => {
-    if (!tab.targetId) {
-      return filters;
-    }
-
-    const recipientColumn =
-      tab.targetType === "self" ? "recipient_user_id" : "recipient_child_id";
-    filters.push(`${recipientColumn}=eq.${tab.targetId}`);
-    return filters;
-  }, []);
-}
-
-function subscribeToNotificationChanges({
-  filters,
-  onRefresh,
-  refreshTimerRef,
-  supabase,
-}: SubscribeToNotificationChangesOptions): () => void {
-  const channel = supabase.channel("notification-center");
-
-  for (const filter of filters) {
-    channel.on(
-      "postgres_changes",
-      {
-        event: "INSERT",
-        schema: "public",
-        table: "notifications",
-        filter,
-      },
-      onRefresh,
-    );
-  }
-
-  channel.subscribe();
-
-  return () => {
-    void channel.unsubscribe();
-    void supabase.removeChannel(channel);
-    clearPendingRefresh(refreshTimerRef);
-  };
-}
-
-function useNotificationCenterState(
-  isParent: boolean,
-  isOpen: boolean,
-): NotificationCenterState {
+export function NotificationCenter({ isParent }: NotificationCenterProps) {
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const supabase = useMemo(() => createBrowserClient(), []);
+  const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tabs, setTabs] = useState<NotificationTab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string>("self");
   const [isMarkingTabAsRead, setIsMarkingTabAsRead] = useState(false);
+
+  const totalUnread = tabs.reduce((sum, tab) => sum + tab.unreadCount, 0);
+
+  const activeTab =
+    tabs.find((tab) => tab.id === activeTabId) ?? tabs[0] ?? null;
+
+  const hasTabNavigation = isParent && tabs.length > 1;
+
+  const realtimeFilters = tabs.reduce<string[]>((acc, tab) => {
+    const filter =
+      tab.targetType === "self"
+        ? `recipient_user_id=eq.${tab.targetId}`
+        : `recipient_child_id=eq.${tab.targetId}`;
+    if (filter) acc.push(filter);
+    return acc;
+  }, []);
 
   const loadNotifications = useCallback(async () => {
     setIsLoading(true);
@@ -210,14 +104,13 @@ function useNotificationCenterState(
 
       if (data.tabs.length === 0) {
         setActiveTabId("self");
-        return;
+      } else {
+        setActiveTabId((currentId) =>
+          data.tabs.some((tab) => tab.id === currentId)
+            ? currentId
+            : data.tabs[0].id,
+        );
       }
-
-      setActiveTabId((currentId) =>
-        data.tabs.some((tab) => tab.id === currentId)
-          ? currentId
-          : data.tabs[0].id,
-      );
     } catch (err) {
       console.error("Notification center load failed:", err);
       setError("Benachrichtigungen konnten nicht geladen werden.");
@@ -227,7 +120,9 @@ function useNotificationCenterState(
   }, []);
 
   const scheduleNotificationsRefresh = useCallback(() => {
-    clearPendingRefresh(refreshTimerRef);
+    if (refreshTimerRef.current) {
+      clearTimeout(refreshTimerRef.current);
+    }
 
     refreshTimerRef.current = setTimeout(() => {
       void loadNotifications();
@@ -298,9 +193,6 @@ function useNotificationCenterState(
     [markSingleAsRead],
   );
 
-  const activeTab =
-    tabs.find((tab) => tab.id === activeTabId) ?? tabs[0] ?? null;
-
   const markActiveTabAsRead = useCallback(async () => {
     if (!activeTab || isMarkingTabAsRead) {
       return;
@@ -348,8 +240,6 @@ function useNotificationCenterState(
     }
   }, [activeTab, isMarkingTabAsRead]);
 
-  const realtimeFilters = useMemo(() => toRealtimeFilters(tabs), [tabs]);
-
   useEffect(() => {
     if (!isOpen) {
       return;
@@ -358,31 +248,6 @@ function useNotificationCenterState(
     void loadNotifications();
   }, [isOpen, loadNotifications]);
 
-  return {
-    activeTab,
-    activeTabId,
-    error,
-    hasTabNavigation: isParent && tabs.length > 1,
-    isLoading,
-    isMarkingTabAsRead,
-    markActiveTabAsRead,
-    markSingleAsRead,
-    openNotification,
-    realtimeFilters,
-    refreshTimerRef,
-    scheduleNotificationsRefresh,
-    setActiveTabId,
-    supabase,
-    tabs,
-    totalUnread: tabs.reduce((sum, tab) => sum + tab.unreadCount, 0),
-  };
-}
-
-function useDismissNotificationPanel(
-  isOpen: boolean,
-  rootRef: RefObject<HTMLDivElement | null>,
-  setIsOpen: Dispatch<SetStateAction<boolean>>,
-) {
   useEffect(() => {
     if (!isOpen) {
       return;
@@ -414,179 +279,122 @@ function useDismissNotificationPanel(
       document.removeEventListener("touchstart", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [isOpen, rootRef, setIsOpen]);
-}
+  }, [isOpen]);
 
-function NotificationRealtimeSubscription({
-  filters,
-  onRefresh,
-  refreshTimerRef,
-  supabase,
-}: NotificationRealtimeSubscriptionProps) {
   useEffect(() => {
-    return subscribeToNotificationChanges({
-      filters,
-      onRefresh,
-      refreshTimerRef,
-      supabase,
-    });
-  }, [filters, onRefresh, refreshTimerRef, supabase]);
+    if (!isOpen || realtimeFilters.length === 0) {
+      return () => {};
+    }
 
-  return null;
-}
+    const channel = supabase.channel("notification-center");
 
-function NotificationPanelContent({
-  activeTab,
-  error,
-  isLoading,
-  markSingleAsRead,
-  openNotification,
-}: NotificationPanelContentProps) {
-  if (isLoading) {
-    return (
-      <div className="min-h-0 flex-1 overflow-y-auto p-3">
-        <p className="py-8 text-center text-sm text-slate-500">Lade...</p>
-      </div>
-    );
-  }
+    for (const filter of realtimeFilters) {
+      channel.on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+          filter,
+        },
+        () => {
+          scheduleNotificationsRefresh();
+        },
+      );
+    }
 
-  if (error) {
-    return (
-      <div className="min-h-0 flex-1 overflow-y-auto p-3">
-        <p className="py-8 text-center text-sm text-red-600">{error}</p>
-      </div>
-    );
-  }
+    channel.subscribe();
 
-  if (!activeTab || activeTab.items.length === 0) {
-    return (
-      <div className="min-h-0 flex-1 overflow-y-auto p-3">
-        <p className="py-8 text-center text-sm text-slate-500">
-          Keine Benachrichtigungen.
-        </p>
-      </div>
-    );
-  }
+    return () => {
+      channel.unsubscribe();
+      supabase.removeChannel(channel);
 
-  return (
-    <div className="min-h-0 flex-1 overflow-y-auto p-3">
-      <ul className="space-y-2">
-        {activeTab.items.map((item) => (
-          <NotificationItemRow
-            key={item.id}
-            item={item}
-            formatRelative={formatRelative}
-            sanitizeClientPath={sanitizeClientPath}
-            onOpenNotification={openNotification}
-            onMarkSingleAsRead={markSingleAsRead}
-          />
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function NotificationCenterPanel({
-  activeTab,
-  activeTabId,
-  error,
-  hasTabNavigation,
-  isLoading,
-  isMarkingTabAsRead,
-  markActiveTabAsRead,
-  markSingleAsRead,
-  onClose,
-  openNotification,
-  setActiveTabId,
-  tabs,
-}: NotificationCenterPanelProps) {
-  return (
-    <div className="fixed inset-x-0 bottom-0 top-14 z-60 sm:top-16">
-      <button
-        type="button"
-        aria-label="Benachrichtigungen schließen"
-        onClick={onClose}
-        className="absolute inset-0 bg-slate-900/15 backdrop-blur-[2px]"
-      />
-
-      <div className="absolute inset-0 flex items-start justify-center px-4 pb-6 pt-4 md:justify-end md:px-6 md:pt-4">
-        <div className="relative flex max-h-[calc(100vh-8rem)] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
-          <NotificationTabsHeader
-            tabs={tabs}
-            activeTabId={activeTabId}
-            hasTabNavigation={hasTabNavigation}
-            isMarkingTabAsRead={isMarkingTabAsRead}
-            onSelectTab={setActiveTabId}
-            onMarkTabAsRead={() => void markActiveTabAsRead()}
-          />
-
-          <NotificationPanelContent
-            activeTab={activeTab}
-            error={error}
-            isLoading={isLoading}
-            markSingleAsRead={markSingleAsRead}
-            openNotification={openNotification}
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function NotificationBellButton({
-  isOpen,
-  onToggle,
-  totalUnread,
-}: NotificationBellButtonProps) {
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      className="relative rounded-full p-2 text-slate-700 transition-colors hover:bg-slate-100 hover:text-jdav-green"
-      aria-expanded={isOpen}
-      aria-label="Benachrichtigungen öffnen"
-    >
-      <Bell className="h-5 w-5" />
-      {totalUnread > 0 && (
-        <span className="absolute -right-0.5 -top-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-jdav-green px-1 text-[10px] font-bold text-white">
-          {totalUnread > 9 ? "9+" : totalUnread}
-        </span>
-      )}
-    </button>
-  );
-}
-
-export function NotificationCenter({ isParent }: NotificationCenterProps) {
-  const rootRef = useRef<HTMLDivElement | null>(null);
-  const [isOpen, setIsOpen] = useState(false);
-  const notificationCenter = useNotificationCenterState(isParent, isOpen);
-  const shouldSubscribeToRealtime =
-    isOpen && notificationCenter.realtimeFilters.length > 0;
-
-  useDismissNotificationPanel(isOpen, rootRef, setIsOpen);
+      if (refreshTimerRef.current) {
+        clearTimeout(refreshTimerRef.current);
+      }
+    };
+  }, [isOpen, realtimeFilters, scheduleNotificationsRefresh, supabase]);
 
   return (
     <div ref={rootRef} className="relative">
-      <NotificationBellButton
-        isOpen={isOpen}
-        onToggle={() => setIsOpen((open) => !open)}
-        totalUnread={notificationCenter.totalUnread}
-      />
-
-      {shouldSubscribeToRealtime && (
-        <NotificationRealtimeSubscription
-          filters={notificationCenter.realtimeFilters}
-          onRefresh={notificationCenter.scheduleNotificationsRefresh}
-          refreshTimerRef={notificationCenter.refreshTimerRef}
-          supabase={notificationCenter.supabase}
-        />
-      )}
+      <button
+        type="button"
+        onClick={() => setIsOpen((open) => !open)}
+        className="relative rounded-full p-2 text-slate-700 transition-colors hover:bg-slate-100 hover:text-jdav-green"
+        aria-expanded={isOpen}
+        aria-label="Benachrichtigungen öffnen"
+      >
+        <Bell className="h-5 w-5" />
+        {totalUnread > 0 && (
+          <span className="absolute -right-0.5 -top-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-jdav-green px-1 text-[10px] font-bold text-white">
+            {totalUnread > 9 ? "9+" : totalUnread}
+          </span>
+        )}
+      </button>
 
       {isOpen && (
-        <NotificationCenterPanel
-          {...notificationCenter}
-          onClose={() => setIsOpen(false)}
-        />
+        <div className="fixed inset-x-0 bottom-0 top-14 z-60 sm:top-16">
+          <button
+            type="button"
+            aria-label="Benachrichtigungen schließen"
+            onClick={() => setIsOpen(false)}
+            className="absolute inset-0 bg-slate-900/15 backdrop-blur-[2px]"
+          />
+
+          <div className="absolute inset-0 flex items-start justify-center px-4 pb-6 pt-4 md:justify-end md:px-6 md:pt-4">
+            <div className="relative flex max-h-[calc(100vh-8rem)] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+              <NotificationTabsHeader
+                tabs={tabs}
+                activeTabId={activeTabId}
+                hasTabNavigation={hasTabNavigation}
+                isMarkingTabAsRead={isMarkingTabAsRead}
+                onSelectTab={setActiveTabId}
+                onMarkTabAsRead={() => void markActiveTabAsRead()}
+              />
+
+              <div className="min-h-0 flex-1 overflow-y-auto p-3">
+                {isLoading && (
+                  <p className="py-8 text-center text-sm text-slate-500">
+                    Lade...
+                  </p>
+                )}
+
+                {!isLoading && error && (
+                  <p className="py-8 text-center text-sm text-red-600">
+                    {error}
+                  </p>
+                )}
+
+                {!isLoading &&
+                  !error &&
+                  activeTab &&
+                  activeTab.items.length === 0 && (
+                    <p className="py-8 text-center text-sm text-slate-500">
+                      Keine Benachrichtigungen.
+                    </p>
+                  )}
+
+                {!isLoading &&
+                  !error &&
+                  activeTab &&
+                  activeTab.items.length > 0 && (
+                    <ul className="space-y-2">
+                      {activeTab.items.map((item) => (
+                        <NotificationItemRow
+                          key={item.id}
+                          item={item}
+                          formatRelative={formatRelative}
+                          sanitizeClientPath={sanitizeClientPath}
+                          onOpenNotification={openNotification}
+                          onMarkSingleAsRead={markSingleAsRead}
+                        />
+                      ))}
+                    </ul>
+                  )}
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

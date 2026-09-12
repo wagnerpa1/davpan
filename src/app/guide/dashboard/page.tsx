@@ -94,9 +94,7 @@ function getTourReportAction(tour: GuideDashboardTour) {
   const hasReport = Boolean(firstReport);
 
   return {
-    href: firstReport
-      ? `/berichte/${firstReport.id}`
-      : `/touren/${tour.id}/bericht/neu`,
+    href: hasReport ? `/berichte/${firstReport.id}` : `/touren/${tour.id}/bericht/neu`,
     label: hasReport ? "Bericht" : "Bericht erstellen",
     classes: hasReport
       ? "bg-slate-100 text-slate-600 hover:bg-slate-200"
@@ -111,8 +109,7 @@ function TourDetails({ tour }: { tour: GuideDashboardTour }) {
         <span
           className={cn(
             "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
-            TOUR_STATUS_MAP[tour.status]?.classes ||
-              "bg-slate-100 text-slate-600",
+            TOUR_STATUS_MAP[tour.status]?.classes || "bg-slate-100 text-slate-600",
           )}
         >
           {TOUR_STATUS_MAP[tour.status]?.label || tour.status}
@@ -127,13 +124,11 @@ function TourDetails({ tour }: { tour: GuideDashboardTour }) {
       <div className="mt-2 flex flex-wrap gap-4 text-sm text-slate-500">
         <div className="flex items-center gap-1.5">
           <Calendar className="h-4 w-4 text-jdav-green" />
-          {tour.start_date
-            ? format(new Date(tour.start_date), "dd.MM.yy")
-            : "TBA"}
+          {tour.start_date ? format(new Date(tour.start_date), "dd.MM.yy") : "TBA"}
         </div>
         <div className="flex items-center gap-1.5">
           <Users className="h-4 w-4 text-jdav-green" />
-          {tour.tour_participants?.[0]?.count || 0} /{" "}
+          {tour.tour_participants?.[0]?.count || 0} / {" "}
           {tour.max_participants || "∞"} Teilnehmer
         </div>
       </div>
@@ -253,6 +248,8 @@ export default async function GuideDashboardPage() {
       t.status === "cancelled" ||
       (t.status === "completed" && t.tour_reports && t.tour_reports.length > 0),
   );
+
+  
 
   return (
     <div className="mx-auto max-w-site px-4 py-8">
