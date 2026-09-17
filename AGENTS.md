@@ -1,6 +1,7 @@
 # AGENTS.md - Developer & Agent Guide
 
 This document defines architecture guidelines, operational patterns, and conventions for working on the DAV Pfarrkirchen application.
+For detailed documentation on system features, database schema, offline PWA logic, and RLS security, consult the **[docs/ Wiki Hub](file:///c:/Users/paulw/WebstormProjects/davpan/docs/README.md)**.
 
 ## Core Architecture & Guidelines
 
