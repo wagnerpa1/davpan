@@ -50,7 +50,47 @@ async function clearAuthSensitiveCaches(): Promise<void> {
   await Promise.all(deletions);
 }
 
+const CONFLICT_CODE_DESCRIPTIONS: Record<string, string> = {
+  stale_write: "Daten veraltet",
+  inventory_exceeded: "Material nicht mehr verfügbar",
+  capacity_exceeded: "Kein freier Platz mehr",
+  invalid_state: "Status-Konflikt",
+  unauthorized: "Sitzung abgelaufen",
+  conflict: "Konflikt",
+};
+
+function extractErrorCode(bodyText: string): string | null {
+  try {
+    const parsed = JSON.parse(bodyText);
+    if (parsed && typeof parsed === "object") {
+      if (
+        parsed.error &&
+        typeof parsed.error === "object" &&
+        typeof parsed.error.code === "string"
+      ) {
+        return parsed.error.code;
+      }
+      if (typeof parsed.code === "string") {
+        return parsed.code;
+      }
+    }
+  } catch {
+    // If not standard JSON (e.g. Next.js RSC flight protocol), extract code via regex
+    const codeMatch = /"code"\s*:\s*"([a-zA-Z0-9_-]+)"/.exec(bodyText);
+    if (codeMatch?.[1]) {
+      return codeMatch[1];
+    }
+  }
+  return null;
+}
+
 function classifyConflictType(bodyText: string): string {
+  const structuredCode = extractErrorCode(bodyText);
+  if (structuredCode && CONFLICT_CODE_DESCRIPTIONS[structuredCode]) {
+    return CONFLICT_CODE_DESCRIPTIONS[structuredCode];
+  }
+
+  // Graceful fallback to substring matching for unformatted responses
   if (bodyText.includes("stale_write")) return "Daten veraltet";
   if (
     bodyText.includes("Material") ||

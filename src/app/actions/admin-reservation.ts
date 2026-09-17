@@ -2,25 +2,16 @@
 
 import { revalidatePath } from "next/cache";
 import { canManageMaterial, isGuideRole } from "@/lib/auth";
+import {
+  isAllowedMaterialTransition,
+  MATERIAL_RESERVATION_STATUSES,
+  type MaterialReservationStatus,
+} from "@/lib/domain/material-transitions";
 import { buildIdempotencyKey } from "@/lib/idempotency";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
 import { createClient } from "@/utils/supabase/server";
 
-const ALLOWED_STATUS = new Set([
-  "requested",
-  "reserved",
-  "on loan",
-  "returned",
-  "cancelled",
-]);
-
-const ALLOWED_TRANSITIONS: Record<string, string[]> = {
-  requested: ["reserved", "cancelled"],
-  reserved: ["on loan", "cancelled"],
-  "on loan": ["returned", "cancelled"],
-  returned: [],
-  cancelled: [],
-};
+const ALLOWED_STATUS = new Set<string>(MATERIAL_RESERVATION_STATUSES);
 
 async function applyMaterialTransitionRpc(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -112,7 +103,12 @@ export async function updateReservationStatus(id: string, newStatus: string) {
     return { success: true };
   }
 
-  if (!ALLOWED_TRANSITIONS[currentStatus]?.includes(newStatus)) {
+  if (
+    !isAllowedMaterialTransition(
+      currentStatus as MaterialReservationStatus,
+      newStatus as MaterialReservationStatus,
+    )
+  ) {
     return {
       error: `Übergang von "${currentStatus}" nach "${newStatus}" ist nicht erlaubt.`,
     };
@@ -255,7 +251,12 @@ export async function bulkUpdateTourReservations(
     return { error: "Ungültiger Status für Stapelverarbeitung." };
   }
 
-  if (!ALLOWED_TRANSITIONS[currentStatus]?.includes(newStatus)) {
+  if (
+    !isAllowedMaterialTransition(
+      currentStatus as MaterialReservationStatus,
+      newStatus as MaterialReservationStatus,
+    )
+  ) {
     return {
       error: `Übergang von "${currentStatus}" nach "${newStatus}" ist nicht erlaubt.`,
     };

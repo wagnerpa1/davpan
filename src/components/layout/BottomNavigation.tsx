@@ -4,10 +4,10 @@ import { File, Home, LogOut, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { SignOutForm } from "@/components/ui/SignOutForm";
 import { buildNavigation } from "@/lib/navigation/nav-config";
 import { getNavigationIcon } from "@/lib/navigation/nav-icons";
 import type { RoleLike } from "@/lib/permissions";
-import { SignOutForm } from "@/components/ui/SignOutForm";
 import { siteConfig } from "@/lib/site-config";
 import { cn } from "@/lib/utils";
 

@@ -31,7 +31,10 @@ export function mapPostgresError(error: unknown): DomainError {
 
   // 08000 is used in our custom RPCs (material, resources)
   if (code === "08000") {
-    if (message.includes("Insufficient inventory")) {
+    if (
+      message.includes("Insufficient inventory") ||
+      message.includes("reserviertes Material ist aktuell nicht verfügbar")
+    ) {
       return new DomainError("inventory_exceeded", message, false);
     }
     if (message.includes("Resource already booked")) {
@@ -45,8 +48,8 @@ export function mapPostgresError(error: unknown): DomainError {
     return new DomainError("conflict", "Data already exists", false);
   }
 
-  // Custom exceptions
-  if (code === "P0001" || code === "P0002") {
+  // Custom exceptions / invalid parameter state
+  if (code === "P0001" || code === "P0002" || code === "22023") {
     return new DomainError("invalid_state", message, false);
   }
 

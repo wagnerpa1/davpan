@@ -2,7 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { buildIdempotencyKey } from "@/lib/idempotency";
-import { dispatchNotification } from "@/lib/notifications/dispatcher";
+import {
+  notifyParticipantStatusChange,
+  notifyWaitlistPromotedUser,
+} from "@/lib/notifications/helpers";
 import { isAdminRole, isGuideRole } from "@/lib/permissions";
 import { createClient } from "@/utils/supabase/server";
 
@@ -154,126 +157,53 @@ export async function updateParticipantStatus(
     throw new Error(`Failed to update status: ${transitionError.message}`);
   }
 
-  const notificationType =
-    newStatus === "waitlist" ? "waitlist" : ("registration" as const);
-
-  const statusText: Record<typeof newStatus, string> = {
-    confirmed: "bestätigt",
-    cancelled: "abgelehnt",
-    pending: "auf pending gesetzt",
-    waitlist: "auf die Warteliste gesetzt",
-  };
-
-  if (newStatus === "confirmed" || newStatus === "cancelled") {
-    await dispatchNotification(supabase, {
-      type: notificationType,
-      title:
-        newStatus === "confirmed"
-          ? "Anmeldung bestätigt"
-          : "Anmeldung abgelehnt",
-      body: `Deine Anmeldung für "${tourInfo?.title || "diese Tour"}" wurde ${statusText[newStatus]}.`,
-      payload: {
-        participant_id: registrationId,
-        old_status: previousStatus,
-        new_status: newStatus,
-        url: `/touren/${tourId}`,
-      },
-      recipientUserId: participantChildId ? null : participantUserId,
-      recipientChildId: participantChildId,
-      relatedTourId: tourId,
-      relatedGroupId: tourInfo?.group ?? null,
-    });
-  }
+  await notifyParticipantStatusChange(supabase, {
+    tourId,
+    tourTitle: tourInfo?.title,
+    groupId: tourInfo?.group,
+    participantId: registrationId,
+    userId: participantUserId,
+    childProfileId: participantChildId,
+    oldStatus: previousStatus,
+    newStatus,
+  });
 
   const promotedCount = Number(transitionResult?.promoted_count || 0);
   if (promotedCount > 0) {
-    await dispatchNotification(supabase, {
-      type: "waitlist",
-      title: "Du bist nachgerückt",
-      body: `Für "${tourInfo?.title || "die Tour"}" ist ein Platz frei geworden. Du bist jetzt bestätigt.`,
-      payload: {
-        tour_id: tourId,
-        participant_id: transitionResult?.promoted_user_id,
-        status: "confirmed",
-        url: `/touren/${tourId}`,
-      },
-      recipientUserId: transitionResult?.promoted_child_id
-        ? null
-        : transitionResult?.promoted_user_id,
-      recipientChildId: transitionResult?.promoted_child_id || null,
-      relatedTourId: tourId,
-      relatedGroupId: tourInfo?.group ?? null,
+    await notifyWaitlistPromotedUser(supabase, {
+      tourId,
+      tourTitle: tourInfo?.title,
+      groupId: tourInfo?.group,
+      promotedUserId: transitionResult?.promoted_user_id,
+      promotedChildId: transitionResult?.promoted_child_id,
     });
   }
 
-  // ...existing code...
+  // Atomic Material Sync: executes in a single PostgreSQL transaction with row locks
   if (materialReservations && materialReservations.length > 0) {
-    if (newStatus === "cancelled") {
-      const activeReservations = materialReservations.filter(
-        (r) => r.status === "reserved" || r.status === "on loan",
+    const { error: materialRpcError } = await supabase.rpc(
+      "sync_participant_material_reservations_atomic",
+      {
+        p_tour_id: tourId,
+        p_user_id: participantUserId,
+        p_child_profile_id: participantChildId || null,
+        p_new_status: newStatus,
+        p_previous_status: previousStatus,
+        p_idempotency_key: buildIdempotencyKey("participant-material-sync", [
+          registrationId,
+          previousStatus,
+          newStatus,
+        ]),
+      },
+    );
+
+    if (materialRpcError) {
+      console.error(
+        "Supabase RPC error syncing participant materials:",
+        materialRpcError,
       );
-      await Promise.all(
-        activeReservations.map(async (reservation) => {
-          const { data: inventory } = await supabase
-            .from("material_inventory")
-            .select("quantity_available")
-            .eq("id", reservation.material_inventory_id)
-            .single();
-
-          if (inventory) {
-            await supabase
-              .from("material_inventory")
-              .update({ quantity_available: inventory.quantity_available + 1 })
-              .eq("id", reservation.material_inventory_id);
-          }
-
-          await supabase
-            .from("material_reservations")
-            .update({ status: "cancelled" })
-            .eq("id", reservation.id);
-        }),
-      );
-
-      const skippedReservations = materialReservations.filter(
-        (r) => r.status === "cancelled",
-      );
-      await Promise.all(
-        skippedReservations.map((reservation) =>
-          supabase
-            .from("material_reservations")
-            .update({ status: "cancelled" })
-            .eq("id", reservation.id),
-        ),
-      );
-    }
-
-    // If a previously cancelled participant is restored, reactivate reservation.
-    if (previousStatus === "cancelled" && newStatus !== "cancelled") {
-      const cancelledToReactivate = materialReservations.filter(
-        (r) => r.status === "cancelled",
-      );
-      await Promise.all(
-        cancelledToReactivate.map(async (reservation) => {
-          const { data: inventory } = await supabase
-            .from("material_inventory")
-            .select("quantity_available")
-            .eq("id", reservation.material_inventory_id)
-            .single();
-
-          if (!inventory || inventory.quantity_available <= 0) {
-            return;
-          }
-
-          await supabase
-            .from("material_inventory")
-            .update({ quantity_available: inventory.quantity_available - 1 })
-            .eq("id", reservation.material_inventory_id);
-
-          await supabase
-            .from("material_reservations")
-            .update({ status: "reserved" })
-            .eq("id", reservation.id);
-        }),
+      throw new Error(
+        `Fehler bei der Materialreservierung: ${materialRpcError.message}`,
       );
     }
   }

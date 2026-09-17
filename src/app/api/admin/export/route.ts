@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getCurrentUserProfile } from "@/lib/auth";
 import { isAdminRole } from "@/lib/permissions";
 import { createClient } from "@/utils/supabase/server";

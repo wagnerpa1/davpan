@@ -2,9 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { buildMemberImportSourceHash } from "@/lib/member-import";
+import {
+  type ImportRow,
+  normalizeMemberImportRow,
+  parseMemberImportCsv,
+} from "@/lib/member-import-csv";
 import { createClient } from "@/utils/supabase/server";
-
-type ImportRow = Record<string, string>;
 
 type NormalizedImportRow = {
   membership_number: string;
@@ -67,86 +70,9 @@ type PreviewRow = {
   diffs: PreviewDiffField[];
 };
 
-function splitCsvLine(line: string) {
-  const cells: string[] = [];
-  let current = "";
-  let inQuotes = false;
-
-  for (let index = 0; index < line.length; index += 1) {
-    const char = line[index];
-    const nextChar = line[index + 1];
-
-    if (char === '"' && inQuotes && nextChar === '"') {
-      current += '"';
-      index += 1;
-      continue;
-    }
-
-    if (char === '"') {
-      inQuotes = !inQuotes;
-      continue;
-    }
-
-    if (char === "," && !inQuotes) {
-      cells.push(current);
-      current = "";
-      continue;
-    }
-
-    current += char;
-  }
-
-  cells.push(current);
-  return cells.map((cell) => cell.trim());
-}
-
-function parseCsv(input: string): ImportRow[] {
-  const lines = input
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-
-  if (lines.length < 2) {
-    return [];
-  }
-
-  const headers = splitCsvLine(lines[0]);
-
-  return lines.slice(1).map((line) => {
-    const values = splitCsvLine(line);
-    return headers.reduce<ImportRow>((row, header, index) => {
-      row[header] = values[index] ?? "";
-      return row;
-    }, {});
-  });
-}
-
 function normalizeImportRow(row: ImportRow): NormalizedImportRow {
   return {
-    membership_number:
-      row.membership_number ?? row["Mitgl.Nr."] ?? row["Mitgl.Nr"] ?? "",
-    family_number: row.family_number ?? row.Familiennummer ?? null,
-    household_number: row.household_number ?? row.Haushaltsnr ?? null,
-    salutation: row.salutation ?? row.Anrede ?? null,
-    first_name: row.first_name ?? row.Vorname ?? "",
-    last_name: row.last_name ?? row.Nachname ?? "",
-    birthdate: row.birthdate ?? row.Geburtsdatum ?? "",
-    email: row.email ?? row["E-Mail"] ?? null,
-    phone_mobile: row.phone_mobile ?? row.Mobil ?? null,
-    zip_city: row.zip_city ?? row["PLZ/Ort"] ?? null,
-    iban: row.iban ?? row.IBAN ?? null,
-    bank_name: row.bank_name ?? row.Bankname ?? null,
-    membership_category_code:
-      row.membership_category_code ??
-      row["Kategorie 1"] ??
-      row.Kategorie1 ??
-      "",
-    section_number: row.section_number ?? row.Sektionsnr ?? null,
-    stammsektion: row.stammsektion ?? row.Stammsektion ?? null,
-    gastsektion: row.gastsektion ?? row.Gastsektion ?? null,
-    is_active:
-      String(row.is_active ?? row.AktivPassiv ?? "true").toLowerCase() !==
-      "false",
+    ...normalizeMemberImportRow(row),
     source_row_hash: buildMemberImportSourceHash(row),
   };
 }
@@ -266,7 +192,9 @@ export async function previewMemberImport(
   fileType: string,
 ) {
   const rows =
-    fileType === "csv" ? parseCsv(fileContent) : JSON.parse(fileContent);
+    fileType === "csv"
+      ? parseMemberImportCsv(fileContent)
+      : JSON.parse(fileContent);
 
   if (!Array.isArray(rows)) {
     throw new Error("Die Importdatei muss ein Array oder CSV sein.");
@@ -318,7 +246,9 @@ export async function runMemberImport(fileContent: string, fileType: string) {
   }
 
   const rows =
-    fileType === "csv" ? parseCsv(fileContent) : JSON.parse(fileContent);
+    fileType === "csv"
+      ? parseMemberImportCsv(fileContent)
+      : JSON.parse(fileContent);
 
   if (!Array.isArray(rows)) {
     return { success: false, error: "Ungültiges Importformat." };
