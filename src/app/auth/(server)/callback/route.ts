@@ -19,30 +19,38 @@ export async function GET(request: Request) {
       } = await supabase.auth.getUser();
 
       if (user) {
-        const metadata = user.user_metadata || {};
-        const fullName =
-          typeof metadata.full_name === "string" ? metadata.full_name : null;
-        const birthdate =
-          typeof metadata.birthdate === "string" ? metadata.birthdate : null;
-        const isParent = metadata.is_parent === true;
+        // Only initialize profile for new users; avoid overwriting existing profile/role/activation during password recovery
+        const { data: existingProfile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("id", user.id)
+          .maybeSingle();
 
-        const { error: upsertError } = await supabase.from("profiles").upsert(
-          {
-            id: user.id,
-            full_name: fullName,
-            // react-doctor-disable-next-line supabase-client-owned-authz-field -- Server callback setting initial default profile role
-            role: isParent ? "parent" : "member",
-            birthdate,
-            is_activated: false,
-          },
-          { onConflict: "id" },
-        );
+        if (!existingProfile) {
+          const metadata = user.user_metadata || {};
+          const fullName =
+            typeof metadata.full_name === "string" ? metadata.full_name : null;
+          const birthdate =
+            typeof metadata.birthdate === "string" ? metadata.birthdate : null;
+          const isParent = metadata.is_parent === true;
 
-        if (upsertError) {
-          console.error(
-            "Error upserting user profile in auth callback:",
-            upsertError,
-          );
+          const { error: insertError } = await supabase
+            .from("profiles")
+            .insert({
+              id: user.id,
+              full_name: fullName,
+              // react-doctor-disable-next-line supabase-client-owned-authz-field -- Server callback setting initial default profile role
+              role: isParent ? "parent" : "member",
+              birthdate,
+              is_activated: false,
+            });
+
+          if (insertError) {
+            console.error(
+              "Error inserting initial user profile in auth callback:",
+              insertError,
+            );
+          }
         }
       }
     }

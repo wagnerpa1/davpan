@@ -54,4 +54,18 @@ Dieses Dokument konsolidiert die Sicherheits- und Berechtigungsarchitektur der D
 * **Automatic Cache Purge**: Bei Abmeldung löscht der Service Worker unverzüglich alle lokal zwischengespeicherten Daten.
 
 ---
+
+## 🔑 Authentifizierung, Passwort-Standards & Reset-Workflow
+
+### Passwort-Sicherheitsstandards (NIST SP 800-63B / OWASP)
+* **Mindestlänge**: Mindestens 8 Zeichen (`MIN_PASSWORD_LENGTH = 8`).
+* **Zusammensetzung**: Verpflichtend mindestens ein Buchstabe und mindestens eine Ziffer oder ein Sonderzeichen (`src/lib/password-rules.ts`).
+* **UX & Sicherheit**: Dynamischer Passwort-Stärke-Indikator und Sichtbarkeits-Toggle (Show/Hide) zur Vermeidung von Tippfehlern bei langen Passwörtern.
+
+### Passwort-Reset Workflow
+1. **Anforderung (`/auth/reset-password`)**: Benutzer gibt E-Mail-Adresse ein. Supabase generiert ein temporäres Recovery-Token und versendet die E-Mail mit Weiterleitungs-Link.
+2. **Auth-Callback (`/auth/callback?next=/auth/update-password`)**: Der Einweg-Code wird serverseitig in eine Session getauscht. Bestehende Benutzerprofile und Rollen bleiben strikt unverändert geschützt.
+3. **Neues Passwort vergeben (`/auth/update-password`)**: Der authentifizierte Nutzer vergibt ein neues Passwort mit Prüfung gegen die Passwort-Sicherheitsregeln und Bestätigungsfeld.
+
+---
 *Zurück zur [Wiki-Übersicht](file:///c:/Users/paulw/WebstormProjects/davpan/docs/README.md)*
