@@ -5,10 +5,10 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { SignOutForm } from "@/components/ui/SignOutForm";
 import { buildNavigation } from "@/lib/navigation/nav-config";
 import type { RoleLike } from "@/lib/permissions";
 import { isParentRole } from "@/lib/permissions";
-import { SignOutForm } from "@/components/ui/SignOutForm";
 import { siteConfig } from "@/lib/site-config";
 
 const MemberBarcodePopup = dynamic(

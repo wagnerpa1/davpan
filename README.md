@@ -9,6 +9,22 @@ Eine moderne, leistungsstarke Progressive Web App (PWA) zur Organisation und Ver
 
 ---
 
+## 📚 Entwickler- & Anwendungsdokumentation (Wiki)
+
+Die komplette technische Dokumentation, Architektur, Datenbank-RPCs, RLS-Sicherheit und Funktionslogiken befinden sich im **[docs/-Wiki Hub](file:///c:/Users/paulw/WebstormProjects/davpan/docs/README.md)**.
+
+* **[System-Architektur & Tech-Stack](file:///c:/Users/paulw/WebstormProjects/davpan/docs/architecture/overview.md)**
+* **[Offline-Fähigkeit & Service Worker](file:///c:/Users/paulw/WebstormProjects/davpan/docs/architecture/offline-and-pwa.md)**
+* **[Mutation Model & Error Handling](file:///c:/Users/paulw/WebstormProjects/davpan/docs/architecture/error-handling-mutations.md)**
+* **[Touren & Kurse Logik](file:///c:/Users/paulw/WebstormProjects/davpan/docs/features/touren-und-kurse.md)**
+* **[Material- & Ausrüstungsverleih](file:///c:/Users/paulw/WebstormProjects/davpan/docs/features/material-verleih.md)**
+* **[Mitgliederverwaltung & CSV-Import](file:///c:/Users/paulw/WebstormProjects/davpan/docs/features/mitglieder-und-import.md)**
+* **[RLS-Sicherheitsmatrix](file:///c:/Users/paulw/WebstormProjects/davpan/docs/database-and-security/rls-and-permissions.md)**
+* **[PostgreSQL Schema & RPCs](file:///c:/Users/paulw/WebstormProjects/davpan/docs/database-and-security/database-schema-and-rpcs.md)**
+* **[Operations Runbook](file:///c:/Users/paulw/WebstormProjects/davpan/docs/RUNBOOK_OPERATIONS.md)**
+
+---
+
 ## 🚀 Kern-Features
 
 *   **📅 Touren-Management**: Planung, Veröffentlichung und Anmeldung zu Vereinstouren.

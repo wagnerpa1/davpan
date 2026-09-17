@@ -30,7 +30,7 @@ export async function createChildProfileInvite(childId: string) {
       if (!isLegacyParent) {
         throw new DomainError(
           "unauthorized",
-          "Keine Berechtigung f�r dieses Kind",
+          "Keine Berechtigung für dieses Kind",
         );
       }
 

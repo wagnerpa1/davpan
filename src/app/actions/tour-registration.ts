@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { after } from "next/server";
 import { buildIdempotencyKey } from "@/lib/idempotency";
 import {
   dispatchNotification,
@@ -12,6 +11,10 @@ import {
   resolveMaterialManagerUserIds,
   resolveTourManagerUserIds,
 } from "@/lib/notifications/targets";
+import {
+  calculateParticipantAgeOnDate,
+  parseMaterialsData,
+} from "@/lib/tours/registration-validation";
 import { createClient } from "@/utils/supabase/server";
 
 export async function registerForTour(formData: FormData) {
@@ -38,14 +41,7 @@ export async function registerForTour(formData: FormData) {
       ? clientRequestIdRaw.trim()
       : "";
   let actorDisplayName = "Teilnehmer/in";
-  let materials: { material_type_id: string; size: string }[] = [];
-  try {
-    materials = materialsDataRaw ? JSON.parse(materialsDataRaw) : [];
-  } catch (e) {
-    after(() => {
-      console.warn("Could not parse materials JSON", e);
-    });
-  }
+  const materials = parseMaterialsData(materialsDataRaw);
 
   if (!tourId) {
     return { success: false, error: "Tour ID fehlt." };
@@ -98,14 +94,7 @@ export async function registerForTour(formData: FormData) {
     }
 
     if (birthdate) {
-      const bDate = new Date(birthdate);
-      const sDate = new Date(tour.start_date);
-      let age = sDate.getFullYear() - bDate.getFullYear();
-      const m = sDate.getMonth() - bDate.getMonth();
-      if (m < 0 || (m === 0 && sDate.getDate() < bDate.getDate())) {
-        age--;
-      }
-
+      const age = calculateParticipantAgeOnDate(birthdate, tour.start_date);
       const isUnderMinAge = age < tour.min_age;
       if (isUnderMinAge) {
         // Registrierung bleibt bewusst möglich (Guide kann Ausnahme manuell prüfen/bestätigen).
@@ -188,8 +177,8 @@ export async function registerForTour(formData: FormData) {
       if (errorMsg.includes("Material not available")) {
         await dispatchNotification(supabase, {
           type: "material",
-          title: "Materialreservierung nicht m�glich",
-          body: `Die Materialreservierung f�r "${tour.title}" konnte nicht abgeschlossen werden.`,
+          title: "Materialreservierung nicht möglich",
+          body: `Die Materialreservierung für "${tour.title}" konnte nicht abgeschlossen werden.`,
           payload: {
             tour_id: tourId,
             status: "failed",
@@ -232,8 +221,8 @@ export async function registerForTour(formData: FormData) {
               : "Neue Tour-Anmeldung",
           body:
             status === "waitlist"
-              ? `${actorDisplayName} steht jetzt auf der Warteliste f�r "${tour.title}".`
-              : `${actorDisplayName} hat sich f�r "${tour.title}" angemeldet (pending).`,
+              ? `${actorDisplayName} steht jetzt auf der Warteliste für "${tour.title}".`
+              : `${actorDisplayName} hat sich für "${tour.title}" angemeldet (pending).`,
           payload: {
             tour_id: tourId,
             status,
@@ -249,7 +238,7 @@ export async function registerForTour(formData: FormData) {
           dispatchToUsers(supabase, materialManagerIds, {
             type: "material",
             title: "Neue Materialreservierung",
-            body: `${actorDisplayName} hat Material f�r "${tour.title}" angefragt.`,
+            body: `${actorDisplayName} hat Material für "${tour.title}" angefragt.`,
             payload: {
               tour_id: tourId,
               status,
@@ -344,8 +333,8 @@ export async function cancelRegistration(participantId: string) {
       // Only notify the promoted participant (not guides, they get it from sync_tour_status)
       await dispatchNotification(supabase, {
         type: "waitlist",
-        title: "Du bist nachger�ckt",
-        body: `F�r "${tourData?.title || "die Tour"}" ist ein Platz frei geworden. Du bist jetzt best�tigt.`,
+        title: "Du bist nachgerückt",
+        body: `Für "${tourData?.title || "die Tour"}" ist ein Platz frei geworden. Du bist jetzt bestätigt.`,
         payload: {
           tour_id: reg.tour_id,
           participant_id: promoted.promoted_user_id,
@@ -455,7 +444,7 @@ async function _confirmWaitlistSpot(participantId: string, tourId: string) {
     console.error("Waitlist confirm error:", error);
     return {
       success: false,
-      error: "Best�tigung fehlgeschlagen. Evtl. ist die 24h-Frist abgelaufen.",
+      error: "Bestätigung fehlgeschlagen. Evtl. ist die 24h-Frist abgelaufen.",
     };
   }
 

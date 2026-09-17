@@ -9,7 +9,9 @@ import { createClient } from "@/utils/supabase/client";
 
 export function ResetPasswordForm({ className }: { className?: string }) {
   const [supabase] = useState(() => createClient());
-  const [redirectTo] = useState(() => getAuthCallbackUrl());
+  const [redirectTo] = useState(() =>
+    getAuthCallbackUrl("/auth/callback?next=/auth/update-password"),
+  );
 
   return (
     <div className={cn("grid gap-6", className)}>
