@@ -190,6 +190,7 @@ describe("GET /api/admin/export", () => {
     vi.resetModules();
     createAdminProfileMock();
     const { constructorMock } = installUtcDateTimeFormatMock();
+    const { GET } = await import("../../src/app/api/admin/export/route");
     createClientMock.mockResolvedValueOnce(createToursSupabaseMock());
     const { GET } = await import("../../src/app/api/admin/export/route");
 
@@ -215,6 +216,8 @@ describe("GET /api/admin/export", () => {
     vi.resetModules();
     createAdminProfileMock();
     const { constructorMock } = installUtcDateTimeFormatMock();
+    vi.resetModules();
+    const { GET } = await import("../../src/app/api/admin/export/route");
     createClientMock.mockResolvedValueOnce(createParticipantsSupabaseMock());
     const { GET } = await import("../../src/app/api/admin/export/route");
 
