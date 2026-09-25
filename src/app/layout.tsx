@@ -1,8 +1,8 @@
 import { GeistSans } from "geist/font/sans";
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import type React from "react";
-import { SpeedInsights } from "@vercel/speed-insights/next"
 import { BottomNavigation } from "@/components/layout/BottomNavigation";
 import { Header } from "@/components/layout/Header";
 import { PushNotificationInit } from "@/components/layout/PushNotificationInit";
@@ -285,6 +285,7 @@ export default async function RootLayout({
     birthdate,
     membershipNumber,
     role: userRole,
+    isParent,
     user,
   } = await getCurrentUserProfile();
 
@@ -303,6 +304,7 @@ export default async function RootLayout({
               birthdate={birthdate}
               membershipNumber={membershipNumber}
               userRole={userRole}
+              isParent={isParent}
             />
           )}
           {user && <PushNotificationInit />} {user && <OfflineIndicator />}{" "}

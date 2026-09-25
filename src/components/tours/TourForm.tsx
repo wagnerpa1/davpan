@@ -47,7 +47,7 @@ interface TourFormInitialData {
 
 interface TourFormProps {
   initialData?: TourFormInitialData;
-  onSubmit: (formData: FormData) => Promise<void>;
+  onSubmit: (formData: FormData) => Promise<void> | void;
   isLoading?: boolean;
   guides?: { id: string; full_name: string }[];
   currentUser?: { id: string; full_name: string };

@@ -8,7 +8,7 @@ import { TourHero } from "@/components/tours/TourHero";
 import { TourInfoGrid } from "@/components/tours/TourInfoGrid";
 import { TourRegistrationSection } from "@/components/tours/TourRegistrationSection";
 import { getCurrentUserProfile } from "@/lib/auth";
-import { isAdminRole, isParentRole } from "@/lib/permissions";
+import { isAdminRole } from "@/lib/permissions";
 import { createClient } from "@/utils/supabase/server";
 
 const CalendarExport = dynamic(() =>
@@ -243,11 +243,12 @@ async function getTourDetailData(
   const [userContextResult, manageResult] = await Promise.all([
     authContext.user
       ? Promise.all([
-          isParentRole(authContext.role)
+          authContext.isParent
             ? supabase
                 .from("child_profiles")
                 .select("id, full_name, birthdate")
                 .eq("parent_id", authContext.user.id)
+                .eq("is_active", true)
             : Promise.resolve({ data: null }),
           supabase
             .from("tour_participants")

@@ -7,6 +7,7 @@ import {
   ChevronDown,
   ChevronUp,
   Edit3,
+  Expand,
   Eye,
   Heading1,
   Info,
@@ -18,11 +19,12 @@ import {
   Save,
   Trash2,
   Type,
+  X,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type React from "react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import {
   deleteReportImage,
@@ -303,6 +305,56 @@ function ReportTextEditor({
   );
 }
 
+function ImageLightbox({
+  imageUrl,
+  altText,
+  onClose,
+}: {
+  altText: string;
+  imageUrl: string;
+  onClose: () => void;
+}) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    dialogRef.current?.showModal();
+  }, []);
+
+  return (
+    <dialog
+      ref={dialogRef}
+      aria-label={altText}
+      onCancel={onClose}
+      className="m-auto max-h-screen max-w-screen bg-transparent p-4 backdrop:bg-black/90 backdrop:backdrop-blur-sm"
+    >
+      <button
+        type="button"
+        aria-label="Hintergrund – Bild schließen"
+        className="fixed inset-0 cursor-default"
+        onClick={onClose}
+      />
+      <button
+        type="button"
+        aria-label="Bild schließen"
+        onClick={onClose}
+        className="fixed right-4 top-4 z-10 rounded-full bg-white/20 p-2 text-white transition-colors hover:bg-white/40"
+      >
+        <X className="h-5 w-5" />
+      </button>
+      <div className="relative z-10">
+        <Image
+          src={imageUrl}
+          alt={altText}
+          width={1280}
+          height={960}
+          className="max-h-[90vh] max-w-[90vw] rounded-xl object-contain shadow-2xl"
+          style={{ width: "auto", height: "auto" }}
+        />
+      </div>
+    </dialog>
+  );
+}
+
 function ReportImageCard({
   image,
   index,
@@ -316,64 +368,92 @@ function ReportImageCard({
   moveImage: (index: number, direction: "up" | "down") => void;
   removeImage: (imageId: string, url: string) => Promise<void>;
 }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   return (
-    <div className="group relative aspect-square overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
-      <Image
-        src={image.image_url}
-        alt={`Vorschau ${index + 1}`}
-        fill
-        sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
-        className="object-cover"
-      />
-      <div className="absolute inset-x-0 bottom-0 flex h-1/2 flex-col justify-end bg-linear-to-t from-black/60 to-transparent p-2 text-white opacity-0 transition-opacity group-hover:opacity-100">
-        <div className="flex items-center justify-between">
-          <div className="flex gap-1">
-            <button
-              type="button"
-              aria-label={`Bild nach oben verschieben ${index + 1}`}
-              onClick={() => moveImage(index, "up")}
-              disabled={index === 0}
-              className="rounded-md bg-white/20 p-1 hover:bg-white/40 disabled:opacity-30"
-            >
-              <ChevronUp className="h-3.5 w-3.5" />
-            </button>
-            <button
-              type="button"
-              aria-label={`Bild nach unten verschieben ${index + 1}`}
-              onClick={() => moveImage(index, "down")}
-              disabled={index === imageCount - 1}
-              className="rounded-md bg-white/20 p-1 hover:bg-white/40 disabled:opacity-30"
-            >
-              <ChevronDown className="h-3.5 w-3.5" />
-            </button>
+    <>
+      {isExpanded && (
+        <ImageLightbox
+          imageUrl={image.image_url}
+          altText={`Bild ${index + 1}`}
+          onClose={() => setIsExpanded(false)}
+        />
+      )}
+      <div className="group relative aspect-square overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
+        <button
+          type="button"
+          aria-label={`Bild ${index + 1} vergrößern`}
+          className="absolute inset-0 z-10 cursor-zoom-in"
+          onClick={() => setIsExpanded(true)}
+        />
+        <Image
+          src={image.image_url}
+          alt={`Vorschau ${index + 1}`}
+          fill
+          sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
+          className="object-cover"
+        />
+        {/* Controls: always visible on touch devices, hover-revealed on pointer devices */}
+        <div className="absolute inset-x-0 bottom-0 z-20 flex h-1/2 flex-col justify-end bg-linear-to-t from-black/60 to-transparent p-2 text-white opacity-0 transition-opacity group-hover:opacity-100 [@media(hover:none)]:opacity-100">
+          <div className="flex items-center justify-between">
+            <div className="flex gap-1">
+              <button
+                type="button"
+                aria-label={`Bild nach oben verschieben ${index + 1}`}
+                onClick={() => moveImage(index, "up")}
+                disabled={index === 0}
+                className="rounded-md bg-white/20 p-1.5 hover:bg-white/40 active:bg-white/40 disabled:opacity-30"
+              >
+                <ChevronUp className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                aria-label={`Bild nach unten verschieben ${index + 1}`}
+                onClick={() => moveImage(index, "down")}
+                disabled={index === imageCount - 1}
+                className="rounded-md bg-white/20 p-1.5 hover:bg-white/40 active:bg-white/40 disabled:opacity-30"
+              >
+                <ChevronDown className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="flex gap-1">
+              <button
+                type="button"
+                aria-label={`Bild ${index + 1} vergrößern`}
+                onClick={() => setIsExpanded(true)}
+                className="rounded-md bg-white/20 p-1.5 hover:bg-white/40 active:bg-white/40"
+              >
+                <Expand className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                aria-label={`Bild ${index + 1} entfernen`}
+                onClick={() => removeImage(image.id, image.image_url)}
+                className="rounded-md bg-red-500/80 p-1.5 hover:bg-red-600 active:bg-red-600"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
           </div>
-          <button
-            type="button"
-            aria-label={`Bild ${index + 1} entfernen`}
-            onClick={() => removeImage(image.id, image.image_url)}
-            className="rounded-md bg-red-500/80 p-1 hover:bg-red-600"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
         </div>
-      </div>
-      <div className="absolute left-2 top-2 flex gap-1">
-        <div className="rounded-md bg-black/40 px-1.5 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm">
-          #{index + 1}
+        <div className="absolute left-2 top-2 z-20 flex gap-1">
+          <div className="rounded-md bg-black/40 px-1.5 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm">
+            #{index + 1}
+          </div>
+          {index === 0 && (
+            <div className="rounded-md bg-jdav-green px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm flex items-center gap-1">
+              <Camera className="h-2 w-2" /> Banner
+            </div>
+          )}
         </div>
-        {index === 0 && (
-          <div className="rounded-md bg-jdav-green px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm flex items-center gap-1">
-            <Camera className="h-2 w-2" /> Banner
+
+        {image.isUploading && (
+          <div className="absolute inset-0 z-30 bg-black/25 flex items-center justify-center backdrop-blur-[1px]">
+            <Loader2 className="h-6 w-6 text-white animate-spin" />
           </div>
         )}
       </div>
-
-      {image.isUploading && (
-        <div className="absolute inset-0 bg-black/25 flex items-center justify-center backdrop-blur-[1px]">
-          <Loader2 className="h-6 w-6 text-white animate-spin" />
-        </div>
-      )}
-    </div>
+    </>
   );
 }
 

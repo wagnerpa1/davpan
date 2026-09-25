@@ -6,7 +6,7 @@ import { loadTourRegistrationOverview } from "@/lib/tours/registration-overview"
 import { createClient } from "@/utils/supabase/server";
 
 export default async function MeineTourenPage() {
-  const [{ user, role }, supabase] = await Promise.all([
+  const [{ user, isParent }, supabase] = await Promise.all([
     getCurrentUserProfile(),
     createClient(),
   ]);
@@ -18,7 +18,7 @@ export default async function MeineTourenPage() {
   const overview = await loadTourRegistrationOverview(
     supabase,
     user.id,
-    role === "parent",
+    isParent,
   );
 
   return (

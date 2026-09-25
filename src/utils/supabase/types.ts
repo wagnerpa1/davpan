@@ -18,6 +18,10 @@ export interface Database {
           created_at: string | null;
           medical_notes: string | null;
           image_consent: boolean | null;
+          membership_number: string | null;
+          user_id: string | null;
+          is_active: boolean;
+          aged_out_at: string | null;
         };
         Insert: {
           id?: string;
@@ -27,6 +31,10 @@ export interface Database {
           created_at?: string | null;
           medical_notes?: string | null;
           image_consent?: boolean | null;
+          membership_number?: string | null;
+          user_id?: string | null;
+          is_active?: boolean;
+          aged_out_at?: string | null;
         };
         Update: {
           id?: string;
@@ -36,6 +44,10 @@ export interface Database {
           created_at?: string | null;
           medical_notes?: string | null;
           image_consent?: boolean | null;
+          membership_number?: string | null;
+          user_id?: string | null;
+          is_active?: boolean;
+          aged_out_at?: string | null;
         };
       };
       documents: {
@@ -399,6 +411,23 @@ export interface Database {
           updated_at?: string;
         };
       };
+      parent_child_relations: {
+        Row: {
+          parent_id: string;
+          child_id: string;
+          created_at: string | null;
+        };
+        Insert: {
+          parent_id: string;
+          child_id: string;
+          created_at?: string | null;
+        };
+        Update: {
+          parent_id?: string;
+          child_id?: string;
+          created_at?: string | null;
+        };
+      };
       profiles: {
         Row: {
           id: string;
@@ -407,9 +436,23 @@ export interface Database {
           birthdate: string | null;
           medical_notes: string | null;
           emergency_phone: string | null;
-          role: "member" | "guide" | "admin" | "parent" | "materialwart" | null;
+          role:
+            | "member"
+            | "guide"
+            | "admin"
+            | "parent"
+            | "materialwart"
+            | "guest"
+            | null;
           image_consent: boolean | null;
           created_at: string | null;
+          membership_number: string | null;
+          is_parent: boolean;
+          requires_parental_approval: boolean;
+          parental_approval_by: string | null;
+          parental_approval_at: string | null;
+          is_activated: boolean;
+          activated: boolean;
         };
         Insert: {
           id: string;
@@ -424,9 +467,17 @@ export interface Database {
             | "admin"
             | "parent"
             | "materialwart"
+            | "guest"
             | null;
           image_consent?: boolean | null;
           created_at?: string | null;
+          membership_number?: string | null;
+          is_parent?: boolean;
+          requires_parental_approval?: boolean;
+          parental_approval_by?: string | null;
+          parental_approval_at?: string | null;
+          is_activated?: boolean;
+          activated?: boolean;
         };
         Update: {
           id?: string;
@@ -441,9 +492,17 @@ export interface Database {
             | "admin"
             | "parent"
             | "materialwart"
+            | "guest"
             | null;
           image_consent?: boolean | null;
           created_at?: string | null;
+          membership_number?: string | null;
+          is_parent?: boolean;
+          requires_parental_approval?: boolean;
+          parental_approval_by?: string | null;
+          parental_approval_at?: string | null;
+          is_activated?: boolean;
+          activated?: boolean;
         };
       };
       push_subscriptions: {
@@ -775,6 +834,80 @@ export interface Database {
           created_at?: string | null;
           min_age?: number | null;
           group?: string | null;
+        };
+      };
+      section_members: {
+        Row: {
+          membership_number: string;
+          family_number: string | null;
+          household_number: string | null;
+          salutation: string | null;
+          first_name: string;
+          last_name: string;
+          birthdate: string;
+          email: string | null;
+          phone_mobile: string | null;
+          zip_city: string | null;
+          iban_masked: string | null;
+          bank_name: string | null;
+          membership_category_code: string;
+          membership_category: "A" | "B" | "C" | "D" | "J" | "K";
+          section_number: string | null;
+          stammsektion: string | null;
+          gastsektion: string | null;
+          is_active: boolean;
+          source_row_hash: string | null;
+          imported_at: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          membership_number: string;
+          family_number?: string | null;
+          household_number?: string | null;
+          salutation?: string | null;
+          first_name: string;
+          last_name: string;
+          birthdate: string;
+          email?: string | null;
+          phone_mobile?: string | null;
+          zip_city?: string | null;
+          iban_masked?: string | null;
+          bank_name?: string | null;
+          membership_category_code: string;
+          membership_category?: "A" | "B" | "C" | "D" | "J" | "K";
+          section_number?: string | null;
+          stammsektion?: string | null;
+          gastsektion?: string | null;
+          is_active?: boolean;
+          source_row_hash?: string | null;
+          imported_at?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          membership_number?: string;
+          family_number?: string | null;
+          household_number?: string | null;
+          salutation?: string | null;
+          first_name?: string;
+          last_name?: string;
+          birthdate?: string;
+          email?: string | null;
+          phone_mobile?: string | null;
+          zip_city?: string | null;
+          iban_masked?: string | null;
+          bank_name?: string | null;
+          membership_category_code?: string;
+          membership_category?: "A" | "B" | "C" | "D" | "J" | "K";
+          section_number?: string | null;
+          stammsektion?: string | null;
+          gastsektion?: string | null;
+          is_active?: boolean;
+          source_row_hash?: string | null;
+          imported_at?: string;
+          created_at?: string;
+          updated_at?: string;
         };
       };
     };

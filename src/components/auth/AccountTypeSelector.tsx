@@ -2,14 +2,16 @@ import { User, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AccountTypeSelectorProps {
-  isParent: boolean;
-  onSelectParent: (isParent: boolean) => void;
+  mode: "member" | "guest";
+  onSelectMode: (mode: "member" | "guest") => void;
 }
 
 export function AccountTypeSelector({
-  isParent,
-  onSelectParent,
+  mode,
+  onSelectMode,
 }: AccountTypeSelectorProps) {
+  const isMember = mode === "member";
+
   return (
     <fieldset>
       <legend className="block mb-3 text-sm font-semibold text-slate-900">
@@ -18,10 +20,10 @@ export function AccountTypeSelector({
       <div className="grid grid-cols-2 gap-3">
         <button
           type="button"
-          onClick={() => onSelectParent(false)}
+          onClick={() => onSelectMode("member")}
           className={cn(
-            "relative p-4 rounded-2xl border-2 transition-shadow duration-200 hover:shadow-md",
-            !isParent
+            "relative p-4 rounded-2xl border-2 transition-shadow duration-200 hover:shadow-md text-left",
+            isMember
               ? "border-jdav-green bg-green-50 shadow-md shadow-green-200"
               : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm",
           )}
@@ -30,7 +32,7 @@ export function AccountTypeSelector({
             <div
               className={cn(
                 "p-2 rounded-xl transition-colors duration-200",
-                !isParent
+                isMember
                   ? "bg-jdav-green text-white"
                   : "bg-slate-100 text-slate-600",
               )}
@@ -39,14 +41,14 @@ export function AccountTypeSelector({
             </div>
             <div>
               <p className="text-sm font-semibold text-slate-900">
-                Mitglied aktivieren
+                Sektionsmitglied
               </p>
               <p className="text-xs text-slate-600">
-                Mit Mitgliedsnummer und Geburtsdatum
+                DAV Pfarrkirchen (mit Mitgliedsnummer)
               </p>
             </div>
           </div>
-          {!isParent && (
+          {isMember && (
             <div className="absolute top-2 right-2 w-5 h-5 bg-jdav-green rounded-full flex items-center justify-center">
               <div className="w-2 h-2 bg-white rounded-full" />
             </div>
@@ -55,10 +57,10 @@ export function AccountTypeSelector({
 
         <button
           type="button"
-          onClick={() => onSelectParent(true)}
+          onClick={() => onSelectMode("guest")}
           className={cn(
-            "relative p-4 rounded-2xl border-2 transition-shadow duration-200 hover:shadow-md",
-            isParent
+            "relative p-4 rounded-2xl border-2 transition-shadow duration-200 hover:shadow-md text-left",
+            !isMember
               ? "border-jdav-green bg-green-50 shadow-md shadow-green-200"
               : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm",
           )}
@@ -67,7 +69,7 @@ export function AccountTypeSelector({
             <div
               className={cn(
                 "p-2 rounded-xl transition-colors duration-200",
-                isParent
+                !isMember
                   ? "bg-jdav-green text-white"
                   : "bg-slate-100 text-slate-600",
               )}
@@ -76,14 +78,14 @@ export function AccountTypeSelector({
             </div>
             <div>
               <p className="text-sm font-semibold text-slate-900">
-                Familienzugang
+                Gast / Eltern
               </p>
               <p className="text-xs text-slate-600">
-                Für Eltern und Familienverwaltung
+                Ohne Mitgliedsnummer anmelden
               </p>
             </div>
           </div>
-          {isParent && (
+          {!isMember && (
             <div className="absolute top-2 right-2 w-5 h-5 bg-jdav-green rounded-full flex items-center justify-center">
               <div className="w-2 h-2 bg-white rounded-full" />
             </div>

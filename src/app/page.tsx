@@ -158,7 +158,7 @@ function normalizeTourCard(tour: RawTourCardItem | null): TourCardItem | null {
  * recent club news, and the latest tour reports.
  */
 export default async function Home() {
-  const [{ fullName, role, user }, supabase] = await Promise.all([
+  const [{ fullName, isParent, user }, supabase] = await Promise.all([
     getCurrentUserProfile(),
     createClient(),
   ]);
@@ -176,7 +176,7 @@ export default async function Home() {
     recentReportsResult,
     recentNewsResult,
   ] = await Promise.all([
-    loadNextConfirmedRegistration(supabase, user.id, role === "parent"),
+    loadNextConfirmedRegistration(supabase, user.id, isParent),
     supabase
       .from("tours")
       .select(TOUR_CARD_SELECT)

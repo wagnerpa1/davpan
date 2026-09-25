@@ -1,20 +1,20 @@
 "use client";
 
-import { CheckCircle2, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import type { ChangeEvent, FormEvent } from "react";
 import { useMemo, useState } from "react";
-import { AccountTypeSelector } from "@/components/auth/AccountTypeSelector";
-import { Button } from "@/components/ui/button";
-import { getAuthCallbackUrl } from "@/lib/auth-client";
 import {
-  getPasswordStrength,
-  MIN_PASSWORD_LENGTH,
-  validatePassword,
-} from "@/lib/password-rules";
+  registerGuestAccount,
+  registerMemberAccount,
+} from "@/app/actions/auth-registration";
+import { AccountTypeSelector } from "@/components/auth/AccountTypeSelector";
+import { GuestRegisterFields } from "@/components/auth/GuestRegisterFields";
+import { MemberRegisterFields } from "@/components/auth/MemberRegisterFields";
+import { RegisterPasswordInput } from "@/components/auth/RegisterPasswordInput";
+import { RegisterSuccessView } from "@/components/auth/RegisterSuccessView";
+import { Button } from "@/components/ui/button";
+import { getPasswordStrength, validatePassword } from "@/lib/password-rules";
 import { cn } from "@/lib/utils";
-import { createClient } from "@/utils/supabase/client";
 
 function formatMembershipNumber(input: string) {
   const digitsOnly = input.replace(/\D/g, "");
@@ -33,21 +33,21 @@ function handleInputChange(setter: (value: string) => void) {
 }
 
 export function RegisterForm({ className }: { className?: string }) {
-  const [supabase] = useState(() => createClient());
-  const router = useRouter();
-
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [requiresParentalApproval, setRequiresParentalApproval] =
+    useState(false);
+
+  // Registration Mode: "member" (Flow A) or "guest" (Flow B)
+  const [mode, setMode] = useState<"member" | "guest">("member");
 
   // Form State
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState("");
   const [birthdate, setBirthdate] = useState("");
   const [membershipNumber, setMembershipNumber] = useState("");
-  const [isParent, setIsParent] = useState(false);
 
   const passwordStrength = useMemo(
     () => getPasswordStrength(password),
@@ -64,12 +64,6 @@ export function RegisterForm({ className }: { className?: string }) {
     setIsLoading(true);
     setError(null);
 
-    if (membershipNumber.replace(/-/g, "").length !== 11) {
-      setError("Mitgliedsnummer muss 11 Ziffern haben (Format: 209-00-001234)");
-      setIsLoading(false);
-      return;
-    }
-
     const passwordValidation = validatePassword(password);
     if (!passwordValidation.valid) {
       setError(passwordValidation.errors[0]);
@@ -78,27 +72,59 @@ export function RegisterForm({ className }: { className?: string }) {
     }
 
     try {
-      const finalData = {
-        full_name: name,
-        role: isParent ? "parent" : "member",
-        birthdate: birthdate || null,
-        membership_number: membershipNumber.replace(/-/g, ""),
-      };
+      if (mode === "member") {
+        if (membershipNumber.replace(/-/g, "").length !== 11) {
+          setError(
+            "Mitgliedsnummer muss 11 Ziffern haben (Format: 209-00-001234)",
+          );
+          setIsLoading(false);
+          return;
+        }
 
-      const { error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: finalData,
-          emailRedirectTo: getAuthCallbackUrl(),
-        },
-      });
+        if (!birthdate) {
+          setError("Bitte gib dein Geburtsdatum an.");
+          setIsLoading(false);
+          return;
+        }
 
-      if (signUpError) {
-        throw signUpError;
+        const res = await registerMemberAccount({
+          membershipNumber,
+          birthdate,
+          email,
+          password,
+        });
+
+        if (!res.success) {
+          setError(res.error?.message || "Fehler bei der Registrierung.");
+          return;
+        }
+
+        setRequiresParentalApproval(
+          Boolean(res.data?.requiresParentalApproval),
+        );
+        setIsSuccess(true);
+      } else {
+        if (!name.trim()) {
+          setError("Bitte gib deinen vollständigen Namen an.");
+          setIsLoading(false);
+          return;
+        }
+
+        const res = await registerGuestAccount({
+          fullName: name,
+          birthdate: birthdate || null,
+          email,
+          password,
+        });
+
+        if (!res.success) {
+          setError(res.error?.message || "Fehler bei der Registrierung.");
+          return;
+        }
+
+        setRequiresParentalApproval(false);
+        setIsSuccess(true);
       }
-
-      setIsSuccess(true);
     } catch (err: unknown) {
       setError(
         err instanceof Error ? err.message : "Fehler bei der Registrierung.",
@@ -110,31 +136,11 @@ export function RegisterForm({ className }: { className?: string }) {
 
   if (isSuccess) {
     return (
-      <div
-        className={cn(
-          "flex flex-col items-center justify-center space-y-4 text-center py-6",
-          className,
-        )}
-      >
-        <div className="rounded-full bg-green-100 p-3 text-jdav-green">
-          <CheckCircle2 className="h-10 w-10" />
-        </div>
-        <h3 className="text-xl font-bold text-slate-900">
-          Registrierung erfolgreich!
-        </h3>
-        <p className="text-sm text-slate-600">
-          Wir haben dir einen Bestätigungslink an <strong>{email}</strong>{" "}
-          gesendet. Bitte überprüfe dein Postfach und bestätige deine
-          E-Mail-Adresse, um fortzufahren.
-        </p>
-        <Button
-          variant="outline"
-          className="mt-4"
-          onClick={() => router.push("/login")}
-        >
-          Zurück zum Login
-        </Button>
-      </div>
+      <RegisterSuccessView
+        email={email}
+        requiresParentalApproval={requiresParentalApproval}
+        className={className}
+      />
     );
   }
 
@@ -147,66 +153,23 @@ export function RegisterForm({ className }: { className?: string }) {
           </div>
         )}
 
-        <AccountTypeSelector isParent={isParent} onSelectParent={setIsParent} />
+        <AccountTypeSelector mode={mode} onSelectMode={setMode} />
 
-        <div>
-          <label
-            htmlFor="register-name"
-            className="block text-sm font-medium text-slate-700"
-          >
-            Name (Vor- und Nachname)
-          </label>
-          <input
-            id="register-name"
-            type="text"
-            required
-            value={name}
-            onChange={handleInputChange(setName)}
-            className="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
+        {mode === "member" ? (
+          <MemberRegisterFields
+            membershipNumber={membershipNumber}
+            birthdate={birthdate}
+            onMembershipChange={handleMembershipChange}
+            onBirthdateChange={handleInputChange(setBirthdate)}
           />
-        </div>
-
-        <div>
-          <label
-            htmlFor="register-membership"
-            className="block text-sm font-medium text-slate-700"
-          >
-            Mitgliedsnummer
-            <span className="text-xs text-slate-500">
-              (Sektionsmitglied oder Familienzugang)
-            </span>
-          </label>
-          <input
-            id="register-membership"
-            type="text"
-            placeholder="209-00-001234"
-            required
-            value={membershipNumber}
-            onChange={handleMembershipChange}
-            maxLength={14}
-            className="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-2 text-sm font-mono shadow-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
+        ) : (
+          <GuestRegisterFields
+            name={name}
+            birthdate={birthdate}
+            onNameChange={handleInputChange(setName)}
+            onBirthdateChange={handleInputChange(setBirthdate)}
           />
-          <p className="mt-1 text-xs text-slate-500">
-            Format: 3-stellig - 2-stellig - 6-stellig (z.B. 209-00-001234)
-          </p>
-        </div>
-
-        <div>
-          <label
-            htmlFor="register-birthdate"
-            className="block text-sm font-medium text-slate-700"
-          >
-            Geburtsdatum
-          </label>
-          <input
-            id="register-birthdate"
-            type="date"
-            required
-            value={birthdate}
-            onChange={handleInputChange(setBirthdate)}
-            className="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
-          />
-        </div>
+        )}
 
         <div>
           <label
@@ -225,81 +188,11 @@ export function RegisterForm({ className }: { className?: string }) {
           />
         </div>
 
-        <div>
-          <div className="flex items-center justify-between">
-            <label
-              htmlFor="register-password"
-              className="block text-sm font-medium text-slate-700"
-            >
-              Passwort
-            </label>
-            {password.length > 0 && (
-              <span className="text-xs font-medium text-slate-500">
-                Stärke:{" "}
-                <span
-                  className={cn(
-                    "font-semibold",
-                    passwordStrength.score >= 3
-                      ? "text-green-600"
-                      : passwordStrength.score === 2
-                        ? "text-amber-600"
-                        : "text-red-500",
-                  )}
-                >
-                  {passwordStrength.label}
-                </span>
-              </span>
-            )}
-          </div>
-
-          <div className="relative mt-1">
-            <input
-              id="register-password"
-              type={showPassword ? "text" : "password"}
-              required
-              minLength={MIN_PASSWORD_LENGTH}
-              value={password}
-              onChange={handleInputChange(setPassword)}
-              className="block w-full rounded-xl border border-slate-300 pr-10 px-3 py-2 text-sm shadow-sm focus:border-jdav-green focus:outline-none focus:ring-1 focus:ring-jdav-green"
-              placeholder="Mindestens 8 Zeichen"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 focus:outline-none"
-              aria-label={
-                showPassword ? "Passwort verbergen" : "Passwort anzeigen"
-              }
-            >
-              {showPassword ? (
-                <EyeOff className="h-4 w-4" />
-              ) : (
-                <Eye className="h-4 w-4" />
-              )}
-            </button>
-          </div>
-
-          {password.length > 0 && (
-            <div className="mt-2 grid grid-cols-4 gap-1">
-              {[1, 2, 3, 4].map((step) => (
-                <div
-                  key={step}
-                  className={cn(
-                    "h-1 rounded-full transition-colors",
-                    passwordStrength.score >= step
-                      ? passwordStrength.colorClass
-                      : "bg-slate-200",
-                  )}
-                />
-              ))}
-            </div>
-          )}
-
-          <p className="mt-1 text-xs text-slate-500">
-            Mindestens {MIN_PASSWORD_LENGTH} Zeichen, mind. 1 Buchstabe und 1
-            Ziffer oder Sonderzeichen.
-          </p>
-        </div>
+        <RegisterPasswordInput
+          value={password}
+          onChange={handleInputChange(setPassword)}
+          passwordStrength={passwordStrength}
+        />
 
         <Button
           type="submit"

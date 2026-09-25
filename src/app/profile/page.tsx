@@ -1,9 +1,7 @@
 import { redirect } from "next/navigation";
-import {
-  CreateChildInviteAction,
-  RedeemChildInvitePopup,
-} from "@/components/profile/ChildInviteCards";
+import { ApproveYouthButton } from "@/components/profile/ApproveYouthButton";
 import { DeleteAccountButton } from "@/components/profile/DeleteAccountButton";
+import { LinkChildModal } from "@/components/profile/LinkChildModal";
 import {
   type NotificationPreference,
   NotificationPreferencesPanel,
@@ -12,7 +10,7 @@ import {
 import { AnimatedSubmitButton } from "@/components/ui/AnimatedSubmitButton";
 import { AsyncForm } from "@/components/ui/AsyncForm";
 import { TextareaWithCounter } from "@/components/ui/TextareaWithCounter";
-import { getRoleDisplayName, isParentRole } from "@/lib/permissions";
+import { getRoleDisplayName } from "@/lib/permissions";
 import { createClient } from "@/utils/supabase/server";
 
 interface ChildProfile {
@@ -21,6 +19,10 @@ interface ChildProfile {
   birthdate: string;
   medical_notes: string | null;
   image_consent: boolean | null;
+  membership_number?: string | null;
+  user_id?: string | null;
+  is_active?: boolean;
+  requires_approval?: boolean;
 }
 
 interface ChildNotificationPreferenceItem {
@@ -48,13 +50,56 @@ async function loadChildrenForParent(
   supabase: Awaited<ReturnType<typeof createClient>>,
   parentId: string,
 ) {
-  const { data } = await supabase
-    .from("child_profiles")
-    .select("id, full_name, birthdate, medical_notes, image_consent")
-    .eq("parent_id", parentId)
-    .order("full_name");
+  const { data: relations } = await supabase
+    .from("parent_child_relations")
+    .select("child_id")
+    .eq("parent_id", parentId);
 
-  return ((data || []) as ChildProfile[]).map(mapChildProfileRow);
+  const relatedChildIds = (relations || []).map((r) => r.child_id);
+
+  let query = supabase
+    .from("child_profiles")
+    .select(
+      "id, full_name, birthdate, medical_notes, image_consent, membership_number, user_id, is_active",
+    );
+
+  if (relatedChildIds.length > 0) {
+    query = query.or(
+      `parent_id.eq.${parentId},id.in.(${relatedChildIds.join(",")})`,
+    );
+  } else {
+    query = query.eq("parent_id", parentId);
+  }
+
+  const { data: childrenData } = await query.order("full_name");
+  const children = ((childrenData || []) as ChildProfile[]).map(
+    mapChildProfileRow,
+  );
+
+  const youthUserIds = children
+    .map((c) => c.user_id)
+    .filter((id): id is string => Boolean(id));
+
+  if (youthUserIds.length > 0) {
+    const { data: youthProfiles } = await supabase
+      .from("profiles")
+      .select("id, requires_parental_approval")
+      .in("id", youthUserIds);
+
+    const approvalRequiredSet = new Set(
+      (youthProfiles || [])
+        .filter((p) => p.requires_parental_approval === true)
+        .map((p) => p.id),
+    );
+
+    for (const child of children) {
+      if (child.user_id && approvalRequiredSet.has(child.user_id)) {
+        child.requires_approval = true;
+      }
+    }
+  }
+
+  return children;
 }
 
 function buildChildNotificationPreferences(
@@ -411,7 +456,21 @@ function ChildProfileCard({ child }: { child: ChildProfile }) {
               </AnimatedSubmitButton>
             </div>
           </AsyncForm>
-          <CreateChildInviteAction childId={child.id} />
+          {child.requires_approval && child.user_id && (
+            <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold text-amber-900">
+                  Tourenfreigabe für Jugendkonto erforderlich
+                </p>
+                <p className="text-xs text-amber-700">
+                  Dieses Kind hat ein eigenes Jugendkonto (16–17 Jahre)
+                  registriert und benötigt deine elterliche Freigabe für
+                  Tourenanmeldungen.
+                </p>
+              </div>
+              <ApproveYouthButton youthUserId={child.user_id} />
+            </div>
+          )}
         </div>
       </details>
     </div>
@@ -425,11 +484,14 @@ function ParentChildrenSection({
 }) {
   return (
     <div className="mt-6 flex flex-col gap-3 rounded-card border border-slate-200 bg-white p-6 shadow-sm">
-      <div>
-        <h2 className="text-xl font-semibold">Meine Kinder</h2>
-        <p className="text-sm text-slate-500">
-          Verwalte die Profile deiner Kinder, um sie für Touren anzumelden.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-semibold">Meine Kinder</h2>
+          <p className="text-sm text-slate-500">
+            Verwalte die Profile deiner Kinder, um sie für Touren anzumelden.
+          </p>
+        </div>
+        <LinkChildModal />
       </div>
 
       {childProfiles.length > 0 ? (
@@ -440,20 +502,9 @@ function ParentChildrenSection({
         </div>
       ) : (
         <div className="rounded-card border border-dashed border-slate-300 p-3 text-center text-sm text-slate-500">
-          Du hast noch keine Kinderprofile angelegt.
+          Du hast noch keine Kinderprofile angelegt oder verknüpft.
         </div>
       )}
-
-      <div className="mt-6 space-y-2">
-        <h3 className="text-lg font-bold text-slate-900">
-          Kind per Einladungscode hinzufügen
-        </h3>
-        <p className="text-sm text-slate-500">
-          Wenn ein anderer Elternteil das Kind bereits angelegt hat, kannst du
-          es hier per Code verknüpfen.
-        </p>
-        <RedeemChildInvitePopup />
-      </div>
 
       <div className="mt-6 border-t border-slate-100 pt-8">
         <h3 className="mb-4 text-lg font-bold text-slate-900">
@@ -584,30 +635,26 @@ export default async function ProfilePage() {
     return redirect("/login");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
-
-  const children = isParentRole(profile?.role)
-    ? await loadChildrenForParent(supabase, user.id)
-    : [];
-
-  const [{ data: userNotificationPreferences }, { data: tourGroups }] =
-    await Promise.all([
-      supabase
-        .from("notification_preferences")
-        .select(
-          "news_enabled, system_enabled, material_enabled, comments_enabled, group_notifications_enabled, push_enabled, tour_group_ids",
-        )
-        .eq("user_id", user.id)
-        .maybeSingle(),
-      supabase
-        .from("tour_groups")
-        .select("id, group_name")
-        .order("group_name", { ascending: true }),
-    ]);
+  const [
+    { data: profile },
+    children,
+    { data: userNotificationPreferences },
+    { data: tourGroups },
+  ] = await Promise.all([
+    supabase.from("profiles").select("*").eq("id", user.id).single(),
+    loadChildrenForParent(supabase, user.id),
+    supabase
+      .from("notification_preferences")
+      .select(
+        "news_enabled, system_enabled, material_enabled, comments_enabled, group_notifications_enabled, push_enabled, tour_group_ids",
+      )
+      .eq("user_id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("tour_groups")
+      .select("id, group_name")
+      .order("group_name", { ascending: true }),
+  ]);
 
   const ownPreferences: NotificationPreference = {
     ...DEFAULT_NOTIFICATION_PREFERENCES,
@@ -660,9 +707,7 @@ export default async function ProfilePage() {
         childPreferences={childNotificationPreferences}
       />
 
-      {profile?.role === "parent" && (
-        <ParentChildrenSection childProfiles={children} />
-      )}
+      <ParentChildrenSection childProfiles={children} />
 
       <AccountDeletionSection />
     </div>
