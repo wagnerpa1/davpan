@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { getCurrentUserProfile } from "@/lib/auth";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
 import { isAdminRole } from "@/lib/permissions";
 import { isSameOriginRequest } from "@/lib/security";
@@ -8,22 +9,13 @@ import { getServerURL } from "@/utils/url-helpers";
 async function requireAdmin() {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+  const { user, role } = await getCurrentUserProfile();
 
-  if (userError || !user) {
+  if (!user) {
     return { supabase, user: null, error: "Unauthorized", status: 401 };
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (!isAdminRole(profile?.role)) {
+  if (!isAdminRole(role)) {
     return { supabase, user: null, error: "Forbidden", status: 403 };
   }
 

@@ -915,7 +915,19 @@ export interface Database {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      book_resource_standalone_atomic: {
+        Args: {
+          p_resource_id: string;
+          p_start_date: string;
+          p_end_date: string;
+          p_reason: string;
+        };
+        Returns: Json;
+      };
+      delete_material_type_atomic: {
+        Args: { p_type_id: string };
+        Returns: undefined;
+      };
     };
     Enums: {
       [_ in never]: never;

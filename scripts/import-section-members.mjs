@@ -12,14 +12,14 @@ function parseJsonRows(input) {
   return parsed;
 }
 
-function splitCsvLine(line) {
+function parseCsvRows(input) {
   const cells = [];
   let current = "";
   let inQuotes = false;
 
-  for (let index = 0; index < line.length; index += 1) {
-    const char = line[index];
-    const nextChar = line[index + 1];
+  for (let index = 0; index < input.length; index += 1) {
+    const char = input[index];
+    const nextChar = input[index + 1];
 
     if (char === '"' && inQuotes && nextChar === '"') {
       current += '"';
@@ -38,32 +38,36 @@ function splitCsvLine(line) {
       continue;
     }
 
+    if ((char === "\n" || char === "\r") && !inQuotes) {
+      if (char === "\r" && nextChar === "\n") index += 1;
+      cells.push(current);
+      current = "";
+      cells.push(null);
+      continue;
+    }
+
     current += char;
   }
 
   cells.push(current);
-  return cells.map((cell) => cell.trim());
-}
-
-function parseCsvRows(input) {
-  const lines = input
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-
-  if (lines.length === 0) {
-    return [];
+  const rows = [];
+  let row = [];
+  for (const cell of cells) {
+    if (cell === null) {
+      if (row.some((value) => value.trim() !== "")) rows.push(row);
+      row = [];
+    } else {
+      row.push(cell.trim());
+    }
   }
-
-  const headers = splitCsvLine(lines[0]);
-
-  return lines.slice(1).map((line) => {
-    const values = splitCsvLine(line);
-    return headers.reduce((row, header, index) => {
-      row[header] = values[index] ?? "";
-      return row;
-    }, {});
-  });
+  if (row.some((value) => value.trim() !== "")) rows.push(row);
+  const [headers, ...dataRows] = rows;
+  return dataRows.map((values) =>
+    headers.reduce((record, header, index) => {
+      record[header] = values[index] ?? "";
+      return record;
+    }, {}),
+  );
 }
 
 function normalizeRow(row) {
@@ -140,7 +144,7 @@ async function main() {
     },
   });
 
-  for (const row of rows) {
+  const normalizedRows = rows.map((row) => {
     const normalized = normalizeRow(row);
     const membershipCategoryCode = buildCategoryCode(row);
 
@@ -154,34 +158,13 @@ async function main() {
     ) {
       throw new Error(`Invalid member row: ${JSON.stringify(row)}`);
     }
+    return { ...normalized, membership_category_code: membershipCategoryCode };
+  });
 
-    const { error } = await supabase.rpc("import_section_member_row", {
-      p_membership_number: normalized.membership_number,
-      p_family_number: normalized.family_number,
-      p_household_number: normalized.household_number,
-      p_salutation: normalized.salutation,
-      p_first_name: normalized.first_name,
-      p_last_name: normalized.last_name,
-      p_birthdate: normalized.birthdate,
-      p_email: normalized.email,
-      p_phone_mobile: normalized.phone_mobile,
-      p_zip_city: normalized.zip_city,
-      p_iban: normalized.iban,
-      p_bank_name: normalized.bank_name,
-      p_membership_category_code: membershipCategoryCode,
-      p_section_number: normalized.section_number,
-      p_stammsektion: normalized.stammsektion,
-      p_gastsektion: normalized.gastsektion,
-      p_is_active: normalized.is_active,
-      p_source_row_hash: normalized.source_row_hash,
-    });
-
-    if (error) {
-      throw new Error(
-        `Import failed for ${normalized.membership_number}: ${error.message}`,
-      );
-    }
-  }
+  const { error } = await supabase.rpc("import_section_member_rows", {
+    p_rows: normalizedRows,
+  });
+  if (error) throw new Error(`Import failed: ${error.message}`);
 
   console.log(`Imported ${rows.length} member rows.`);
 }

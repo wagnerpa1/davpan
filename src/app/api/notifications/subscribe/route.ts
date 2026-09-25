@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { isSameOriginRequest } from "@/lib/security";
 import { createClient } from "@/utils/supabase/server";
 
 interface SubscriptionBody {
@@ -8,6 +9,13 @@ interface SubscriptionBody {
 }
 
 export async function POST(req: NextRequest) {
+  if (!isSameOriginRequest(req)) {
+    return NextResponse.json(
+      { error: "CSRF validation failed" },
+      { status: 403 },
+    );
+  }
+
   try {
     const supabase = await createClient();
 

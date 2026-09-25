@@ -202,22 +202,10 @@ $$;
 DROP FUNCTION IF EXISTS public.redeem_child_invite(uuid, date, timestamp with time zone);
 DROP TABLE IF EXISTS public.child_profile_invites CASCADE;
 
--- 9. Migrate existing static 'parent' roles to 'member' or 'guest' and backfill is_parent
-UPDATE public.profiles
-SET role = CASE
-  WHEN membership_number IS NOT NULL AND membership_number <> '' THEN 'member'::public.user_role
-  ELSE 'guest'::public.user_role
-END
-WHERE role = 'parent'::public.user_role;
-
-DO $$
-DECLARE
-  r record;
-BEGIN
-  FOR r IN SELECT id FROM public.profiles LOOP
-    PERFORM public.recalculate_user_parent_status(r.id);
-  END LOOP;
-END$$;
+-- 9. Role backfill ('parent' → 'member'/'guest') and is_parent recalculation are in
+--    20260923130001_backfill_guest_role.sql — they must run in a separate transaction
+--    because PostgreSQL (SQLSTATE 55P04) does not allow referencing a newly-added enum
+--    value in the same transaction where ALTER TYPE … ADD VALUE executed.
 
 -- 10. Execution grants
 GRANT EXECUTE ON FUNCTION public.recalculate_user_parent_status(uuid) TO authenticated, service_role;

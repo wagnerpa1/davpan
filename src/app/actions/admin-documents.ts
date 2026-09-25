@@ -1,23 +1,17 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getCurrentUserProfile } from "@/lib/auth";
 import { isAdminRole } from "@/lib/permissions";
 import { createClient } from "@/utils/supabase/server";
 
 export async function uploadDocument(formData: FormData) {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, role } = await getCurrentUserProfile();
   if (!user) return { error: "Nicht eingeloggt." };
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-  if (!isAdminRole(profile?.role)) {
+  if (!isAdminRole(role)) {
     return { error: "Keine Berechtigung (nur Admin)." };
   }
 
@@ -72,17 +66,10 @@ export async function uploadDocument(formData: FormData) {
 export async function deleteDocument(id: string, fileUrl: string) {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, role } = await getCurrentUserProfile();
   if (!user) return { error: "Nicht eingeloggt." };
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-  if (!isAdminRole(profile?.role)) {
+  if (!isAdminRole(role)) {
     return { error: "Keine Berechtigung (nur Admin)." };
   }
 
