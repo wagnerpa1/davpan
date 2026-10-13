@@ -21,6 +21,15 @@ describe("Age-Out Automation and Child History Continuity", () => {
   });
 
   describe("Cron Route: /api/cron/age-out", () => {
+    it("returns 401 when CRON_SECRET is not configured", async () => {
+      const req = new NextRequest("http://localhost:3000/api/cron/age-out");
+
+      const response = await GET(req);
+
+      expect(response.status).toBe(401);
+      expect(createAdminClientMock).not.toHaveBeenCalled();
+    });
+
     it("returns 401 when CRON_SECRET is set and authorization header is invalid", async () => {
       process.env.CRON_SECRET = "super-secret-token";
 
@@ -61,6 +70,8 @@ describe("Age-Out Automation and Child History Continuity", () => {
     });
 
     it("returns 500 when RPC returns error", async () => {
+      process.env.CRON_SECRET = "super-secret-token";
+
       const mockSupabase = {
         rpc: vi.fn().mockResolvedValue({
           data: null,
@@ -71,7 +82,9 @@ describe("Age-Out Automation and Child History Continuity", () => {
         mockSupabase as unknown as ReturnType<typeof createAdminClient>,
       );
 
-      const req = new NextRequest("http://localhost:3000/api/cron/age-out");
+      const req = new NextRequest("http://localhost:3000/api/cron/age-out", {
+        headers: { authorization: "Bearer super-secret-token" },
+      });
 
       const response = await GET(req);
       expect(response.status).toBe(500);
