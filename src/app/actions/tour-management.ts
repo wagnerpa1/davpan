@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { cache } from "react";
+import type { ActionState } from "@/lib/action-runner";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
 import { notifyTourOpenForSubscribers } from "@/lib/notifications/targets";
 import { isAdminRole, isGuideRole } from "@/lib/permissions";
@@ -319,6 +320,188 @@ export async function createTour(formData: FormData) {
 
   revalidatePath("/touren");
   redirect(`/touren/${tour.id}`);
+}
+
+/** Action-state compatible variant for the new-tour client form. */
+export async function createTourAction(
+  _prev: ActionState<{ tourId: string; title: string }>,
+  formData: FormData,
+): Promise<ActionState<{ tourId: string; title: string }>> {
+  const supabase = await createClient();
+
+  const normalizeOptional = (value: FormDataEntryValue | null) => {
+    const raw = value?.toString().trim();
+    return raw ? raw : null;
+  };
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return {
+      success: false,
+      error: {
+        code: "unauthorized",
+        message: "Nicht eingeloggt.",
+        retryable: false,
+      },
+    };
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile || (!isGuideRole(profile.role) && !isAdminRole(profile.role))) {
+    return {
+      success: false,
+      error: {
+        code: "unauthorized",
+        message: "Keine Berechtigung.",
+        retryable: false,
+      },
+    };
+  }
+
+  const title = normalizeOptional(formData.get("title"));
+  const description = normalizeOptional(formData.get("description"));
+  const category = normalizeOptional(formData.get("category"));
+  const group = normalizeOptional(formData.get("group"));
+  const target_area = normalizeOptional(formData.get("target_area"));
+  const start_date = normalizeOptional(formData.get("start_date"));
+  const end_date = normalizeOptional(formData.get("end_date")) || start_date;
+  const registration_deadline = normalizeOptional(
+    formData.get("registration_deadline"),
+  );
+  const meeting_point = normalizeOptional(formData.get("meeting_point"));
+  const meeting_time = normalizeOptional(formData.get("meeting_time"));
+  const difficulty = normalizeOptional(formData.get("difficulty"));
+  const elevation = parseInt(formData.get("elevation")?.toString() || "0", 10);
+  const distance = parseFloat(formData.get("distance")?.toString() || "0");
+  const duration_hours = parseFloat(
+    formData.get("duration_hours")?.toString() || "0",
+  );
+  const max_participants_raw = formData.get("max_participants")?.toString();
+  const max_participants = max_participants_raw
+    ? parseInt(max_participants_raw, 10) || null
+    : null;
+  const min_age_raw = formData.get("min_age")?.toString();
+  const min_age = min_age_raw ? parseInt(min_age_raw, 10) || null : null;
+  const cost_info = normalizeOptional(formData.get("cost_info"));
+  const requirements = normalizeOptional(formData.get("requirements"));
+  const statusRaw = normalizeOptional(formData.get("status"));
+  const status: "planning" | "open" | "full" | "completed" | "cancelled" = [
+    "planning",
+    "open",
+    "full",
+    "completed",
+    "cancelled",
+  ].includes(statusRaw || "")
+    ? (statusRaw as "planning" | "open" | "full" | "completed" | "cancelled")
+    : "planning";
+
+  if (!title || !start_date) {
+    return {
+      success: false,
+      error: {
+        code: "invalid_state",
+        message: "Bitte fülle mindestens Titel und Startdatum aus.",
+        retryable: true,
+      },
+    };
+  }
+
+  const guideIds = formData.getAll("guide_ids") as string[];
+  const materialIds = formData.getAll("material_ids") as string[];
+  const resourceIds = formData.getAll("resource_ids") as string[];
+
+  const { data: tour, error } = await supabase
+    .from("tours")
+    .insert({
+      title,
+      description,
+      category,
+      group,
+      target_area,
+      start_date,
+      end_date,
+      registration_deadline,
+      meeting_point,
+      meeting_time,
+      difficulty: difficulty || null,
+      elevation: elevation || null,
+      distance: distance || null,
+      duration_hours: duration_hours || null,
+      max_participants: max_participants || null,
+      min_age: min_age || null,
+      cost_info,
+      requirements,
+      status,
+      created_by: user.id,
+    })
+    .select()
+    .single();
+
+  if (error || !tour) {
+    console.error("Error creating tour:", error);
+    return {
+      success: false,
+      error: {
+        code: "unknown_error",
+        message:
+          "Die Tour konnte nicht gespeichert werden. Bitte prüfe die Eingaben.",
+        retryable: true,
+      },
+    };
+  }
+
+  if (guideIds.length > 0) {
+    await supabase
+      .from("tour_guides")
+      .insert(guideIds.map((uid) => ({ tour_id: tour.id, user_id: uid })));
+  } else if (isGuideRole(profile.role)) {
+    await supabase
+      .from("tour_guides")
+      .insert({ tour_id: tour.id, user_id: user.id });
+  }
+
+  if (materialIds.length > 0) {
+    await supabase
+      .from("tour_material_requirements")
+      .insert(
+        materialIds.map((mid) => ({ tour_id: tour.id, material_type_id: mid })),
+      );
+  }
+
+  if (resourceIds.length > 0 && start_date) {
+    await Promise.all(
+      resourceIds.map((resId) =>
+        checkAndBookResource(
+          resId,
+          tour.id,
+          start_date,
+          end_date || start_date,
+          user.id,
+        ),
+      ),
+    );
+  }
+
+  if (tour.status === "open" && tour.group) {
+    await notifyTourOpenForSubscribers(supabase, {
+      tourId: tour.id,
+      title: tour.title,
+      groupId: tour.group,
+    });
+  }
+
+  revalidatePath("/touren");
+
+  return { success: true, data: { tourId: tour.id, title: tour.title } };
 }
 
 export async function updateTour(tourId: string, formData: FormData) {

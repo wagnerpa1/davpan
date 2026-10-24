@@ -6,6 +6,7 @@ import {
   dispatchNotification,
   dispatchToUsers,
 } from "@/lib/notifications/dispatcher";
+import { notifyParentOfYouthApprovalNeeded } from "@/lib/notifications/parental-approval-dispatch";
 import {
   notifyTourOpenForSubscribers,
   resolveMaterialManagerUserIds,
@@ -65,6 +66,25 @@ export async function registerForTour(formData: FormData) {
       success: false,
       error: "Anmeldung für diese Tour ist aktuell nicht möglich.",
     };
+  }
+
+  // 1.55 Youth Parental Approval Check
+  if (!childId || childId === "self") {
+    const { data: userProfile } = await supabase
+      .from("profiles")
+      .select("requires_parental_approval, full_name, birthdate")
+      .eq("id", user.id)
+      .single();
+
+    if (userProfile?.requires_parental_approval) {
+      void notifyParentOfYouthApprovalNeeded(supabase, user.id, tour.title);
+
+      return {
+        success: false,
+        error:
+          "Zustimmung der Erziehungsberechtigten erforderlich. Ein Elternteil muss dein Konto über sein Profil für Touren freischalten.",
+      };
+    }
   }
 
   // 1.6 Age Check

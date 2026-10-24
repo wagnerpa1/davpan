@@ -34,7 +34,11 @@ export async function GET() {
   }
 
   const [{ data: profile }, { data: userNotifications }] = await Promise.all([
-    supabase.from("profiles").select("role").eq("id", user.id).single(),
+    supabase
+      .from("profiles")
+      .select("role, is_parent")
+      .eq("id", user.id)
+      .single(),
     supabase
       .from("notifications")
       .select("id, type, title, body, payload, created_at, read_at")
@@ -56,12 +60,30 @@ export async function GET() {
     },
   ];
 
-  if (profile?.role === "parent") {
-    const { data: children } = await supabase
+  if (profile?.is_parent === true || profile?.role === "parent") {
+    const { data: relations } = await supabase
+      .from("parent_child_relations")
+      .select("child_id")
+      .eq("parent_id", user.id);
+
+    const relChildIds = (relations || []).map((r) => r.child_id);
+
+    let query = supabase
       .from("child_profiles")
       .select("id, full_name")
-      .eq("parent_id", user.id)
-      .order("full_name", { ascending: true });
+      .eq("is_active", true);
+
+    if (relChildIds.length > 0) {
+      query = query.or(
+        `parent_id.eq.${user.id},id.in.(${relChildIds.join(",")})`,
+      );
+    } else {
+      query = query.eq("parent_id", user.id);
+    }
+
+    const { data: children } = await query.order("full_name", {
+      ascending: true,
+    });
 
     if (children && children.length > 0) {
       const childIds = children.map((child) => child.id);

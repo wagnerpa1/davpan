@@ -151,18 +151,37 @@ export async function loadTourRegistrationOverview(
   userId: string,
   isParent: boolean,
 ): Promise<TourRegistrationOverview> {
+  // Check for historical child profile claimed by this user
+  const { data: claimedChildRows } = await supabase
+    .from("child_profiles")
+    .select("id")
+    .eq("user_id", userId);
+
+  const claimedChildIds = ((claimedChildRows ?? []) as { id: string }[]).map(
+    (c) => c.id,
+  );
+
+  let selfQuery = supabase
+    .from("tour_participants")
+    .select(TOUR_SELECT)
+    .order("created_at", { ascending: false });
+
+  if (claimedChildIds.length > 0) {
+    selfQuery = selfQuery.or(
+      `and(user_id.eq.${userId},child_profile_id.is.null),child_profile_id.in.(${claimedChildIds.join(",")})`,
+    );
+  } else {
+    selfQuery = selfQuery.eq("user_id", userId).is("child_profile_id", null);
+  }
+
   const [selfResult, childProfilesResult] = await Promise.all([
-    supabase
-      .from("tour_participants")
-      .select(TOUR_SELECT)
-      .eq("user_id", userId)
-      .is("child_profile_id", null)
-      .order("created_at", { ascending: false }),
+    selfQuery,
     isParent
       ? supabase
           .from("child_profiles")
           .select("id, full_name")
           .eq("parent_id", userId)
+          .eq("is_active", true)
           .order("full_name")
       : Promise.resolve({ data: [] as ChildProfileRow[] | null, error: null }),
   ]);
@@ -299,22 +318,43 @@ export async function loadNextConfirmedRegistration(
 ): Promise<UserTourRegistration | null> {
   const today = new Date().toISOString().split("T")[0];
 
+  const { data: claimedChildRows } = await supabase
+    .from("child_profiles")
+    .select("id")
+    .eq("user_id", userId);
+
+  const claimedChildIds = ((claimedChildRows ?? []) as { id: string }[]).map(
+    (c) => c.id,
+  );
+
+  let selfQuery = supabase
+    .from("tour_participants")
+    .select(NEXT_CONFIRMED_SELECT)
+    .eq("status", "confirmed")
+    .gte("tours.end_date", today)
+    .not("tours.status", "in", "(completed,cancelled)")
+    .order("start_date", {
+      ascending: true,
+      referencedTable: "tours",
+    })
+    .limit(1);
+
+  if (claimedChildIds.length > 0) {
+    selfQuery = selfQuery.or(
+      `and(user_id.eq.${userId},child_profile_id.is.null),child_profile_id.in.(${claimedChildIds.join(",")})`,
+    );
+  } else {
+    selfQuery = selfQuery.eq("user_id", userId).is("child_profile_id", null);
+  }
+
   const [selfResult, childProfilesResult] = await Promise.all([
-    supabase
-      .from("tour_participants")
-      .select(NEXT_CONFIRMED_SELECT)
-      .eq("user_id", userId)
-      .eq("status", "confirmed")
-      .is("child_profile_id", null)
-      .gte("tours.end_date", today)
-      .not("tours.status", "in", "(completed,cancelled)")
-      .order("start_date", {
-        ascending: true,
-        referencedTable: "tours",
-      })
-      .limit(1),
+    selfQuery,
     isParent
-      ? supabase.from("child_profiles").select("id").eq("parent_id", userId)
+      ? supabase
+          .from("child_profiles")
+          .select("id")
+          .eq("parent_id", userId)
+          .eq("is_active", true)
       : Promise.resolve({ data: [] as { id: string }[] | null }),
   ]);
 

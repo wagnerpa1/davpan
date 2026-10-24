@@ -1,35 +1,17 @@
-import { AlertTriangle, Mountain } from "lucide-react";
+import { Mountain } from "lucide-react";
 import { redirect } from "next/navigation";
 import { getResources } from "@/app/actions/admin-resources";
 import {
-  createTour,
   getAvailableGuides,
   getAvailableMaterials,
   getTourCategories,
   getTourGroups,
 } from "@/app/actions/tour-management";
-import { TourForm } from "@/components/tours/TourForm";
 import { canCreateTour } from "@/lib/permissions";
 import { createClient } from "@/utils/supabase/server";
+import { NewTourFormClient } from "./NewTourFormClient";
 
-const ERROR_TEXT_MAP: Record<string, string> = {
-  missing_required: "Bitte fülle mindestens Titel und Startdatum aus.",
-  create_failed:
-    "Die Tour konnte nicht gespeichert werden. Bitte prüfe die Eingaben.",
-  forbidden: "Du hast keine Berechtigung, Touren zu erstellen.",
-};
-
-export default async function NewTourPage({
-  searchParams,
-}: {
-  searchParams?: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  const params = searchParams ? await searchParams : undefined;
-  const errorRaw = params?.error;
-  const debugRaw = params?.debug;
-  const error = Array.isArray(errorRaw) ? errorRaw[0] : errorRaw;
-  const debug = Array.isArray(debugRaw) ? debugRaw[0] : debugRaw;
-
+export default async function NewTourPage() {
   const [
     supabase,
     guides,
@@ -55,7 +37,6 @@ export default async function NewTourPage({
     redirect("/login");
   }
 
-  // Check role and get name
   const { data: profile } = await supabase
     .from("profiles")
     .select("id, full_name, role")
@@ -70,10 +51,6 @@ export default async function NewTourPage({
     id: profile.id,
     full_name: profile.full_name,
   };
-
-  const errorMessage = error
-    ? (ERROR_TEXT_MAP[error] ?? "Unbekannter Fehler.")
-    : null;
 
   return (
     <div className="mx-auto max-w-site px-4 py-8">
@@ -91,25 +68,7 @@ export default async function NewTourPage({
         </div>
       </div>
 
-      {errorMessage && (
-        <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-red-800">
-          <div className="flex items-start gap-2">
-            <AlertTriangle className="mt-0.5 h-4 w-4" />
-            <div>
-              <p className="text-sm font-semibold">Speichern fehlgeschlagen</p>
-              <p className="text-sm">{errorMessage}</p>
-              {debug && (
-                <p className="mt-2 text-xs text-red-700">
-                  Technischer Hinweis: {decodeURIComponent(debug)}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      <TourForm
-        onSubmit={createTour}
+      <NewTourFormClient
         guides={guides}
         currentUser={currentUser}
         availableMaterials={availableMaterials}

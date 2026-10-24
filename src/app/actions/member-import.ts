@@ -1,13 +1,28 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getCurrentUserProfile } from "@/lib/auth";
 import { buildMemberImportSourceHash } from "@/lib/member-import";
 import {
   type ImportRow,
   normalizeMemberImportRow,
   parseMemberImportCsv,
 } from "@/lib/member-import-csv";
+import { isAdminRole } from "@/lib/permissions";
 import { createClient } from "@/utils/supabase/server";
+
+async function requireMemberImportAdmin() {
+  const supabase = await createClient();
+  const { user, role } = await getCurrentUserProfile();
+
+  if (!user) return { supabase, error: "Nicht eingeloggt." };
+
+  if (!isAdminRole(role)) {
+    return { supabase, error: "Keine Berechtigung (nur Admin)." };
+  }
+
+  return { supabase, error: null };
+}
 
 type NormalizedImportRow = {
   membership_number: string;
@@ -191,6 +206,17 @@ export async function previewMemberImport(
   fileContent: string,
   fileType: string,
 ) {
+  const { supabase, error: authorizationError } =
+    await requireMemberImportAdmin();
+  if (authorizationError) {
+    return {
+      success: false,
+      error: authorizationError,
+      totalRows: 0,
+      previewRows: [],
+    };
+  }
+
   const rows =
     fileType === "csv"
       ? parseMemberImportCsv(fileContent)
@@ -208,7 +234,6 @@ export async function previewMemberImport(
     return values;
   }, []);
 
-  const supabase = await createClient();
   const { data: existingRows } = membershipNumbers.length
     ? await supabase
         .from("section_members")
@@ -238,12 +263,8 @@ export async function previewMemberImport(
 }
 
 export async function runMemberImport(fileContent: string, fileType: string) {
-  const supabase = await createClient();
-  const { data: userData, error: authError } = await supabase.auth.getUser();
-
-  if (authError || !userData.user) {
-    return { success: false, error: "Nicht eingeloggt." };
-  }
+  const { error: authorizationError } = await requireMemberImportAdmin();
+  if (authorizationError) return { success: false, error: authorizationError };
 
   const rows =
     fileType === "csv"
@@ -269,13 +290,14 @@ export async function runMemberImport(fileContent: string, fileType: string) {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  for (const row of rows as ImportRow[]) {
-    const normalizedRow = normalizeImportRow(row);
-    const membershipNumber = normalizedRow.membership_number;
-    const firstName = normalizedRow.first_name;
-    const lastName = normalizedRow.last_name;
-    const birthdate = normalizedRow.birthdate;
-    const sourceRowHash = normalizedRow.source_row_hash;
+  const normalizedRows = (rows as ImportRow[]).map(normalizeImportRow);
+  for (const normalizedRow of normalizedRows) {
+    const {
+      membership_number: membershipNumber,
+      first_name: firstName,
+      last_name: lastName,
+      birthdate,
+    } = normalizedRow;
 
     if (!membershipNumber || !firstName || !lastName || !birthdate) {
       return {
@@ -283,35 +305,13 @@ export async function runMemberImport(fileContent: string, fileType: string) {
         error: `Ungültige Importzeile für ${membershipNumber || "unbekannte Mitgliedsnummer"}.`,
       };
     }
-
-    const { error } = await adminClient.rpc("import_section_member_row", {
-      p_membership_number: membershipNumber,
-      p_family_number: normalizedRow.family_number,
-      p_household_number: normalizedRow.household_number,
-      p_salutation: normalizedRow.salutation,
-      p_first_name: firstName,
-      p_last_name: lastName,
-      p_birthdate: birthdate,
-      p_email: normalizedRow.email,
-      p_phone_mobile: normalizedRow.phone_mobile,
-      p_zip_city: normalizedRow.zip_city,
-      p_iban: normalizedRow.iban,
-      p_bank_name: normalizedRow.bank_name,
-      p_membership_category_code: normalizedRow.membership_category_code,
-      p_section_number: normalizedRow.section_number,
-      p_stammsektion: normalizedRow.stammsektion,
-      p_gastsektion: normalizedRow.gastsektion,
-      p_is_active: normalizedRow.is_active,
-      p_source_row_hash: sourceRowHash,
-    });
-
-    if (error) {
-      return {
-        success: false,
-        error: `Import fehlgeschlagen für ${membershipNumber}: ${error.message}`,
-      };
-    }
   }
+
+  const { error } = await adminClient.rpc("import_section_member_rows", {
+    p_rows: normalizedRows,
+  });
+  if (error)
+    return { success: false, error: `Import fehlgeschlagen: ${error.message}` };
 
   revalidatePath("/admin/members/import");
   revalidatePath("/admin");

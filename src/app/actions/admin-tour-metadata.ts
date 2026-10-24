@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getCurrentUserProfile } from "@/lib/auth";
 import { isAdminRole } from "@/lib/permissions";
 import { requireAuth } from "./auth-guards";
 
@@ -19,13 +20,9 @@ function normalizeValue(value: FormDataEntryValue | null) {
 async function requireAdmin(
   auth: Awaited<ReturnType<typeof requireAuth>>,
 ): Promise<AdminAuthResult> {
-  const { data: profile } = await auth.supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", auth.user.id)
-    .single();
+  const { role } = await getCurrentUserProfile();
 
-  if (!isAdminRole(profile?.role)) {
+  if (!isAdminRole(role)) {
     return {
       supabase: auth.supabase,
       error: "Keine Berechtigung. Nur Admins dürfen diese Einträge verwalten.",

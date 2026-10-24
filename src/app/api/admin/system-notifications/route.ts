@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { getCurrentUserProfile } from "@/lib/auth";
 import {
   resolveAdminSystemTargets,
   SYSTEM_TARGET_MODES,
@@ -25,22 +26,13 @@ export async function POST(req: NextRequest) {
 
   const supabase = await createClient();
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+  const { user, role } = await getCurrentUserProfile();
 
-  if (userError || !user) {
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (!isAdminRole(profile?.role)) {
+  if (!isAdminRole(role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

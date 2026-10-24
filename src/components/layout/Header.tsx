@@ -8,7 +8,6 @@ import { useState } from "react";
 import { SignOutForm } from "@/components/ui/SignOutForm";
 import { buildNavigation } from "@/lib/navigation/nav-config";
 import type { RoleLike } from "@/lib/permissions";
-import { isParentRole } from "@/lib/permissions";
 import { siteConfig } from "@/lib/site-config";
 
 const MemberBarcodePopup = dynamic(
@@ -31,6 +30,7 @@ interface HeaderProps {
   birthdate: string | null;
   membershipNumber: string | null;
   userRole?: RoleLike;
+  isParent?: boolean;
 }
 
 /**
@@ -38,8 +38,12 @@ interface HeaderProps {
  * Displays the JDAV logo, primary navigation links, a "More" dropdown for secondary links,
  * and user-specific actions (barcode popup, notifications, logout).
  */
-export function Header({ birthdate, membershipNumber, userRole }: HeaderProps) {
-  const isParent = isParentRole(userRole);
+export function Header({
+  birthdate,
+  membershipNumber,
+  userRole,
+  isParent = false,
+}: HeaderProps) {
   const [isMoreOpen, setIsMoreOpen] = useState(false);
 
   const navigation = buildNavigation(userRole);

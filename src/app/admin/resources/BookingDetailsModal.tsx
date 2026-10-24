@@ -28,12 +28,10 @@ interface BookingDetailsModalProps {
 }
 
 function BookingHeader({
-  isTourBooking,
   title,
   isStandaloneBooking,
   onClose,
 }: {
-  isTourBooking: boolean;
   title: string;
   isStandaloneBooking: boolean;
   onClose: () => void;
@@ -41,9 +39,7 @@ function BookingHeader({
   return (
     <div className="flex items-start justify-between border-b border-slate-200 p-5">
       <div>
-        <h2 className="text-lg font-bold text-slate-900">
-          {isTourBooking ? title : title}
-        </h2>
+        <h2 className="text-lg font-bold text-slate-900">{title}</h2>
         <p className="text-sm text-slate-500">
           {isStandaloneBooking ? "Eigene Reservierung" : "Tour-Ressource"}
         </p>
@@ -172,7 +168,6 @@ export function BookingDetailsModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
       <div className="w-full max-w-md rounded-2xl bg-white shadow-lg animate-in fade-in zoom-in-95">
         <BookingHeader
-          isTourBooking={isTourBooking}
           title={title}
           isStandaloneBooking={isStandaloneBooking}
           onClose={onClose}

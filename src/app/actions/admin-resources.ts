@@ -171,7 +171,8 @@ export async function getResourceBookings() {
         )
       )
     `)
-    .order("start_date");
+    .order("start_date")
+    .limit(250);
 
   if (error) {
     console.error("Error fetching resource bookings:", error);
@@ -220,7 +221,10 @@ export async function checkAndBookResource(
     return { error: error.message || "Resource booking failed" };
   }
 
-  return { success: true, booking_id: data.booking_id };
+  return {
+    success: true,
+    booking_id: (data as { booking_id: string }).booking_id,
+  };
 }
 
 async function _releaseResourceBooking(resourceBookingId: string) {
@@ -290,46 +294,28 @@ export async function bookResourceStandalone(
     return { error: "Grund für die Reservierung ist erforderlich." };
   }
 
-  // Check for time conflicts
-  const { data: conflicts, error: conflictError } = await supabase
-    .from("resource_bookings")
-    .select("id")
-    .eq("resource_id", resourceId)
-    .neq("status", "released")
-    .gte("end_date", startDate)
-    .lte("start_date", endDate);
-
-  if (conflictError) {
-    return { error: `Fehler bei Konfliktprüfung: ${conflictError.message}` };
-  }
-
-  if (conflicts && conflicts.length > 0) {
-    return {
-      error:
-        "Zeitkonflikt: Diese Ressource ist bereits in diesem Zeitraum reserviert.",
-    };
-  }
-
-  // Create standalone booking
-  const { data, error } = await supabase
-    .from("resource_bookings")
-    .insert({
-      resource_id: resourceId,
-      tour_id: null,
-      start_date: startDate,
-      end_date: endDate,
-      reason: reason.trim(),
-      status: "booked",
-      created_by: user.id,
-    })
-    .select("id");
+  const { data, error } = await supabase.rpc(
+    "book_resource_standalone_atomic",
+    {
+      p_resource_id: resourceId,
+      p_start_date: startDate,
+      p_end_date: endDate,
+      p_reason: reason,
+    },
+  );
 
   if (error) {
+    if (error.code === "23P01") {
+      return {
+        error:
+          "Zeitkonflikt: Diese Ressource ist bereits in diesem Zeitraum reserviert.",
+      };
+    }
     return { error: `Fehler beim Erstellen der Buchung: ${error.message}` };
   }
 
   revalidatePath("/admin/resources");
-  return { success: true, booking_id: data?.[0]?.id };
+  return { success: true, booking_id: data.booking_id };
 }
 
 export async function deleteResourceBooking(resourceBookingId: string) {

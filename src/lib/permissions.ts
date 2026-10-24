@@ -3,6 +3,7 @@
  */
 export type AppUserRole =
   | "member"
+  | "guest"
   | "parent"
   | "guide"
   | "materialwart"
@@ -32,10 +33,29 @@ export function isMaterialwartRole(role: RoleLike): boolean {
 }
 
 /**
- * Checks if the given role is a parent account.
+ * Checks if the given role is a guest / non-member.
+ */
+export function isGuestRole(role: RoleLike): boolean {
+  return role === "guest";
+}
+
+/**
+ * Checks if the given role is a legacy parent role.
+ * Prefer `isParentAccount` with profile data when available.
  */
 export function isParentRole(role: RoleLike): boolean {
   return role === "parent";
+}
+
+/**
+ * Dynamically checks if a profile is currently operating as a parent account
+ * (either dynamically flagged via active minor children, or legacy parent role).
+ */
+export function isParentAccount(
+  account: { is_parent?: boolean | null; role?: RoleLike } | null | undefined,
+): boolean {
+  if (!account) return false;
+  return account.is_parent === true || account.role === "parent";
 }
 
 /**
@@ -77,6 +97,8 @@ export function getRoleDisplayName(role: RoleLike): string {
       return "Materialwart";
     case "admin":
       return "Administrator";
+    case "guest":
+      return "Gast / Nicht-Mitglied";
     case "parent":
       return "Elternkonto";
     default:

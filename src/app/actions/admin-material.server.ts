@@ -184,20 +184,9 @@ export async function deleteMaterialType(typeId: string) {
     return { error: "Keine Berechtigung (nur Materialwart/Admin)." };
   }
 
-  // Deleting a material type needs to delete pricing and inventory first (or CASCADE)
-  await supabase
-    .from("material_pricing")
-    .delete()
-    .eq("material_type_id", typeId);
-  await supabase
-    .from("material_inventory")
-    .delete()
-    .eq("material_type_id", typeId);
-
-  const { error } = await supabase
-    .from("material_types")
-    .delete()
-    .eq("id", typeId);
+  const { error } = await supabase.rpc("delete_material_type_atomic", {
+    p_type_id: typeId,
+  });
 
   if (error) {
     console.error("Delete material error: ", error);
