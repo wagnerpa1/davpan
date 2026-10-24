@@ -1,7 +1,6 @@
 import { GeistSans } from "geist/font/sans";
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 import type React from "react";
 import { BottomNavigation } from "@/components/layout/BottomNavigation";
 import { Header } from "@/components/layout/Header";
@@ -312,7 +311,6 @@ export default async function RootLayout({
             {children}
           </main>
           {user && <BottomNavigation userRole={userRole} />}
-          <SpeedInsights />
         </SerwistProvider>
       </body>
     </html>
