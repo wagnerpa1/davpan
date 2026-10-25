@@ -141,17 +141,21 @@ export default async function BerichtePage({ searchParams }: Props) {
   const groupFilter = getSearchParam(params, "group");
   const sortFilter = getSearchParam(params, "sort", "newest");
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    redirect("/login");
-  }
-
-  const [{ data: catData }, { data: groupsData }] = await Promise.all([
+  const userPromise = supabase.auth.getUser();
+  const metadataPromise = Promise.all([
     supabase.from("tour_categorys").select("id, category").order("category"),
     supabase.from("tour_groups").select("id, group_name"),
   ]);
+  const [
+    {
+      data: { user },
+    },
+    [{ data: catData }, { data: groupsData }],
+  ] = await Promise.all([userPromise, metadataPromise]);
+
+  if (!user) {
+    redirect("/login");
+  }
 
   const categories = ((catData || []) as TourCategoryOption[]).filter(
     (c): c is { id: string; category: string } => Boolean(c.category),
@@ -236,7 +240,8 @@ export default async function BerichtePage({ searchParams }: Props) {
               <Link
                 key={report.id}
                 href={`/berichte/${report.id}`}
-                className="group flex flex-col h-full bg-white rounded-2xl border border-slate-200 shadow-sm transition-colors hover:border-jdav-green hover:shadow-md"
+                prefetch={false}
+                className="group flex content-visibility-auto flex-col h-full bg-white rounded-2xl border border-slate-200 shadow-sm transition-colors hover:border-jdav-green hover:shadow-md"
               >
                 <div className="relative aspect-4/3 w-full overflow-hidden rounded-t-2xl">
                   {previewImage ? (

@@ -318,14 +318,20 @@ export async function loadNextConfirmedRegistration(
 ): Promise<UserTourRegistration | null> {
   const today = new Date().toISOString().split("T")[0];
 
-  const { data: claimedChildRows } = await supabase
-    .from("child_profiles")
-    .select("id")
-    .eq("user_id", userId);
+  const [claimedChildrenResult, parentChildrenResult] = await Promise.all([
+    supabase.from("child_profiles").select("id").eq("user_id", userId),
+    isParent
+      ? supabase
+          .from("child_profiles")
+          .select("id")
+          .eq("parent_id", userId)
+          .eq("is_active", true)
+      : Promise.resolve({ data: [] as { id: string }[] | null }),
+  ]);
 
-  const claimedChildIds = ((claimedChildRows ?? []) as { id: string }[]).map(
-    (c) => c.id,
-  );
+  const claimedChildIds = (
+    (claimedChildrenResult.data ?? []) as { id: string }[]
+  ).map((child) => child.id);
 
   let selfQuery = supabase
     .from("tour_participants")
@@ -347,20 +353,11 @@ export async function loadNextConfirmedRegistration(
     selfQuery = selfQuery.eq("user_id", userId).is("child_profile_id", null);
   }
 
-  const [selfResult, childProfilesResult] = await Promise.all([
-    selfQuery,
-    isParent
-      ? supabase
-          .from("child_profiles")
-          .select("id")
-          .eq("parent_id", userId)
-          .eq("is_active", true)
-      : Promise.resolve({ data: [] as { id: string }[] | null }),
-  ]);
-
-  const childIds = (
-    (childProfilesResult.data ?? []) as { id: string }[]
-  ).flatMap((child) => (child.id ? [child.id] : []));
+  const { data: childProfiles } = parentChildrenResult;
+  const childIds = ((childProfiles ?? []) as { id: string }[]).flatMap(
+    (child) => (child.id ? [child.id] : []),
+  );
+  const selfResult = await selfQuery;
 
   const childResult =
     isParent && childIds.length > 0

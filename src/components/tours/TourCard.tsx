@@ -304,10 +304,14 @@ export function TourCard({ tour }: TourCardProps) {
   const vm = getTourCardViewModel(tour);
 
   return (
-    <Link href={`/touren/${tour.id}`} className="motion-press block">
+    <Link
+      href={`/touren/${tour.id}`}
+      prefetch={false}
+      className="motion-press block"
+    >
       <div
         className={cn(
-          "motion-card motion-enter group relative overflow-hidden rounded-2xl border shadow-sm transition-colors",
+          "motion-card content-visibility-auto group relative overflow-hidden rounded-2xl border shadow-sm transition-colors",
           vm.isCancelled
             ? "border-slate-200 bg-slate-50 text-slate-500"
             : "border-slate-200 bg-white hover:border-jdav-green hover:shadow-md",

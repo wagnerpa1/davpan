@@ -314,31 +314,22 @@ async function getTourenPageData(
   };
 }
 
-export default async function TourenPage({
-  searchParams,
+async function TourenContent({
+  supabase,
+  params,
+  authRole,
+  canCreate,
 }: {
-  searchParams: Promise<TourSearchParams>;
+  supabase: Awaited<ReturnType<typeof createClient>>;
+  params: TourSearchParams;
+  authRole: string | undefined;
+  canCreate: boolean;
 }) {
-  const [supabase, params, authContext] = await Promise.all([
-    createClient(),
-    searchParams,
-    getCurrentUserProfile(),
-  ]);
-
-  after(() => {
-    void syncTourStatuses();
-  });
-
-  if (!authContext.user) {
-    redirect("/login");
-  }
-
-  const canCreate = canCreateTour(authContext.role);
   const { categories, difficulties, guides, tourGroups, filteredTours } =
-    await getTourenPageData(supabase, params, authContext.role ?? undefined);
+    await getTourenPageData(supabase, params, authRole);
 
   return (
-    <div className="mx-auto max-w-site px-4 py-8">
+    <>
       <div className="mb-10 flex flex-col gap-4 xs:flex-row xs:items-center xs:justify-between lg:mb-12">
         <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
           Tourenprogramm
@@ -346,6 +337,7 @@ export default async function TourenPage({
         <div className="flex w-full flex-col gap-2 xs:w-auto xs:flex-row">
           <Link
             href="/touren/meine"
+            prefetch={false}
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-jdav-green-dark px-4 py-2 text-sm font-bold text-white shadow-sm transition-colors hover:bg-jdav-green xs:w-auto"
           >
             Meine Touren
@@ -353,6 +345,7 @@ export default async function TourenPage({
           {canCreate && (
             <Link
               href="/touren/neu"
+              prefetch={false}
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-jdav-green-dark px-4 py-2 text-sm font-bold text-white shadow-sm transition-colors hover:bg-jdav-green xs:w-auto"
             >
               Tour erstellen
@@ -361,7 +354,11 @@ export default async function TourenPage({
         </div>
       </div>
 
-      <Suspense fallback={<div />}>
+      <Suspense
+        fallback={
+          <div className="h-16 animate-pulse rounded-2xl bg-slate-100" />
+        }
+      >
         <TourFilters
           categories={categories}
           difficulties={difficulties}
@@ -386,6 +383,49 @@ export default async function TourenPage({
           </div>
         )}
       </div>
+    </>
+  );
+}
+
+export default async function TourenPage({
+  searchParams,
+}: {
+  searchParams: Promise<TourSearchParams>;
+}) {
+  const [supabase, params, authContext] = await Promise.all([
+    createClient(),
+    searchParams,
+    getCurrentUserProfile(),
+  ]);
+
+  after(() => {
+    void syncTourStatuses();
+  });
+
+  if (!authContext.user) {
+    redirect("/login");
+  }
+
+  const canCreate = canCreateTour(authContext.role);
+
+  return (
+    <div className="mx-auto max-w-site px-4 py-8">
+      <Suspense
+        fallback={
+          <div className="space-y-4">
+            <div className="h-24 animate-pulse rounded-2xl bg-slate-100" />
+            <div className="h-12 animate-pulse rounded-2xl bg-slate-100" />
+            <div className="h-36 animate-pulse rounded-2xl bg-slate-100" />
+          </div>
+        }
+      >
+        <TourenContent
+          supabase={supabase}
+          params={params}
+          authRole={authContext.role ?? undefined}
+          canCreate={canCreate}
+        />
+      </Suspense>
     </div>
   );
 }

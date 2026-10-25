@@ -16,6 +16,7 @@ interface NotificationCenterResponse {
 export function useNotificationCenter(isParent: boolean) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasLoadedNotificationsRef = useRef(false);
   const supabase = useMemo(() => createBrowserClient(), []);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -60,6 +61,7 @@ export function useNotificationCenter(isParent: boolean) {
 
       const data = (await response.json()) as NotificationCenterResponse;
       setTabs(data.tabs);
+      hasLoadedNotificationsRef.current = true;
 
       if (data.tabs.length === 0) {
         setActiveTabId("self");
@@ -200,7 +202,7 @@ export function useNotificationCenter(isParent: boolean) {
   }, [activeTab, isMarkingTabAsRead]);
 
   useEffect(() => {
-    if (!isOpen) {
+    if (!isOpen || hasLoadedNotificationsRef.current) {
       return;
     }
 

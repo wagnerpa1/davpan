@@ -51,7 +51,7 @@ export function Header({
   return (
     <header className="fixed inset-x-0 top-0 z-50 w-full border-b border-slate-200/80 bg-white/95 shadow-sm md:backdrop-blur-md">
       <div className="container mx-auto flex h-14 items-center px-3 sm:h-16 sm:px-4">
-        <Link href="/" className="flex items-center">
+        <Link href="/" prefetch={false} className="flex items-center">
           <Image
             src={siteConfig.logoPath}
             alt={siteConfig.logoAlt}
@@ -65,6 +65,7 @@ export function Header({
             <Link
               key={item.href}
               href={item.href}
+              prefetch={false}
               className="text-sm font-medium text-slate-700 transition-colors hover:text-jdav-green"
             >
               {item.label}
@@ -98,6 +99,7 @@ export function Header({
                         <Link
                           key={item.href}
                           href={item.href}
+                          prefetch={false}
                           onClick={() => setIsMoreOpen(false)}
                           className="block rounded-xl px-2 py-2 text-sm text-slate-700 transition hover:bg-jdav-green/5 hover:text-jdav-green"
                         >

@@ -327,6 +327,7 @@ export default async function Home() {
                   <Link
                     key={report.id}
                     href={`/berichte/${report.id}`}
+                    prefetch={false}
                     className="group block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-colors hover:border-jdav-green hover:shadow-md"
                   >
                     <div className="flex flex-col sm:flex-row">

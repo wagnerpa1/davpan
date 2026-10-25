@@ -249,7 +249,7 @@ const runtimeCaching: import("serwist").RuntimeCaching[] = [
     matcher: ({ url }: { url: URL }) => url.pathname.startsWith("/touren"),
     handler: new NetworkFirst({
       cacheName: "jdav-touren",
-      networkTimeoutSeconds: 4,
+      networkTimeoutSeconds: 1,
       plugins: [
         new ExpirationPlugin({
           maxEntries: 20, // Strict limit for offline touren
@@ -267,7 +267,7 @@ const runtimeCaching: import("serwist").RuntimeCaching[] = [
       ),
     handler: new NetworkFirst({
       cacheName: "jdav-pages",
-      networkTimeoutSeconds: 4,
+      networkTimeoutSeconds: 1,
       plugins: [
         new ExpirationPlugin({
           maxEntries: 48,
@@ -277,10 +277,29 @@ const runtimeCaching: import("serwist").RuntimeCaching[] = [
     }),
   },
   {
-    matcher: ({ request }: { request: Request }) =>
-      request.destination === "style" ||
-      request.destination === "script" ||
-      request.destination === "worker",
+    matcher: ({ request, url }: { request: Request; url: URL }) =>
+      url.pathname.startsWith("/_next/static/") &&
+      (request.destination === "style" ||
+        request.destination === "script" ||
+        request.destination === "font" ||
+        request.destination === "worker"),
+    handler: new CacheFirst({
+      cacheName: "jdav-assets",
+      plugins: [
+        new ExpirationPlugin({
+          maxEntries: 96,
+          maxAgeSeconds: 60 * 60 * 24 * 30,
+        }),
+      ],
+    }),
+  },
+  {
+    matcher: ({ request, url }: { request: Request; url: URL }) =>
+      !url.pathname.startsWith("/_next/static/") &&
+      (request.destination === "style" ||
+        request.destination === "script" ||
+        request.destination === "font" ||
+        request.destination === "worker"),
     handler: new StaleWhileRevalidate({
       cacheName: "jdav-assets",
       plugins: [

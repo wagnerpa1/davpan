@@ -8,13 +8,25 @@ import {
   Ruler,
   User,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import ReactMarkdown from "react-markdown";
-import { ReportGallery } from "@/components/reports/ReportGallery";
 import { isAdminRole } from "@/lib/permissions";
 import { createClient } from "@/utils/supabase/server";
+
+const ReportGallery = dynamic(
+  () =>
+    import("@/components/reports/ReportGallery").then(
+      (module) => module.ReportGallery,
+    ),
+  {
+    loading: () => (
+      <div className="h-48 animate-pulse rounded-2xl bg-slate-100" />
+    ),
+  },
+);
 
 interface Props {
   params: Promise<{ id: string }>;

@@ -91,6 +91,7 @@ export function BottomNavigation({ userRole }: BottomNavigationProps) {
                       <Link
                         key={item.href}
                         href={item.href}
+                        prefetch={false}
                         onClick={() => setIsMoreOpen(false)}
                         className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white px-3 py-3 shadow-sm transition hover:border-jdav-green/30 hover:bg-jdav-green/5"
                       >
@@ -146,6 +147,7 @@ export function BottomNavigation({ userRole }: BottomNavigationProps) {
             <Link
               key={item.href}
               href={item.href}
+              prefetch={false}
               onClick={() => setIsMoreOpen(false)}
               className={cn(
                 "motion-press group relative flex flex-col items-center justify-center px-1.5 py-1 transition-colors duration-300",
