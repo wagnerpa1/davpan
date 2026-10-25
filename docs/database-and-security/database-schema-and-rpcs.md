@@ -11,7 +11,8 @@ erDiagram
     profiles ||--o{ tour_participants : registers
     tours ||--o{ tour_participants : has
     tours ||--o{ resource_bookings : links
-    materials ||--o{ resource_bookings : reserves
+    material_types ||--o{ material_inventory : contains
+    material_inventory ||--o{ material_reservations : reserves
     profiles ||--o{ child_profiles : manages
     tours ||--o{ tour_reports : documents
     section_members ||--o| profiles : verifies
@@ -43,6 +44,19 @@ Gleicht geliehene Materialien bei Teilnehmer-Statusänderungen ab:
 Automatische Verknüpfungsfunktion nach CSV-Import:
 * Gleicht `section_members` mit `profiles` über Mitgliedsnummer und Geburtsdatum ab.
 * Aktualisiert `profiles.is_section_member` und setzt Verifizierungsdaten.
+
+### 5. Datenintegritäts- und RLS-Härtung
+Die Migration `20261025184500_database_integrity_and_rls_hardening.sql` migriert
+Legacy-Materialzeilen in das kanonische Modell
+(`material_types`/`material_inventory`/`material_pricing`) und stellt die alten
+Tabellen auf read-only-Kompatibilität. Sie synchronisiert die vorläufig weiterhin
+benötigten Profil-Aktivierungsfelder, erzwingt Nicht-Null- und Mengen-Constraints
+und entfernt Policies, die versehentlich für `PUBLIC` galten.
+
+`section_member_imports` bleibt eine interne Staging-Tabelle. Admins können die
+Vorschau lesen; Import-Schreibvorgänge laufen ausschließlich über den geschützten
+Service-Role-RPC. SECURITY-DEFINER-Material-RPCs prüfen zusätzlich selbst
+Authentifizierung und Besitz-/Rollenrechte.
 
 ---
 

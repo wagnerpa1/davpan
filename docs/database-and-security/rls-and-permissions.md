@@ -38,12 +38,19 @@ Dieses Dokument konsolidiert die Sicherheits- und Berechtigungsarchitektur der D
 * **READ**: Eigene Anmeldungen, Eltern für ihre Kinder, Tourenleiter für ihre Touren, Admins.
 * **INSERT / UPDATE**: Über atomare Stored Procedures (`register_for_tour_atomic`). Direct SQL Inserts gesperrt.
 
-### 4. `materials` & `resource_bookings`
-* **READ**: `materials` öffentlich lesbar. `resource_bookings` nur eigenes Mitglied, Tourenleiter der verbundenen Tour, Materialwart und Admin.
-* **INSERT / UPDATE**: Buchungsänderungen erfolgen über atomare RPCs (`apply_material_reservation_transition_atomic`).
+### 4. Material & `resource_bookings`
+* **READ**: Der kanonische Materialbestand liegt in `material_types` und
+  `material_inventory`. Die Legacy-Tabellen `materials` und `tour_materials`
+  sind für Browser-Rollen read-only gesperrt.
+* **INSERT / UPDATE**: Reservierungen und Statusänderungen erfolgen über
+  atomare RPCs. SECURITY-DEFINER-RPCs erzwingen zusätzlich die Identität,
+  Kinderberechtigung und Managerrolle des Aufrufers.
 
 ### 5. `section_members` (Stammdaten)
-* **READ / WRITE**: Ausschließlich für `admin` und `SECURITY DEFINER` Validierungs-Functions zugänglich.
+* **READ / WRITE**: Eigene Stammdaten dürfen authentifizierte Mitglieder lesen;
+  Änderungen sind ausschließlich für `admin` und geschützte Importfunktionen möglich.
+  `section_member_imports` ist eine geschützte Staging-Tabelle; nur Admins
+  erhalten eine Vorschau, Schreibzugriffe erfolgen über den Service-Role-RPC.
 
 ---
 
