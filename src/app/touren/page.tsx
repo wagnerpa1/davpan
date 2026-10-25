@@ -43,11 +43,6 @@ interface TourCategoryOption {
   category: string | null;
 }
 
-interface TourParticipantCountRow {
-  tour_id: string;
-  confirmed_count: number;
-}
-
 type TourSearchParams = Record<string, string | string[] | undefined>;
 
 function getSearchParam(params: TourSearchParams, key: string, fallback = "") {
@@ -202,79 +197,26 @@ async function getTourenPageData(
   const guides = guidesData || [];
   const tourGroups = tourGroupsData || [];
 
-  // Build query
-  let query = supabase
-    .from("tours")
-    .select(`
-      id,
-      title,
-      category,
-      status,
-      start_date,
-      end_date,
-      target_area,
-      max_participants,
-      difficulty,
-      group,
-      tour_guides (
-        user_id,
-        profiles (
-          full_name
-        )
-      ),
-      tour_groups!tours_group_fkey (
-        group_name
-      ),
-      tour_categorys!tours_category_fkey (
-        category
-      )
-    `)
-    .neq("status", "completed");
-
-  if (normalizedCategoryFilter) {
-    query = query.eq("category", normalizedCategoryFilter);
-  }
-  if (difficultyFilter) query = query.eq("difficulty", difficultyFilter);
-  if (groupFilter) query = query.eq("group", groupFilter);
-
   const visibilityDateLimit = getTourVisibilityDateLimit(new Date());
-
-  if (shouldApplyTourVisibilityLimit(authRole)) {
-    query = query.lt("start_date", visibilityDateLimit);
-  }
-
-  const { data: tours, error } = await query.order("start_date", {
-    ascending: sortBy === "date_asc",
+  const { data: tours, error } = await supabase.rpc("get_tour_overview", {
+    p_category: normalizedCategoryFilter || null,
+    p_difficulty: difficultyFilter || null,
+    p_group: groupFilter || null,
+    p_guide: guideFilter || null,
+    p_visibility_date: visibilityDateLimit,
+    p_apply_visibility_limit: shouldApplyTourVisibilityLimit(authRole),
+    p_sort_by: sortBy === "date_desc" ? "date_desc" : "date_asc",
   });
 
   if (error) {
-    console.error("Error fetching tours:", error);
+    console.error("Error fetching tour overview:", error);
   }
-
-  const tourIds = (tours || []).map((tour) => tour.id);
-  const { data: countRows, error: countError } =
-    tourIds.length > 0
-      ? await supabase.rpc("get_tour_participant_counts", {
-          p_tour_ids: tourIds,
-        })
-      : { data: [], error: null };
-
-  if (countError) {
-    console.error("Error fetching participant counts:", countError);
-  }
-
-  const confirmedCountByTour = new Map<string, number>(
-    ((countRows || []) as TourParticipantCountRow[]).map((row) => [
-      row.tour_id,
-      row.confirmed_count || 0,
-    ]),
-  );
 
   let filteredTours: TourCardItem[] = normalizeTourRows(
     tours as RawTourCardItem[] | null,
   ).map((tour) => ({
     ...tour,
-    confirmed_participants_count: confirmedCountByTour.get(tour.id) ?? 0,
+    confirmed_participants_count: tour.confirmed_participants_count ?? 0,
   }));
 
   const todayIso = new Date().toISOString().split("T")[0];
@@ -282,12 +224,6 @@ async function getTourenPageData(
   filteredTours = filteredTours.filter((tour) =>
     isCancelledTourVisible(tour, todayIso),
   );
-
-  if (guideFilter) {
-    filteredTours = filteredTours.filter((tour) =>
-      tour.tour_guides?.some((tg) => tg.user_id === guideFilter),
-    );
-  }
 
   if (availableOnly) {
     filteredTours = filteredTours.filter((tour) => {
