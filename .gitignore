@@ -55,6 +55,3 @@ next-env.d.ts
 # Database files
 *.db_dump/
 .migrations_old/
-/dist/
-.vinext/
-.cloudflare/

@@ -59,7 +59,15 @@ export function ParticipantTable({
               <tr
                 key={p.id}
                 className="hover:bg-slate-50/50 transition-colors group cursor-pointer lg:cursor-default"
+                tabIndex={0}
+                aria-label={`Teilnehmerdetails für ${name} anzeigen`}
                 onClick={() => onSelectParticipant(p)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    onSelectParticipant(p);
+                  }
+                }}
               >
                 <td className="px-4 py-3 font-medium text-slate-400">
                   {index + 1}

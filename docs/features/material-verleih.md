@@ -6,22 +6,24 @@ Die DAV Sektion Pfarrkirchen stellt ihren Mitgliedern Bergsportausrüstung (z.B.
 
 ## 📦 Inventarstruktur & Kategorien
 
-Die Ausrüstung wird in zwei zentralen Tabellen verwaltet:
+Die Ausrüstung wird im kanonischen, normalisierten Modell verwaltet:
 
-1. **`materials` (Materialstamm)**:
-   * `name`: Bezeichnung der Ausrüstung (z.B. "Mammut Barryvox LVS-Gerät").
-   * `category`: Kategorie (z.B. LVS/Lawine, Klettern, Hochtour).
-   * `total_quantity`: Gesamtbestand der Sektion.
-   * `available_quantity`: Aktuell für Ausleihe verfügbare Anzahl.
-   * `requires_approval`: Kennzeichen, ob Materialwart-Freigabe erforderlich ist.
+1. **`material_types`**: Bezeichnung und Kategorie des Materials.
+2. **`material_inventory`**: Größen, Gesamtbestand und verfügbarer Bestand je
+   Materialtyp.
+3. **`material_pricing`**: Preisstaffeln je Materialtyp.
 
-2. **`resource_bookings` (Reservierungen & Buchungen)**:
-   * `material_id`: Referenz zum Materialstamm.
+4. **`material_reservations` (Reservierungen)**:
+   * `material_inventory_id`: Referenz auf Bestand und Größe.
    * `user_id`: Ausleihendes Mitglied.
    * `tour_id`: (Optional) Anbindung an eine Sektionstour.
-   * `quantity`: Reservierte Stückzahl.
+   * `quantity`: Positive reservierte Stückzahl.
    * `status`: Status der Reservierung.
-   * `start_date` / `end_date`: Verleihzeitraum.
+   * `loan_date` / `return_date`: Verleihzeitraum.
+
+Die früheren Tabellen `materials` und `tour_materials` werden in einer
+additiven Migration in das kanonische Modell überführt und anschließend nicht
+mehr für Browser-Zugriffe freigegeben.
 
 ---
 
@@ -45,8 +47,8 @@ Um Überbuchungen bei gleichzeitigem Zugriff zu verhindern, erfolgt die Buchungs
 
 ```sql
 -- Verkürztes Schema des Bestands-Check Locks in Postgres
-SELECT total_quantity, available_quantity 
-FROM materials 
+SELECT quantity_total, quantity_available
+FROM material_inventory
 WHERE id = p_material_id 
 FOR UPDATE;
 ```

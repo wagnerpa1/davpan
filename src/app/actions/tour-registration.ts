@@ -140,12 +140,17 @@ export async function registerForTour(formData: FormData) {
           materials.map((m) => m.material_type_id),
         );
 
+      const inventoryByTypeAndSize = new Map(
+        (inventoryItems ?? []).map((inventoryItem) => [
+          `${inventoryItem.material_type_id}:${inventoryItem.size}`,
+          inventoryItem,
+        ]),
+      );
+
       materialReqs = materials
-        .map((m) => {
-          const invItem = inventoryItems?.find(
-            (inv) =>
-              inv.material_type_id === m.material_type_id &&
-              inv.size === m.size,
+        .map((material) => {
+          const invItem = inventoryByTypeAndSize.get(
+            `${material.material_type_id}:${material.size}`,
           );
           return invItem
             ? {
