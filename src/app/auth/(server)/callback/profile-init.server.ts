@@ -54,20 +54,4 @@ export async function initializeUserProfileOnAuth(
     );
     return;
   }
-
-  if (membershipNumber) {
-    const { error: claimError } = await adminClient.rpc(
-      "claim_child_history_on_registration",
-      {
-        p_user_id: user.id,
-        p_membership_number: membershipNumber,
-      },
-    );
-    if (claimError) {
-      console.error(
-        "Error claiming child history on registration:",
-        claimError,
-      );
-    }
-  }
 }

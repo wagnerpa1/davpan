@@ -24,9 +24,10 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const supabase = await createClient();
-
-  const { user, role } = await getCurrentUserProfile();
+  const [supabase, { user, role }] = await Promise.all([
+    createClient(),
+    getCurrentUserProfile(),
+  ]);
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

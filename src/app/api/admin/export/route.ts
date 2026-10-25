@@ -91,9 +91,10 @@ function firstOrNull<T>(value: T | T[] | null | undefined): T | null {
 }
 
 function toCsvCell(value: unknown): string {
-  return `"${String(value ?? "")
-    .replace(/"/g, '""')
-    .replace(/\n/g, " ")}"`;
+  const text = String(value ?? "");
+  const safeText = /^[=+\-@]/.test(text) ? `'${text}` : text;
+
+  return `"${safeText.replace(/"/g, '""').replace(/\n/g, " ")}"`;
 }
 
 const exportDateFormatter = new Intl.DateTimeFormat("de-DE", {

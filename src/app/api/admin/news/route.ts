@@ -7,9 +7,10 @@ import { createClient } from "@/utils/supabase/server";
 import { getServerURL } from "@/utils/url-helpers";
 
 async function requireAdmin() {
-  const supabase = await createClient();
-
-  const { user, role } = await getCurrentUserProfile();
+  const [supabase, { user, role }] = await Promise.all([
+    createClient(),
+    getCurrentUserProfile(),
+  ]);
 
   if (!user) {
     return { supabase, user: null, error: "Unauthorized", status: 401 };

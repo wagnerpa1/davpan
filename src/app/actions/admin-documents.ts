@@ -6,9 +6,10 @@ import { isAdminRole } from "@/lib/permissions";
 import { createClient } from "@/utils/supabase/server";
 
 export async function uploadDocument(formData: FormData) {
-  const supabase = await createClient();
-
-  const { user, role } = await getCurrentUserProfile();
+  const [supabase, { user, role }] = await Promise.all([
+    createClient(),
+    getCurrentUserProfile(),
+  ]);
   if (!user) return { error: "Nicht eingeloggt." };
 
   if (!isAdminRole(role)) {
@@ -64,9 +65,10 @@ export async function uploadDocument(formData: FormData) {
 }
 
 export async function deleteDocument(id: string, fileUrl: string) {
-  const supabase = await createClient();
-
-  const { user, role } = await getCurrentUserProfile();
+  const [supabase, { user, role }] = await Promise.all([
+    createClient(),
+    getCurrentUserProfile(),
+  ]);
   if (!user) return { error: "Nicht eingeloggt." };
 
   if (!isAdminRole(role)) {
